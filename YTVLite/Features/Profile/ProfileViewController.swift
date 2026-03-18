@@ -2,8 +2,6 @@ import UIKit
 
 class ProfileViewController: UIViewController {
 
-    private let ytAPI = YouTubeAPIClient()
-
     // Header
     private let avatarView = ThumbnailImageView(frame: .zero)
     private let nameLabel = UILabel()
@@ -24,6 +22,18 @@ class ProfileViewController: UIViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(applyTheme),
                                                name: ThemeManager.didChangeNotification, object: nil)
         loadProfile()
+        navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Sign Out", style: .plain,
+                                                            target: self, action: #selector(signOut))
+    }
+
+    @objc private func signOut() {
+        OAuthClient.shared.signOut()
+        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
+        let auth = AuthViewController()
+        auth.onAuthorized = {
+            appDelegate.window?.rootViewController = MainTabBarController()
+        }
+        appDelegate.window?.rootViewController = auth
     }
 
     private func setupUI() {
@@ -115,9 +125,11 @@ class ProfileViewController: UIViewController {
     }
 
     private func loadProfile() {
-        guard let url = URL(string: "\(Config.youtubeAPIBase)/channels?part=snippet,statistics&mine=true") else { return }
-        let headers = ["Authorization": "Bearer \(Config.accessToken)"]
-        APIClient().get(url: url, headers: headers) { [weak self] result in
+        OAuthClient.shared.validToken { [weak self] result in
+            guard case .success(let token) = result else { return }
+            guard let url = URL(string: "https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true") else { return }
+            let headers = ["Authorization": "Bearer \(token)"]
+            APIClient().get(url: url, headers: headers) { [weak self] result in
             guard case .success(let data) = result,
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let item = (json["items"] as? [[String: Any]])?.first,
@@ -138,6 +150,7 @@ class ProfileViewController: UIViewController {
                     self?.avatarView.setImage(url: url)
                 }
             }
+        }
         }
     }
 }

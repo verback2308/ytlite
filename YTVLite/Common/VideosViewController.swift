@@ -8,6 +8,10 @@ class VideosViewController: UIViewController {
     private(set) var collectionView: UICollectionView!
     let spinner = UIActivityIndicatorView(style: .white)
 
+    private var continuationToken: String?
+    private var isLoadingMore = false
+    private var seenVideoIds: Set<String> = []
+
     override func viewDidLoad() {
         super.viewDidLoad()
         setupCollectionView()
@@ -41,13 +45,14 @@ class VideosViewController: UIViewController {
         view.addSubview(collectionView)
     }
 
-    @objc func handleRefresh() {
-        // Subclasses override to reload data; call endRefreshing when done
-    }
+    @objc func handleRefresh() {}
 
     func endRefreshing() {
         collectionView.refreshControl?.endRefreshing()
     }
+
+    // Override in subclasses to load next page using continuationToken
+    func handleLoadMore() {}
 
     private func setupSpinner() {
         spinner.translatesAutoresizingMaskIntoConstraints = false
@@ -79,10 +84,27 @@ class VideosViewController: UIViewController {
         collectionView?.reloadData()
     }
 
-    func setVideos(_ videos: [Video]) {
-        self.videos = videos
+    // Reset and show first page
+    func setPage(_ page: FeedPage) {
+        seenVideoIds = []
+        videos = []
+        appendPage(page)
+    }
+
+    // Append a page of results (deduplicates by video id)
+    func appendPage(_ page: FeedPage) {
+        let newVideos = page.videos.filter { seenVideoIds.insert($0.id).inserted }
+        videos.append(contentsOf: newVideos)
+        continuationToken = page.continuation
+        isLoadingMore = false
         collectionView.reloadData()
     }
+
+    func finishLoadingMore() {
+        isLoadingMore = false
+    }
+
+    var currentContinuation: String? { continuationToken }
 }
 
 extension VideosViewController: UICollectionViewDataSource {
@@ -101,5 +123,11 @@ extension VideosViewController: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let videoId = videos[indexPath.item].id
         navigationController?.pushViewController(PlayerViewController(videoId: videoId), animated: true)
+    }
+
+    func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        guard !isLoadingMore, continuationToken != nil, indexPath.item >= videos.count - 4 else { return }
+        isLoadingMore = true
+        handleLoadMore()
     }
 }

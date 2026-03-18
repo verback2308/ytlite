@@ -93,7 +93,7 @@ class VideoCell: UICollectionViewCell {
         titleLabel.text = video.title
         channelLabel.text = video.channelName
         let views = video.viewCount ?? ""
-        let date = video.publishedAt.map(YouTubeAPIClient.formatRelativeDate) ?? ""
+        let date = video.publishedAt.map(VideoFormatters.formatRelativeDate) ?? ""
         metaLabel.text = [views, date].filter { !$0.isEmpty }.joined(separator: " • ")
 
         if let duration = video.duration, !duration.isEmpty {

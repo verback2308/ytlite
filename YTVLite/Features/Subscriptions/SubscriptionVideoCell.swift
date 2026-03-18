@@ -89,7 +89,7 @@ class SubscriptionVideoCell: UITableViewCell {
         applyTheme()
         titleLabel.text = video.title
         channelLabel.text = video.channelName
-        dateLabel.text = video.publishedAt.map(YouTubeAPIClient.formatRelativeDate) ?? ""
+        dateLabel.text = video.publishedAt.map(VideoFormatters.formatRelativeDate) ?? ""
 
         if let duration = video.duration, !duration.isEmpty {
             durationLabel.text = " \(duration) "

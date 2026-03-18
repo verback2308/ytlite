@@ -2,7 +2,7 @@ import UIKit
 
 class SearchViewController: UIViewController {
 
-    private let innertube = InnertubeClient()
+    private let service = ServiceContainer.video
     private var results: [Video] = []
 
     private let searchBar = UISearchBar()
@@ -54,7 +54,7 @@ class SearchViewController: UIViewController {
     }
 
     private func search(query: String) {
-        innertube.searchVideos(query: query) { [weak self] result in
+        service.search(query: query) { [weak self] result in
             DispatchQueue.main.async {
                 switch result {
                 case .success(let videos):

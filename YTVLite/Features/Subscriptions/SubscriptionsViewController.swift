@@ -2,8 +2,11 @@ import UIKit
 
 class SubscriptionsViewController: UIViewController {
 
-    private let ytAPI = YouTubeAPIClient()
+    private let service = ServiceContainer.video
     private var videos: [Video] = []
+    private var continuationToken: String?
+    private var isLoadingMore = false
+    private var seenVideoIds: Set<String> = []
     private let tableView = UITableView()
     private let spinner = UIActivityIndicatorView(style: .white)
 
@@ -62,19 +65,56 @@ class SubscriptionsViewController: UIViewController {
     }
 
     private func loadFeed() {
-        ytAPI.fetchSubscriptionFeed { [weak self] result in
+        service.fetchSubscriptionFeed { [weak self] result in
             DispatchQueue.main.async {
                 self?.spinner.stopAnimating()
                 self?.tableView.refreshControl?.endRefreshing()
                 switch result {
-                case .success(let videos):
-                    self?.videos = videos
-                    self?.tableView.reloadData()
+                case .success(let page):
+                    self?.setPage(page)
                 case .failure(let error):
+                    self?.finishLoadingMore()
                     print("Subscriptions error: \(error)")
                 }
             }
         }
+    }
+
+    private func loadMore() {
+        guard let continuation = continuationToken else {
+            finishLoadingMore()
+            return
+        }
+
+        service.fetchNextPage(continuation: continuation) { [weak self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let page):
+                    self?.appendPage(page)
+                case .failure(let error):
+                    self?.finishLoadingMore()
+                    print("Subscriptions pagination error: \(error)")
+                }
+            }
+        }
+    }
+
+    private func setPage(_ page: FeedPage) {
+        seenVideoIds = []
+        videos = []
+        appendPage(page)
+    }
+
+    private func appendPage(_ page: FeedPage) {
+        let newVideos = page.videos.filter { seenVideoIds.insert($0.id).inserted }
+        videos.append(contentsOf: newVideos)
+        continuationToken = page.continuation
+        isLoadingMore = false
+        tableView.reloadData()
+    }
+
+    private func finishLoadingMore() {
+        isLoadingMore = false
     }
 }
 
@@ -94,5 +134,15 @@ extension SubscriptionsViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let videoId = videos[indexPath.row].id
         navigationController?.pushViewController(PlayerViewController(videoId: videoId), animated: true)
+    }
+
+    func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+        guard !isLoadingMore,
+              continuationToken != nil,
+              indexPath.row >= videos.count - 4
+        else { return }
+
+        isLoadingMore = true
+        loadMore()
     }
 }

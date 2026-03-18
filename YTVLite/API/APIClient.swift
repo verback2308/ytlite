@@ -35,4 +35,5 @@ enum APIError: Error {
     case invalidURL
     case decodingFailed
     case notReady
+    case unauthorized
 }
