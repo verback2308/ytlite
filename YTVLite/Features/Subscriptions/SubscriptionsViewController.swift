@@ -3,6 +3,7 @@ import UIKit
 class SubscriptionsViewController: UIViewController {
 
     private let service = ServiceContainer.video
+    private let cache = AppCache.shared
     private var videos: [Video] = []
     private var continuationToken: String?
     private var isLoadingMore = false
@@ -18,7 +19,13 @@ class SubscriptionsViewController: UIViewController {
         applyTheme()
         NotificationCenter.default.addObserver(self, selector: #selector(applyTheme),
                                                name: ThemeManager.didChangeNotification, object: nil)
-        loadFeed()
+
+        if let cachedPage = cache.cachedSubscriptionsFeed() {
+            spinner.stopAnimating()
+            setPage(cachedPage)
+        } else {
+            loadFeed()
+        }
     }
 
     private func setupTableView() {
@@ -61,6 +68,7 @@ class SubscriptionsViewController: UIViewController {
     }
 
     @objc private func handleRefresh() {
+        cache.clearSubscriptionsFeed()
         loadFeed()
     }
 
@@ -71,6 +79,7 @@ class SubscriptionsViewController: UIViewController {
                 self?.tableView.refreshControl?.endRefreshing()
                 switch result {
                 case .success(let page):
+                    self?.cache.setSubscriptionsFeed(page)
                     self?.setPage(page)
                 case .failure(let error):
                     self?.finishLoadingMore()
@@ -125,7 +134,14 @@ extension SubscriptionsViewController: UITableViewDataSource {
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: SubscriptionVideoCell.reuseId, for: indexPath) as! SubscriptionVideoCell
-        cell.configure(with: videos[indexPath.row])
+        let video = videos[indexPath.row]
+        cell.configure(with: video)
+        cell.onChannelTap = { [weak self] in
+            guard let channelId = video.channelId else { return }
+            self?.navigationController?.pushViewController(ChannelViewController(channelId: channelId,
+                                                                                channelName: video.channelName),
+                                                           animated: true)
+        }
         return cell
     }
 }

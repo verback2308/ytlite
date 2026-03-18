@@ -3,6 +3,7 @@ import UIKit
 class HomeViewController: VideosViewController {
 
     private let service = ServiceContainer.video
+    private let cache = AppCache.shared
     override var columns: Int { 3 }
 
     private lazy var errorLabel: UILabel = {
@@ -28,7 +29,13 @@ class HomeViewController: VideosViewController {
             errorLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -32),
         ])
         setupSearchButton()
-        loadFeed()
+
+        if let cachedPage = cache.cachedHomeFeed() {
+            spinner.stopAnimating()
+            setPage(cachedPage)
+        } else {
+            loadFeed()
+        }
     }
 
     private func setupSearchButton() {
@@ -41,6 +48,7 @@ class HomeViewController: VideosViewController {
     }
 
     override func handleRefresh() {
+        cache.clearHomeFeed()
         loadFeed()
     }
 
@@ -52,6 +60,7 @@ class HomeViewController: VideosViewController {
                 self?.endRefreshing()
                 switch result {
                 case .success(let page):
+                    self?.cache.setHomeFeed(page)
                     self?.setPage(page)
                 case .failure:
                     self?.finishLoadingMore()

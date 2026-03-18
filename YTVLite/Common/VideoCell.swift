@@ -11,6 +11,7 @@ class VideoCell: UICollectionViewCell {
     private let channelLabel = UILabel()
     private let metaLabel = UILabel()
     private var representedChannelId: String?
+    var onChannelTap: (() -> Void)?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -41,6 +42,7 @@ class VideoCell: UICollectionViewCell {
         channelAvatarView.layer.cornerRadius = 16
         channelAvatarView.layer.masksToBounds = true
         channelAvatarView.translatesAutoresizingMaskIntoConstraints = false
+        channelAvatarView.isUserInteractionEnabled = true
         contentView.addSubview(channelAvatarView)
 
         // Title
@@ -54,6 +56,7 @@ class VideoCell: UICollectionViewCell {
         channelLabel.textColor = ThemeManager.shared.secondaryText
         channelLabel.font = UIFont.systemFont(ofSize: 11)
         channelLabel.translatesAutoresizingMaskIntoConstraints = false
+        channelLabel.isUserInteractionEnabled = true
         contentView.addSubview(channelLabel)
 
         // Meta (views • date)
@@ -90,6 +93,16 @@ class VideoCell: UICollectionViewCell {
             metaLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
             metaLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
         ])
+
+        let avatarTap = UITapGestureRecognizer(target: self, action: #selector(handleChannelTap))
+        channelAvatarView.addGestureRecognizer(avatarTap)
+
+        let labelTap = UITapGestureRecognizer(target: self, action: #selector(handleChannelTap))
+        channelLabel.addGestureRecognizer(labelTap)
+    }
+
+    @objc private func handleChannelTap() {
+        onChannelTap?()
     }
 
     @objc private func applyTheme() {
@@ -122,13 +135,13 @@ class VideoCell: UICollectionViewCell {
                       let avatarURL = info.avatarURL,
                       let url = URL(string: avatarURL)
                 else {
-                    print("[VideoCell] avatar missing after fetch for channel \(channelId)")
+                    print("[VideoCell] avatar unavailable for channel \(channelId)")
                     return
                 }
                 self.channelAvatarView.setImage(url: url)
             }
         } else {
-            print("[VideoCell] no channelId for video \(video.id)")
+            print("[VideoCell] no channelId for video \(video.id) (\(video.channelName))")
             channelAvatarView.isHidden = true
             channelAvatarView.cancel()
         }
@@ -156,5 +169,6 @@ class VideoCell: UICollectionViewCell {
         durationLabel.text = nil
         durationLabel.isHidden = true
         channelAvatarView.isHidden = false
+        onChannelTap = nil
     }
 }

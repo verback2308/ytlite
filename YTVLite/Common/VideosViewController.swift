@@ -47,6 +47,13 @@ class VideosViewController: UIViewController {
 
     @objc func handleRefresh() {}
 
+    func openChannel(for video: Video) {
+        guard let channelId = video.channelId else { return }
+        navigationController?.pushViewController(ChannelViewController(channelId: channelId,
+                                                                      channelName: video.channelName),
+                                                 animated: true)
+    }
+
     func endRefreshing() {
         collectionView.refreshControl?.endRefreshing()
     }
@@ -114,7 +121,11 @@ extension VideosViewController: UICollectionViewDataSource {
 
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: VideoCell.reuseId, for: indexPath) as! VideoCell
-        cell.configure(with: videos[indexPath.item])
+        let video = videos[indexPath.item]
+        cell.configure(with: video)
+        cell.onChannelTap = { [weak self] in
+            self?.openChannel(for: video)
+        }
         return cell
     }
 }

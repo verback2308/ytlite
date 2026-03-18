@@ -11,6 +11,7 @@ class SubscriptionVideoCell: UITableViewCell {
     private let channelLabel = UILabel()
     private let dateLabel = UILabel()
     private var representedChannelId: String?
+    var onChannelTap: (() -> Void)?
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -41,6 +42,7 @@ class SubscriptionVideoCell: UITableViewCell {
         channelAvatarView.layer.cornerRadius = 18
         channelAvatarView.layer.masksToBounds = true
         channelAvatarView.translatesAutoresizingMaskIntoConstraints = false
+        channelAvatarView.isUserInteractionEnabled = true
         contentView.addSubview(channelAvatarView)
 
         titleLabel.numberOfLines = 2
@@ -50,6 +52,7 @@ class SubscriptionVideoCell: UITableViewCell {
 
         channelLabel.font = UIFont.systemFont(ofSize: 12)
         channelLabel.translatesAutoresizingMaskIntoConstraints = false
+        channelLabel.isUserInteractionEnabled = true
         contentView.addSubview(channelLabel)
 
         dateLabel.font = UIFont.systemFont(ofSize: 12)
@@ -85,7 +88,17 @@ class SubscriptionVideoCell: UITableViewCell {
             dateLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
         ])
 
+        let avatarTap = UITapGestureRecognizer(target: self, action: #selector(handleChannelTap))
+        channelAvatarView.addGestureRecognizer(avatarTap)
+
+        let labelTap = UITapGestureRecognizer(target: self, action: #selector(handleChannelTap))
+        channelLabel.addGestureRecognizer(labelTap)
+
         applyTheme()
+    }
+
+    @objc private func handleChannelTap() {
+        onChannelTap?()
     }
 
     @objc private func applyTheme() {
@@ -117,13 +130,13 @@ class SubscriptionVideoCell: UITableViewCell {
                       let avatarURL = info.avatarURL,
                       let url = URL(string: avatarURL)
                 else {
-                    print("[SubscriptionVideoCell] avatar missing after fetch for channel \(channelId)")
+                    print("[SubscriptionVideoCell] avatar unavailable for channel \(channelId)")
                     return
                 }
                 self.channelAvatarView.setImage(url: url)
             }
         } else {
-            print("[SubscriptionVideoCell] no channelId for video \(video.id)")
+            print("[SubscriptionVideoCell] no channelId for video \(video.id) (\(video.channelName))")
             channelAvatarView.isHidden = true
             channelAvatarView.cancel()
         }
@@ -150,6 +163,7 @@ class SubscriptionVideoCell: UITableViewCell {
         dateLabel.text = nil
         durationLabel.isHidden = true
         channelAvatarView.isHidden = false
+        onChannelTap = nil
     }
 
 }

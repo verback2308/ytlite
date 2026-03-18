@@ -19,6 +19,13 @@ struct ChannelInfo {
     let subscriberCountText: String?
 }
 
+struct ChannelPage {
+    let info: ChannelInfo
+    let videosPage: FeedPage
+    let subscribeButtonText: String?
+    let isSubscribed: Bool
+}
+
 final class ChannelInfoStore {
     static let shared = ChannelInfoStore()
 

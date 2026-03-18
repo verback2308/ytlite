@@ -62,6 +62,19 @@ final class InnertubeClient: VideoService {
         }
     }
 
+    func fetchChannelPage(channelId: String, completion: @escaping (Result<ChannelPage, Error>) -> Void) {
+        print("[Innertube] fetchChannelPage start: \(channelId)")
+        OAuthClient.shared.validToken { [weak self] result in
+            switch result {
+            case .failure(let error):
+                print("[Innertube] fetchChannelPage token failure for \(channelId): \(error)")
+                completion(.failure(error))
+            case .success(let token):
+                self?.executeChannelPageBrowse(channelId: channelId, token: token, completion: completion)
+            }
+        }
+    }
+
     // MARK: - Authenticated browse
 
     private func authenticatedBrowse(browseId: String, completion: @escaping (Result<FeedPage, Error>) -> Void) {
@@ -139,13 +152,52 @@ final class InnertubeClient: VideoService {
                 guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                       let info = InnertubeClient.parseChannelInfo(json, fallbackChannelId: channelId)
                 else {
-                    let raw = String(data: data, encoding: .utf8)?.prefix(800) ?? "nil"
-                    print("[Innertube] channel browse parse failed (\(clientName)) \(channelId). Raw: \(raw)")
+                    print("[Innertube] channel browse parse failed (\(clientName)) for \(channelId)")
                     completion(.failure(APIError.decodingFailed))
                     return
                 }
                 print("[Innertube] parsed channel info (\(clientName)) \(channelId), avatar: \(info.avatarURL ?? "nil"), title: \(info.title)")
                 completion(.success(info))
+            }
+        }
+    }
+
+    private func executeChannelPageBrowse(channelId: String, token: String,
+                                          completion: @escaping (Result<ChannelPage, Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/browse") else {
+            completion(.failure(APIError.invalidURL))
+            return
+        }
+
+        var body = tvContext
+        body["browseId"] = channelId
+
+        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
+            completion(.failure(APIError.decodingFailed))
+            return
+        }
+
+        let headers = ["Content-Type": "application/json", "Authorization": "Bearer \(token)"]
+        api.post(url: url, headers: headers, body: bodyData) { result in
+            switch result {
+            case .failure(let error):
+                print("[Innertube] channel page request failed \(channelId): \(error)")
+                completion(.failure(error))
+            case .success(let data):
+                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let info = InnertubeClient.parseChannelInfo(json, fallbackChannelId: channelId)
+                else {
+                    print("[Innertube] channel page parse failed for \(channelId)")
+                    completion(.failure(APIError.decodingFailed))
+                    return
+                }
+
+                let page = InnertubeClient.parsePageJSON(json)
+                let subscribeState = InnertubeClient.parseSubscribeState(json)
+                completion(.success(ChannelPage(info: info,
+                                                videosPage: page,
+                                                subscribeButtonText: subscribeState.text,
+                                                isSubscribed: subscribeState.isSubscribed)))
             }
         }
     }
@@ -404,6 +456,19 @@ final class InnertubeClient: VideoService {
         return nil
     }
 
+    private static func parseSubscribeState(_ json: [String: Any]) -> (text: String?, isSubscribed: Bool) {
+        guard let renderer = firstRenderer(in: json, named: "subscribeButtonRenderer") else {
+            return (nil, false)
+        }
+
+        let isSubscribed = renderer["subscribed"] as? Bool ?? false
+        let text = simpleText(from: renderer["buttonText"]) ??
+            simpleText(from: renderer["subscribedButtonText"]) ??
+            simpleText(from: renderer["unsubscribedButtonText"])
+
+        return (text, isSubscribed)
+    }
+
     private static func extractChannelId(from tile: [String: Any], firstLineItems: [[String: Any]]) -> String? {
         let candidatePaths: [[[String]]] = [
             [["lineItemRenderer"], ["navigationEndpoint"], ["browseEndpoint"], ["browseId"]],
@@ -427,8 +492,10 @@ final class InnertubeClient: VideoService {
             return browseId
         }
 
-        let snippet = String(describing: firstLineItems.prefix(1))
-        print("[Innertube] extractChannelId failed. First line items: \(snippet.prefix(500))")
+        let label = ((firstLineItems.first?["lineItemRenderer"] as? [String: Any])?["text"] as? [String: Any])
+            .flatMap(simpleText(from:))
+            ?? "unknown"
+        print("[Innertube] extractChannelId failed for channel label: \(label)")
         return nil
     }
 

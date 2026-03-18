@@ -85,7 +85,14 @@ extension SearchViewController: UICollectionViewDataSource {
 
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: VideoCell.reuseId, for: indexPath) as! VideoCell
-        cell.configure(with: results[indexPath.item])
+        let video = results[indexPath.item]
+        cell.configure(with: video)
+        cell.onChannelTap = { [weak self] in
+            guard let channelId = video.channelId else { return }
+            self?.navigationController?.pushViewController(ChannelViewController(channelId: channelId,
+                                                                                channelName: video.channelName),
+                                                           animated: true)
+        }
         return cell
     }
 }
