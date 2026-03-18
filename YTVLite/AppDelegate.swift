@@ -9,7 +9,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         print("AppDelegate: didFinishLaunching")
         window = UIWindow(frame: UIScreen.main.bounds)
-        window?.rootViewController = ViewController()
+        window?.rootViewController = MainTabBarController()
         window?.makeKeyAndVisible()
         print("AppDelegate: window set up")
         return true
