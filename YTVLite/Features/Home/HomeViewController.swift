@@ -8,30 +8,28 @@ class HomeViewController: VideosViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Home"
-        setupThemeButton()
+        setupSearchButton()
         loadFeed()
     }
 
-    private func setupThemeButton() {
-        let btn = UIBarButtonItem(title: ThemeManager.shared.isDark ? "☀" : "☾",
-                                  style: .plain, target: self, action: #selector(toggleTheme))
+    private func setupSearchButton() {
+        let btn = UIBarButtonItem(barButtonSystemItem: .search, target: self, action: #selector(openSearch))
         navigationItem.rightBarButtonItem = btn
     }
 
-    @objc private func toggleTheme() {
-        ThemeManager.shared.isDark.toggle()
-        navigationItem.rightBarButtonItem?.title = ThemeManager.shared.isDark ? "☀" : "☾"
+    @objc private func openSearch() {
+        navigationController?.pushViewController(SearchViewController(), animated: true)
     }
 
-    override func applyTheme() {
-        super.applyTheme()
-        navigationItem.rightBarButtonItem?.title = ThemeManager.shared.isDark ? "☀" : "☾"
+    override func handleRefresh() {
+        loadFeed()
     }
 
     private func loadFeed() {
         ytAPI.fetchPopularVideos { [weak self] result in
             DispatchQueue.main.async {
                 self?.spinner.stopAnimating()
+                self?.endRefreshing()
                 switch result {
                 case .success(let videos): self?.setVideos(videos)
                 case .failure(let error): print("Home feed error: \(error)")

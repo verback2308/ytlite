@@ -8,7 +8,7 @@ class VideoCell: UICollectionViewCell {
     private let durationLabel = UILabel()
     private let titleLabel = UILabel()
     private let channelLabel = UILabel()
-    private let viewCountLabel = UILabel()
+    private let metaLabel = UILabel()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -49,11 +49,11 @@ class VideoCell: UICollectionViewCell {
         channelLabel.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(channelLabel)
 
-        // View count
-        viewCountLabel.textColor = ThemeManager.shared.secondaryText
-        viewCountLabel.font = UIFont.systemFont(ofSize: 11)
-        viewCountLabel.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(viewCountLabel)
+        // Meta (views • date)
+        metaLabel.textColor = ThemeManager.shared.secondaryText
+        metaLabel.font = UIFont.systemFont(ofSize: 11)
+        metaLabel.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(metaLabel)
 
         NSLayoutConstraint.activate([
             thumbnail.topAnchor.constraint(equalTo: contentView.topAnchor),
@@ -74,9 +74,9 @@ class VideoCell: UICollectionViewCell {
             channelLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
             channelLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
 
-            viewCountLabel.topAnchor.constraint(equalTo: channelLabel.bottomAnchor, constant: 1),
-            viewCountLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
-            viewCountLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
+            metaLabel.topAnchor.constraint(equalTo: channelLabel.bottomAnchor, constant: 2),
+            metaLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
+            metaLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
         ])
     }
 
@@ -85,14 +85,16 @@ class VideoCell: UICollectionViewCell {
         backgroundColor = t.surface
         titleLabel.textColor = t.primaryText
         channelLabel.textColor = t.secondaryText
-        viewCountLabel.textColor = t.secondaryText
+        metaLabel.textColor = t.secondaryText
     }
 
     func configure(with video: Video) {
         applyTheme()
         titleLabel.text = video.title
         channelLabel.text = video.channelName
-        viewCountLabel.text = video.viewCount ?? ""
+        let views = video.viewCount ?? ""
+        let date = video.publishedAt.map(YouTubeAPIClient.formatRelativeDate) ?? ""
+        metaLabel.text = [views, date].filter { !$0.isEmpty }.joined(separator: " • ")
 
         if let duration = video.duration, !duration.isEmpty {
             durationLabel.text = " \(duration) "
@@ -111,8 +113,9 @@ class VideoCell: UICollectionViewCell {
         thumbnail.cancel()
         titleLabel.text = nil
         channelLabel.text = nil
-        viewCountLabel.text = nil
+        metaLabel.text = nil
         durationLabel.text = nil
         durationLabel.isHidden = true
+        metaLabel.text = nil
     }
 }

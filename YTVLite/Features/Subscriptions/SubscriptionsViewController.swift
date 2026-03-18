@@ -22,9 +22,14 @@ class SubscriptionsViewController: UIViewController {
         tableView.register(SubscriptionVideoCell.self, forCellReuseIdentifier: SubscriptionVideoCell.reuseId)
         tableView.dataSource = self
         tableView.delegate = self
-        tableView.rowHeight = 128
+        tableView.rowHeight = 220
         tableView.separatorInset = UIEdgeInsets(top: 0, left: 12, bottom: 0, right: 12)
         tableView.translatesAutoresizingMaskIntoConstraints = false
+
+        let refresh = UIRefreshControl()
+        refresh.addTarget(self, action: #selector(handleRefresh), for: .valueChanged)
+        tableView.refreshControl = refresh
+
         view.addSubview(tableView)
         NSLayoutConstraint.activate([
             tableView.topAnchor.constraint(equalTo: view.topAnchor),
@@ -52,10 +57,15 @@ class SubscriptionsViewController: UIViewController {
         tableView.reloadData()
     }
 
+    @objc private func handleRefresh() {
+        loadFeed()
+    }
+
     private func loadFeed() {
         ytAPI.fetchSubscriptionFeed { [weak self] result in
             DispatchQueue.main.async {
                 self?.spinner.stopAnimating()
+                self?.tableView.refreshControl?.endRefreshing()
                 switch result {
                 case .success(let videos):
                     self?.videos = videos

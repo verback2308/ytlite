@@ -33,7 +33,20 @@ class VideosViewController: UIViewController {
         collectionView.register(VideoCell.self, forCellWithReuseIdentifier: VideoCell.reuseId)
         collectionView.dataSource = self
         collectionView.delegate = self
+
+        let refresh = UIRefreshControl()
+        refresh.addTarget(self, action: #selector(handleRefresh), for: .valueChanged)
+        collectionView.refreshControl = refresh
+
         view.addSubview(collectionView)
+    }
+
+    @objc func handleRefresh() {
+        // Subclasses override to reload data; call endRefreshing when done
+    }
+
+    func endRefreshing() {
+        collectionView.refreshControl?.endRefreshing()
     }
 
     private func setupSpinner() {
@@ -51,7 +64,7 @@ class VideosViewController: UIViewController {
         let inset = layout.sectionInset.left + layout.sectionInset.right
         let spacing = layout.minimumInteritemSpacing * CGFloat(columns - 1)
         let width = floor((collectionView.bounds.width - inset - spacing) / CGFloat(columns))
-        let height = width * (9.0 / 16.0) + 62
+        let height = width * (9.0 / 16.0) + 80
         let newSize = CGSize(width: width, height: height)
         if layout.itemSize != newSize {
             layout.itemSize = newSize
