@@ -23,16 +23,19 @@ class ThumbnailImageView: UIImageView {
         currentURL = url
 
         if let cached = ThumbnailImageView.cache.object(forKey: url.absoluteString as NSString) {
+            print("[ImageCache] memory hit \(url.absoluteString)")
             image = cached
             return
         }
 
         if let cached = ThumbnailImageView.diskCache.image(for: url) {
+            print("[ImageCache] disk hit \(url.absoluteString)")
             ThumbnailImageView.cache.setObject(cached, forKey: url.absoluteString as NSString)
             image = cached
             return
         }
 
+        print("[ImageCache] network fetch \(url.absoluteString)")
         image = nil
 
         URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
@@ -64,7 +67,7 @@ private final class ImageDiskCache {
         let caches = fm.urls(for: .cachesDirectory, in: .userDomainMask).first ??
             URL(fileURLWithPath: NSTemporaryDirectory())
         cacheDir = caches.appendingPathComponent("ImageDiskCache", isDirectory: true)
-        try? fm.createDirectory(at: cacheDir, withIntermediateDirectories: true)
+        try? fm.createDirectory(at: cacheDir, withIntermediateDirectories: true, attributes: nil)
     }
 
     func image(for url: URL) -> UIImage? {
@@ -74,6 +77,7 @@ private final class ImageDiskCache {
         else { return nil }
 
         if Date().timeIntervalSince(modifiedAt) > ttl {
+            print("[ImageCache] disk expired \(url.absoluteString)")
             try? fm.removeItem(at: fileURL)
             return nil
         }

@@ -492,10 +492,6 @@ final class InnertubeClient: VideoService {
             return browseId
         }
 
-        let label = ((firstLineItems.first?["lineItemRenderer"] as? [String: Any])?["text"] as? [String: Any])
-            .flatMap(simpleText(from:))
-            ?? "unknown"
-        print("[Innertube] extractChannelId failed for channel label: \(label)")
         return nil
     }
 

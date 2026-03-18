@@ -47,6 +47,8 @@ class VideosViewController: UIViewController {
 
     @objc func handleRefresh() {}
 
+    func handleScroll(_ scrollView: UIScrollView) {}
+
     func openChannel(for video: Video) {
         guard let channelId = video.channelId else { return }
         navigationController?.pushViewController(ChannelViewController(channelId: channelId,
@@ -140,5 +142,9 @@ extension VideosViewController: UICollectionViewDelegate {
         guard !isLoadingMore, continuationToken != nil, indexPath.item >= videos.count - 4 else { return }
         isLoadingMore = true
         handleLoadMore()
+    }
+
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        handleScroll(scrollView)
     }
 }

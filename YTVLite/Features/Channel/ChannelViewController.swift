@@ -15,6 +15,13 @@ final class ChannelViewController: VideosViewController {
     private let separatorView = UIView()
     private let errorLabel = UILabel()
 
+    private var headerHeightConstraint: NSLayoutConstraint!
+    private var avatarTopConstraint: NSLayoutConstraint!
+    private var nameTopConstraint: NSLayoutConstraint!
+
+    private let expandedHeaderHeight: CGFloat = 210
+    private let collapsedHeaderHeight: CGFloat = 8
+
     override var columns: Int { 3 }
 
     init(channelId: String, channelName: String) {
@@ -68,6 +75,31 @@ final class ChannelViewController: VideosViewController {
         }
     }
 
+    override func handleScroll(_ scrollView: UIScrollView) {
+        guard headerHeightConstraint != nil,
+              avatarTopConstraint != nil,
+              nameTopConstraint != nil
+        else { return }
+
+        let offset = scrollView.contentOffset.y + scrollView.adjustedContentInset.top
+        let progress = min(max(offset / (expandedHeaderHeight - collapsedHeaderHeight), 0), 1)
+        let height = max(collapsedHeaderHeight, expandedHeaderHeight - offset)
+
+        headerHeightConstraint.constant = height
+        avatarTopConstraint.constant = 20 - (16 * progress)
+        nameTopConstraint.constant = 14 - (16 * progress)
+
+        let expandedAlpha = 1 - progress * 1.15
+        avatarView.alpha = max(0, expandedAlpha)
+        subscribersLabel.alpha = max(0, 1 - progress * 1.25)
+        subscribeButton.alpha = max(0, 1 - progress * 1.35)
+        separatorView.alpha = max(0, 1 - progress * 1.5)
+        nameLabel.alpha = max(0, 1 - progress * 1.1)
+
+        let avatarScale = 1 - (0.35 * progress)
+        avatarView.transform = CGAffineTransform(scaleX: avatarScale, y: avatarScale)
+    }
+
     private func setupHeader() {
         headerView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(headerView)
@@ -107,18 +139,25 @@ final class ChannelViewController: VideosViewController {
 
         collectionView.translatesAutoresizingMaskIntoConstraints = false
         collectionView.autoresizingMask = []
+        collectionView.contentInset = UIEdgeInsets(top: expandedHeaderHeight, left: 0, bottom: 0, right: 0)
+        collectionView.scrollIndicatorInsets = UIEdgeInsets(top: expandedHeaderHeight, left: 0, bottom: 0, right: 0)
+
+        headerHeightConstraint = headerView.heightAnchor.constraint(equalToConstant: expandedHeaderHeight)
+        avatarTopConstraint = avatarView.topAnchor.constraint(equalTo: headerView.topAnchor, constant: 20)
+        nameTopConstraint = nameLabel.topAnchor.constraint(equalTo: avatarView.bottomAnchor, constant: 14)
 
         NSLayoutConstraint.activate([
             headerView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             headerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             headerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            headerHeightConstraint,
 
-            avatarView.topAnchor.constraint(equalTo: headerView.topAnchor, constant: 20),
+            avatarTopConstraint,
             avatarView.centerXAnchor.constraint(equalTo: headerView.centerXAnchor),
             avatarView.widthAnchor.constraint(equalToConstant: 64),
             avatarView.heightAnchor.constraint(equalToConstant: 64),
 
-            nameLabel.topAnchor.constraint(equalTo: avatarView.bottomAnchor, constant: 14),
+            nameTopConstraint,
             nameLabel.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 24),
             nameLabel.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -24),
 
@@ -135,7 +174,7 @@ final class ChannelViewController: VideosViewController {
             separatorView.heightAnchor.constraint(equalToConstant: 1),
             separatorView.bottomAnchor.constraint(equalTo: headerView.bottomAnchor),
 
-            collectionView.topAnchor.constraint(equalTo: headerView.bottomAnchor),
+            collectionView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
@@ -145,6 +184,8 @@ final class ChannelViewController: VideosViewController {
             errorLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 32),
             errorLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -32),
         ])
+
+        collectionView.setContentOffset(CGPoint(x: 0, y: -expandedHeaderHeight), animated: false)
     }
 
     private func applyHeaderTheme() {
@@ -212,5 +253,6 @@ final class ChannelViewController: VideosViewController {
         cache.setChannelPage(pageWithChannelAvatars, channelId: channelId)
         setPage(pageWithChannelAvatars.videosPage)
         errorLabel.isHidden = !videos.isEmpty
+        handleScroll(collectionView)
     }
 }
