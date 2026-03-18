@@ -4,33 +4,34 @@ class SubscriptionsViewController: UIViewController {
 
     private let ytAPI = YouTubeAPIClient()
     private var videos: [Video] = []
-    private var collectionView: UICollectionView!
-    private let spinner = UIActivityIndicatorView(style: .whiteLarge)
+    private let tableView = UITableView()
+    private let spinner = UIActivityIndicatorView(style: .white)
 
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Subscriptions"
-        view.backgroundColor = .black
-        setupCollectionView()
+        setupTableView()
         setupSpinner()
+        applyTheme()
+        NotificationCenter.default.addObserver(self, selector: #selector(applyTheme),
+                                               name: ThemeManager.didChangeNotification, object: nil)
         loadFeed()
     }
 
-    private func setupCollectionView() {
-        let layout = UICollectionViewFlowLayout()
-        layout.minimumLineSpacing = 1
-        let width = view.bounds.width / 2 - 1
-        let height = width * (9.0/16.0) + 80
-        layout.itemSize = CGSize(width: width, height: height)
-        layout.sectionInset = .zero
-
-        collectionView = UICollectionView(frame: view.bounds, collectionViewLayout: layout)
-        collectionView.backgroundColor = .black
-        collectionView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        collectionView.register(VideoCell.self, forCellWithReuseIdentifier: VideoCell.reuseId)
-        collectionView.dataSource = self
-        collectionView.delegate = self
-        view.addSubview(collectionView)
+    private func setupTableView() {
+        tableView.register(SubscriptionVideoCell.self, forCellReuseIdentifier: SubscriptionVideoCell.reuseId)
+        tableView.dataSource = self
+        tableView.delegate = self
+        tableView.rowHeight = 128
+        tableView.separatorInset = UIEdgeInsets(top: 0, left: 12, bottom: 0, right: 12)
+        tableView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(tableView)
+        NSLayoutConstraint.activate([
+            tableView.topAnchor.constraint(equalTo: view.topAnchor),
+            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+        ])
     }
 
     private func setupSpinner() {
@@ -43,6 +44,14 @@ class SubscriptionsViewController: UIViewController {
         spinner.startAnimating()
     }
 
+    @objc private func applyTheme() {
+        let t = ThemeManager.shared
+        view.backgroundColor = t.background
+        tableView.backgroundColor = t.background
+        tableView.separatorColor = t.separator
+        tableView.reloadData()
+    }
+
     private func loadFeed() {
         ytAPI.fetchSubscriptionFeed { [weak self] result in
             DispatchQueue.main.async {
@@ -50,7 +59,7 @@ class SubscriptionsViewController: UIViewController {
                 switch result {
                 case .success(let videos):
                     self?.videos = videos
-                    self?.collectionView.reloadData()
+                    self?.tableView.reloadData()
                 case .failure(let error):
                     print("Subscriptions error: \(error)")
                 }
@@ -59,21 +68,21 @@ class SubscriptionsViewController: UIViewController {
     }
 }
 
-extension SubscriptionsViewController: UICollectionViewDataSource {
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+extension SubscriptionsViewController: UITableViewDataSource {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         videos.count
     }
 
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: VideoCell.reuseId, for: indexPath) as! VideoCell
-        cell.configure(with: videos[indexPath.item])
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: SubscriptionVideoCell.reuseId, for: indexPath) as! SubscriptionVideoCell
+        cell.configure(with: videos[indexPath.row])
         return cell
     }
 }
 
-extension SubscriptionsViewController: UICollectionViewDelegate {
-    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let videoId = videos[indexPath.item].id
+extension SubscriptionsViewController: UITableViewDelegate {
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let videoId = videos[indexPath.row].id
         navigationController?.pushViewController(PlayerViewController(videoId: videoId), animated: true)
     }
 }

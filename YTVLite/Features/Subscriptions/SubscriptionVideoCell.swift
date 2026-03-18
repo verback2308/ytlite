@@ -1,17 +1,17 @@
 import UIKit
 
-class VideoCell: UICollectionViewCell {
+class SubscriptionVideoCell: UITableViewCell {
 
-    static let reuseId = "VideoCell"
+    static let reuseId = "SubscriptionVideoCell"
 
     private let thumbnail = ThumbnailImageView(frame: .zero)
     private let durationLabel = UILabel()
     private let titleLabel = UILabel()
     private let channelLabel = UILabel()
-    private let viewCountLabel = UILabel()
+    private let dateLabel = UILabel()
 
-    override init(frame: CGRect) {
-        super.init(frame: frame)
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: style, reuseIdentifier: reuseIdentifier)
         setupUI()
         NotificationCenter.default.addObserver(self, selector: #selector(applyTheme),
                                                name: ThemeManager.didChangeNotification, object: nil)
@@ -20,13 +20,13 @@ class VideoCell: UICollectionViewCell {
     required init?(coder: NSCoder) { fatalError() }
 
     private func setupUI() {
-        // Thumbnail
+        selectionStyle = .none
+
         thumbnail.layer.cornerRadius = 4
         thumbnail.layer.masksToBounds = true
         thumbnail.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(thumbnail)
 
-        // Duration overlay
         durationLabel.font = UIFont.systemFont(ofSize: 11, weight: .semibold)
         durationLabel.textColor = .white
         durationLabel.backgroundColor = UIColor.black.withAlphaComponent(0.8)
@@ -36,63 +36,62 @@ class VideoCell: UICollectionViewCell {
         durationLabel.translatesAutoresizingMaskIntoConstraints = false
         thumbnail.addSubview(durationLabel)
 
-        // Title
-        titleLabel.textColor = ThemeManager.shared.primaryText
-        titleLabel.font = UIFont.systemFont(ofSize: 13, weight: .medium)
         titleLabel.numberOfLines = 2
+        titleLabel.font = UIFont.systemFont(ofSize: 14, weight: .medium)
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(titleLabel)
 
-        // Channel
-        channelLabel.textColor = ThemeManager.shared.secondaryText
-        channelLabel.font = UIFont.systemFont(ofSize: 11)
+        channelLabel.font = UIFont.systemFont(ofSize: 12)
         channelLabel.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(channelLabel)
 
-        // View count
-        viewCountLabel.textColor = ThemeManager.shared.secondaryText
-        viewCountLabel.font = UIFont.systemFont(ofSize: 11)
-        viewCountLabel.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(viewCountLabel)
+        dateLabel.font = UIFont.systemFont(ofSize: 12)
+        dateLabel.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(dateLabel)
 
         NSLayoutConstraint.activate([
-            thumbnail.topAnchor.constraint(equalTo: contentView.topAnchor),
-            thumbnail.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            thumbnail.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            thumbnail.heightAnchor.constraint(equalTo: thumbnail.widthAnchor, multiplier: 9.0/16.0),
+            thumbnail.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
+            thumbnail.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+            thumbnail.widthAnchor.constraint(equalToConstant: 200),
+            thumbnail.heightAnchor.constraint(equalToConstant: 112),
+            thumbnail.topAnchor.constraint(greaterThanOrEqualTo: contentView.topAnchor, constant: 8),
+            thumbnail.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor, constant: -8),
 
             durationLabel.trailingAnchor.constraint(equalTo: thumbnail.trailingAnchor, constant: -6),
             durationLabel.bottomAnchor.constraint(equalTo: thumbnail.bottomAnchor, constant: -6),
             durationLabel.heightAnchor.constraint(equalToConstant: 18),
             durationLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 36),
 
-            titleLabel.topAnchor.constraint(equalTo: thumbnail.bottomAnchor, constant: 6),
-            titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 6),
-            titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -6),
+            titleLabel.topAnchor.constraint(equalTo: thumbnail.topAnchor),
+            titleLabel.leadingAnchor.constraint(equalTo: thumbnail.trailingAnchor, constant: 12),
+            titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
 
-            channelLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 2),
+            channelLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 6),
             channelLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
             channelLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
 
-            viewCountLabel.topAnchor.constraint(equalTo: channelLabel.bottomAnchor, constant: 1),
-            viewCountLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
-            viewCountLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
+            dateLabel.topAnchor.constraint(equalTo: channelLabel.bottomAnchor, constant: 4),
+            dateLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
+            dateLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
         ])
+
+        applyTheme()
     }
 
     @objc private func applyTheme() {
         let t = ThemeManager.shared
-        backgroundColor = t.surface
+        backgroundColor = t.background
+        contentView.backgroundColor = t.background
         titleLabel.textColor = t.primaryText
         channelLabel.textColor = t.secondaryText
-        viewCountLabel.textColor = t.secondaryText
+        dateLabel.textColor = t.secondaryText
     }
 
     func configure(with video: Video) {
         applyTheme()
         titleLabel.text = video.title
         channelLabel.text = video.channelName
-        viewCountLabel.text = video.viewCount ?? ""
+        dateLabel.text = video.publishedAt.flatMap { Self.formatDate($0) } ?? ""
 
         if let duration = video.duration, !duration.isEmpty {
             durationLabel.text = " \(duration) "
@@ -111,8 +110,17 @@ class VideoCell: UICollectionViewCell {
         thumbnail.cancel()
         titleLabel.text = nil
         channelLabel.text = nil
-        viewCountLabel.text = nil
-        durationLabel.text = nil
+        dateLabel.text = nil
         durationLabel.isHidden = true
+    }
+
+    private static func formatDate(_ iso: String) -> String? {
+        let parser = DateFormatter()
+        parser.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+        guard let date = parser.date(from: iso) else { return nil }
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter.string(from: date)
     }
 }

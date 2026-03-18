@@ -37,7 +37,7 @@ class YouTubeAPIClient {
     func fetchPopularVideos(regionCode: String = "US", completion: @escaping (Result<[Video], Error>) -> Void) {
         var components = URLComponents(string: "\(baseURL)/videos")!
         components.queryItems = [
-            URLQueryItem(name: "part", value: "snippet"),
+            URLQueryItem(name: "part", value: "snippet,contentDetails"),
             URLQueryItem(name: "chart", value: "mostPopular"),
             URLQueryItem(name: "maxResults", value: "25"),
             URLQueryItem(name: "regionCode", value: regionCode),
@@ -61,9 +61,11 @@ class YouTubeAPIClient {
                     let thumbnails = snippet["thumbnails"] as? [String: Any] ?? [:]
                     let thumb = (thumbnails["maxres"] ?? thumbnails["high"] ?? thumbnails["medium"]) as? [String: Any]
                     let thumbURL = thumb?["url"] as? String ?? ""
+                    let iso = (item["contentDetails"] as? [String: Any])?["duration"] as? String
                     return Video(id: id, title: title, channelName: channel,
                                  thumbnailURL: thumbURL, viewCount: nil,
-                                 publishedAt: snippet["publishedAt"] as? String, duration: nil)
+                                 publishedAt: snippet["publishedAt"] as? String,
+                                 duration: iso.map(YouTubeAPIClient.parseDuration))
                 }
                 completion(.success(videos))
             }
@@ -160,9 +162,11 @@ class YouTubeAPIClient {
                     let thumb = (thumbnails["high"] ?? thumbnails["medium"] ?? thumbnails["default"]) as? [String: Any]
                     let thumbURL = thumb?["url"] as? String ?? ""
                     let publishedAt = snippet["publishedAt"] as? String
+                    let iso = (item["contentDetails"] as? [String: Any])?["duration"] as? String
                     return Video(id: videoId, title: title, channelName: channel,
                                  thumbnailURL: thumbURL, viewCount: nil,
-                                 publishedAt: publishedAt, duration: nil)
+                                 publishedAt: publishedAt,
+                                 duration: iso.map(YouTubeAPIClient.parseDuration))
                 }
                 allVideos.append(contentsOf: videos)
             }
@@ -171,6 +175,23 @@ class YouTubeAPIClient {
             let sorted = allVideos.sorted { ($0.publishedAt ?? "") > ($1.publishedAt ?? "") }
             completion(.success(sorted))
         }
+    }
+
+    // MARK: - Helpers
+
+    /// Converts ISO 8601 duration (PT1H2M3S) to display string (1:02:03 or 4:32)
+    static func parseDuration(_ iso: String) -> String {
+        var h = 0, m = 0, s = 0
+        let str = iso.dropFirst(2) // remove "PT"
+        var current = ""
+        for ch in str {
+            if ch.isNumber { current.append(ch) }
+            else if ch == "H" { h = Int(current) ?? 0; current = "" }
+            else if ch == "M" { m = Int(current) ?? 0; current = "" }
+            else if ch == "S" { s = Int(current) ?? 0; current = "" }
+        }
+        if h > 0 { return String(format: "%d:%02d:%02d", h, m, s) }
+        return String(format: "%d:%02d", m, s)
     }
 
     // MARK: - Parsing

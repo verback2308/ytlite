@@ -6,13 +6,13 @@ class MainTabBarController: UITabBarController {
         super.viewDidLoad()
 
         let home = UINavigationController(rootViewController: HomeViewController())
-        home.tabBarItem = UITabBarItem(title: "Home", image: UIImage(named: "house"), tag: 0)
+        home.tabBarItem = UITabBarItem(title: "Home", image: nil, tag: 0)
 
         let subs = UINavigationController(rootViewController: SubscriptionsViewController())
-        subs.tabBarItem = UITabBarItem(title: "Subscriptions", image: UIImage(named: "person.2"), tag: 1)
+        subs.tabBarItem = UITabBarItem(title: "Subscriptions", image: nil, tag: 1)
 
         let search = UINavigationController(rootViewController: SearchViewController())
-        search.tabBarItem = UITabBarItem(title: "Search", image: UIImage(named: "magnifyingglass"), tag: 2)
+        search.tabBarItem = UITabBarItem(tabBarSystemItem: .search, tag: 2)
 
         viewControllers = [home, subs, search]
     }
