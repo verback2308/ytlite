@@ -3,7 +3,7 @@ import Foundation
 class YouTubeAPIClient {
 
     private let api = APIClient()
-    private let baseURL = "https://www.googleapis.com/youtube/v3"
+    private let baseURL = Config.youtubeAPIBase
     private var authHeaders: [String: String] {
         ["Authorization": "Bearer \(Config.accessToken)"]
     }
