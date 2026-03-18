@@ -37,7 +37,7 @@ class YouTubeAPIClient {
     func fetchPopularVideos(regionCode: String = "US", completion: @escaping (Result<[Video], Error>) -> Void) {
         var components = URLComponents(string: "\(baseURL)/videos")!
         components.queryItems = [
-            URLQueryItem(name: "part", value: "snippet,contentDetails"),
+            URLQueryItem(name: "part", value: "snippet,contentDetails,statistics"),
             URLQueryItem(name: "chart", value: "mostPopular"),
             URLQueryItem(name: "maxResults", value: "25"),
             URLQueryItem(name: "regionCode", value: regionCode),
@@ -62,8 +62,10 @@ class YouTubeAPIClient {
                     let thumb = (thumbnails["maxres"] ?? thumbnails["high"] ?? thumbnails["medium"]) as? [String: Any]
                     let thumbURL = thumb?["url"] as? String ?? ""
                     let iso = (item["contentDetails"] as? [String: Any])?["duration"] as? String
+                    let rawViews = (item["statistics"] as? [String: Any])?["viewCount"] as? String
                     return Video(id: id, title: title, channelName: channel,
-                                 thumbnailURL: thumbURL, viewCount: nil,
+                                 thumbnailURL: thumbURL,
+                                 viewCount: rawViews.map(YouTubeAPIClient.formatViewCount),
                                  publishedAt: snippet["publishedAt"] as? String,
                                  duration: iso.map(YouTubeAPIClient.parseDuration))
                 }
@@ -171,13 +173,74 @@ class YouTubeAPIClient {
                 allVideos.append(contentsOf: videos)
             }
         }
-        group.notify(queue: .main) {
-            let sorted = allVideos.sorted { ($0.publishedAt ?? "") > ($1.publishedAt ?? "") }
-            completion(.success(sorted))
+        group.notify(queue: .global()) { [weak self] in
+            let ids = allVideos.map { $0.id }
+            self?.fetchVideoDetails(videoIds: ids) { durations, viewCounts in
+                let result = allVideos.map { v in
+                    Video(id: v.id, title: v.title, channelName: v.channelName,
+                          thumbnailURL: v.thumbnailURL,
+                          viewCount: viewCounts[v.id] ?? v.viewCount,
+                          publishedAt: v.publishedAt,
+                          duration: durations[v.id] ?? v.duration)
+                }.sorted { ($0.publishedAt ?? "") > ($1.publishedAt ?? "") }
+                completion(.success(result))
+            }
+        }
+    }
+
+    private func fetchVideoDetails(videoIds: [String],
+                                   completion: @escaping (_ durations: [String: String], _ viewCounts: [String: String]) -> Void) {
+        guard !videoIds.isEmpty else { completion([:], [:]); return }
+        var components = URLComponents(string: "\(baseURL)/videos")!
+        components.queryItems = [
+            URLQueryItem(name: "part", value: "contentDetails,statistics"),
+            URLQueryItem(name: "id", value: videoIds.joined(separator: ",")),
+            URLQueryItem(name: "maxResults", value: "50"),
+        ]
+        guard let url = components.url else { completion([:], [:]); return }
+        api.get(url: url, headers: authHeaders) { result in
+            var durations: [String: String] = [:]
+            var viewCounts: [String: String] = [:]
+            if case .success(let data) = result,
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let items = json["items"] as? [[String: Any]] {
+                for item in items {
+                    guard let id = item["id"] as? String else { continue }
+                    if let iso = (item["contentDetails"] as? [String: Any])?["duration"] as? String {
+                        durations[id] = YouTubeAPIClient.parseDuration(iso)
+                    }
+                    if let raw = (item["statistics"] as? [String: Any])?["viewCount"] as? String {
+                        viewCounts[id] = YouTubeAPIClient.formatViewCount(raw)
+                    }
+                }
+            }
+            completion(durations, viewCounts)
         }
     }
 
     // MARK: - Helpers
+
+    static func formatViewCount(_ raw: String) -> String {
+        guard let n = Int(raw) else { return raw }
+        switch n {
+        case 1_000_000_000...: return String(format: "%.1fB views", Double(n) / 1e9)
+        case 1_000_000...:     return String(format: "%.1fM views", Double(n) / 1e6)
+        case 1_000...:         return String(format: "%.0fK views", Double(n) / 1e3)
+        default:               return "\(n) views"
+        }
+    }
+
+    static func formatRelativeDate(_ iso: String) -> String {
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+        guard let date = fmt.date(from: iso) else { return "" }
+        let s = -date.timeIntervalSinceNow
+        if s < 3600        { return "\(max(1, Int(s/60)))m ago" }
+        if s < 86400       { return "\(Int(s/3600))h ago" }
+        if s < 86400*30    { return "\(Int(s/86400))d ago" }
+        if s < 86400*365   { return "\(Int(s/86400/30))mo ago" }
+        return "\(Int(s/86400/365))y ago"
+    }
 
     /// Converts ISO 8601 duration (PT1H2M3S) to display string (1:02:03 or 4:32)
     static func parseDuration(_ iso: String) -> String {

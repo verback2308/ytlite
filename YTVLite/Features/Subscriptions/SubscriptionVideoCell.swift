@@ -51,11 +51,9 @@ class SubscriptionVideoCell: UITableViewCell {
 
         NSLayoutConstraint.activate([
             thumbnail.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
-            thumbnail.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-            thumbnail.widthAnchor.constraint(equalToConstant: 200),
-            thumbnail.heightAnchor.constraint(equalToConstant: 112),
-            thumbnail.topAnchor.constraint(greaterThanOrEqualTo: contentView.topAnchor, constant: 8),
-            thumbnail.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor, constant: -8),
+            thumbnail.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
+            thumbnail.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8),
+            thumbnail.widthAnchor.constraint(equalTo: thumbnail.heightAnchor, multiplier: 16.0/9.0),
 
             durationLabel.trailingAnchor.constraint(equalTo: thumbnail.trailingAnchor, constant: -6),
             durationLabel.bottomAnchor.constraint(equalTo: thumbnail.bottomAnchor, constant: -6),
@@ -91,7 +89,7 @@ class SubscriptionVideoCell: UITableViewCell {
         applyTheme()
         titleLabel.text = video.title
         channelLabel.text = video.channelName
-        dateLabel.text = video.publishedAt.flatMap { Self.formatDate($0) } ?? ""
+        dateLabel.text = video.publishedAt.map(YouTubeAPIClient.formatRelativeDate) ?? ""
 
         if let duration = video.duration, !duration.isEmpty {
             durationLabel.text = " \(duration) "
@@ -114,13 +112,4 @@ class SubscriptionVideoCell: UITableViewCell {
         durationLabel.isHidden = true
     }
 
-    private static func formatDate(_ iso: String) -> String? {
-        let parser = DateFormatter()
-        parser.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
-        guard let date = parser.date(from: iso) else { return nil }
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .none
-        return formatter.string(from: date)
-    }
 }
