@@ -49,6 +49,19 @@ final class InnertubeClient: VideoService {
         }
     }
 
+    func fetchChannelInfo(channelId: String, completion: @escaping (Result<ChannelInfo, Error>) -> Void) {
+        print("[Innertube] fetchChannelInfo start: \(channelId)")
+        OAuthClient.shared.validToken { [weak self] result in
+            switch result {
+            case .failure(let error):
+                print("[Innertube] fetchChannelInfo token failure for \(channelId): \(error)")
+                completion(.failure(error))
+            case .success(let token):
+                self?.executeChannelBrowse(channelId: channelId, token: token, completion: completion)
+            }
+        }
+    }
+
     // MARK: - Authenticated browse
 
     private func authenticatedBrowse(browseId: String, completion: @escaping (Result<FeedPage, Error>) -> Void) {
@@ -89,6 +102,50 @@ final class InnertubeClient: VideoService {
                 } else {
                     completion(.success(page))
                 }
+            }
+        }
+    }
+
+    private func executeChannelBrowse(channelId: String, token: String,
+                                      completion: @escaping (Result<ChannelInfo, Error>) -> Void) {
+        print("[Innertube] channel browse TV attempt: \(channelId)")
+        executeChannelBrowse(channelId: channelId, token: token, context: tvContext, completion: completion)
+    }
+
+    private func executeChannelBrowse(channelId: String, token: String, context: [String: Any],
+                                      completion: @escaping (Result<ChannelInfo, Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/browse") else {
+            completion(.failure(APIError.invalidURL))
+            return
+        }
+
+        var body = context
+        body["browseId"] = channelId
+
+        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
+            completion(.failure(APIError.decodingFailed))
+            return
+        }
+
+        let headers = ["Content-Type": "application/json", "Authorization": "Bearer \(token)"]
+        api.post(url: url, headers: headers, body: bodyData) { result in
+            switch result {
+            case .failure(let error):
+                let clientName = (((context["context"] as? [String: Any])?["client"] as? [String: Any])?["clientName"] as? String) ?? "unknown"
+                print("[Innertube] channel browse request failed (\(clientName)) \(channelId): \(error)")
+                completion(.failure(error))
+            case .success(let data):
+                let clientName = (((context["context"] as? [String: Any])?["client"] as? [String: Any])?["clientName"] as? String) ?? "unknown"
+                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let info = InnertubeClient.parseChannelInfo(json, fallbackChannelId: channelId)
+                else {
+                    let raw = String(data: data, encoding: .utf8)?.prefix(800) ?? "nil"
+                    print("[Innertube] channel browse parse failed (\(clientName)) \(channelId). Raw: \(raw)")
+                    completion(.failure(APIError.decodingFailed))
+                    return
+                }
+                print("[Innertube] parsed channel info (\(clientName)) \(channelId), avatar: \(info.avatarURL ?? "nil"), title: \(info.title)")
+                completion(.success(info))
             }
         }
     }
@@ -166,6 +223,8 @@ final class InnertubeClient: VideoService {
         let firstLineItems = (lines.first?["lineRenderer"] as? [String: Any])?["items"] as? [[String: Any]] ?? []
         let channel = ((firstLineItems.first?["lineItemRenderer"] as? [String: Any])?["text"] as? [String: Any])
             .flatMap { ($0["runs"] as? [[String: Any]])?.first?["text"] as? String } ?? ""
+        let channelId = extractChannelId(from: tile, firstLineItems: firstLineItems)
+        let channelAvatarURL = extractChannelAvatarURL(from: tile)
 
         let tileHeader = (tile["header"] as? [String: Any])?["tileHeaderRenderer"] as? [String: Any]
         let thumbs = (tileHeader?["thumbnail"] as? [String: Any])?["thumbnails"] as? [[String: Any]] ?? []
@@ -194,7 +253,8 @@ final class InnertubeClient: VideoService {
             }
         }
 
-        return Video(id: videoId, title: title, channelName: channel,
+        return Video(id: videoId, title: title, channelId: channelId,
+                     channelName: channel, channelAvatarURL: channelAvatarURL,
                      thumbnailURL: thumbURL, viewCount: viewCount,
                      publishedAt: publishedAt, duration: duration)
     }
@@ -218,12 +278,358 @@ final class InnertubeClient: VideoService {
                 ($0["runs"] as? [[String: Any]])?.first?["text"] as? String } ?? ""
             let channel = (vr["ownerText"] as? [String: Any]).flatMap {
                 ($0["runs"] as? [[String: Any]])?.first?["text"] as? String } ?? ""
+            let channelId = (vr["ownerText"] as? [String: Any]).flatMap {
+                ($0["runs"] as? [[String: Any]])?.first?["navigationEndpoint"] as? [String: Any]
+            }.flatMap { ($0["browseEndpoint"] as? [String: Any])?["browseId"] as? String }
             let viewCount = (vr["viewCountText"] as? [String: Any])?["simpleText"] as? String
             let thumbs = (vr["thumbnail"] as? [String: Any])?["thumbnails"] as? [[String: Any]] ?? []
             let thumbURL = thumbs.last?["url"] as? String ?? ""
+            let channelAvatarURL = (((vr["channelThumbnailSupportedRenderers"] as? [String: Any])?["channelThumbnailWithLinkRenderer"] as? [String: Any])?["thumbnail"] as? [String: Any])
+                .flatMap { ($0["thumbnails"] as? [[String: Any]])?.last?["url"] as? String }
             guard !videoId.isEmpty else { return nil }
-            return Video(id: videoId, title: title, channelName: channel,
+            return Video(id: videoId, title: title, channelId: channelId,
+                         channelName: channel, channelAvatarURL: channelAvatarURL,
                          thumbnailURL: thumbURL, viewCount: viewCount, publishedAt: nil, duration: nil)
         }
+    }
+
+    private static func parseChannelInfo(_ json: [String: Any], fallbackChannelId: String) -> ChannelInfo? {
+        if let header = firstRenderer(in: json, named: "channelHeaderRenderer") {
+            let avatarURL = extractThumbnailURL(from: header["avatar"]) ??
+                extractThumbnailURL(from: header["thumbnail"]) ??
+                extractThumbnailURL(from: header["image"])
+            let title =
+                simpleText(from: header["title"]) ??
+                header["title"] as? String ??
+                simpleText(from: header["headline"]) ??
+                ""
+            let subscriberCountText =
+                simpleText(from: header["subscriberCountText"]) ??
+                simpleText(from: header["metadata"]) ??
+                simpleText(from: header["subtitle"])
+            let channelId = header["channelId"] as? String ?? fallbackChannelId
+
+            if !title.isEmpty || avatarURL != nil {
+                print("[Innertube] parseChannelInfo: channelHeaderRenderer matched for \(fallbackChannelId)")
+                return ChannelInfo(id: channelId, title: title,
+                                   avatarURL: avatarURL,
+                                   subscriberCountText: subscriberCountText)
+            }
+        }
+
+        if let avatarLockup = firstRenderer(in: json, named: "avatarLockupRenderer") {
+            let avatarURL = extractThumbnailURL(from: avatarLockup["avatar"]) ??
+                extractThumbnailURL(from: avatarLockup["thumbnail"])
+            let title =
+                simpleText(from: avatarLockup["title"]) ??
+                simpleText(from: avatarLockup["text"]) ??
+                ""
+            let subscriberCountText =
+                simpleText(from: avatarLockup["subtitle"]) ??
+                simpleText(from: avatarLockup["accessibilityText"])
+            let channelId = firstMatchingBrowseId(in: avatarLockup) ?? fallbackChannelId
+
+            if !title.isEmpty || avatarURL != nil {
+                print("[Innertube] parseChannelInfo: avatarLockupRenderer matched for \(fallbackChannelId)")
+                return ChannelInfo(id: channelId, title: title,
+                                   avatarURL: avatarURL,
+                                   subscriberCountText: subscriberCountText)
+            }
+        }
+
+        if let header = firstRenderer(in: json, named: "c4TabbedHeaderRenderer") {
+            let avatarURL = ((header["avatar"] as? [String: Any])?["thumbnails"] as? [[String: Any]])?
+                .last?["url"] as? String
+            let title = header["title"] as? String ?? ""
+            let subscriberCountText = simpleText(from: header["subscriberCountText"])
+            let channelId = header["channelId"] as? String ?? fallbackChannelId
+
+            if !title.isEmpty || avatarURL != nil {
+                return ChannelInfo(id: channelId, title: title,
+                                   avatarURL: avatarURL,
+                                   subscriberCountText: subscriberCountText)
+            }
+        }
+
+        if let metadata = firstRenderer(in: json, named: "channelMetadataRenderer") {
+            let avatarURL = ((metadata["avatar"] as? [String: Any])?["thumbnails"] as? [[String: Any]])?
+                .last?["url"] as? String
+            let title = metadata["title"] as? String ?? ""
+            let channelId = metadata["externalId"] as? String ?? fallbackChannelId
+
+            if !title.isEmpty || avatarURL != nil {
+                return ChannelInfo(id: channelId, title: title,
+                                   avatarURL: avatarURL,
+                                   subscriberCountText: nil)
+            }
+        }
+
+        if let header = findChannelHeaderCandidate(in: json) {
+            let avatarURL =
+                ((header["avatar"] as? [String: Any])?["thumbnails"] as? [[String: Any]])?.last?["url"] as? String ??
+                ((header["boxArt"] as? [String: Any])?["thumbnails"] as? [[String: Any]])?.last?["url"] as? String
+            let title =
+                header["title"] as? String ??
+                simpleText(from: header["title"]) ??
+                simpleText(from: header["pageTitle"]) ??
+                ""
+            let subscriberCountText =
+                simpleText(from: header["subscriberCountText"]) ??
+                simpleText(from: header["metadata"]) ??
+                simpleText(from: header["description"])
+            let channelId = header["channelId"] as? String ?? fallbackChannelId
+
+            if !title.isEmpty || avatarURL != nil {
+                print("[Innertube] parseChannelInfo: heuristic header matched for \(fallbackChannelId)")
+                return ChannelInfo(id: channelId, title: title,
+                                   avatarURL: avatarURL,
+                                   subscriberCountText: subscriberCountText)
+            }
+        }
+
+        if let tvBrowse = (json["contents"] as? [String: Any])?["tvBrowseRenderer"] as? [String: Any] {
+            let topKeys = tvBrowse.keys.sorted().joined(separator: ", ")
+            let headerKeys = (tvBrowse["header"] as? [String: Any])?.keys.sorted().joined(separator: ", ") ?? "nil"
+            let contentKeys = (tvBrowse["content"] as? [String: Any])?.keys.sorted().joined(separator: ", ") ?? "nil"
+            let rendererPaths = Array(collectRendererKeys(in: tvBrowse).prefix(30)).sorted().joined(separator: ", ")
+            let thumbnailURLs = Array(collectThumbnailURLs(in: tvBrowse).prefix(10)).joined(separator: ", ")
+            print("[Innertube] parseChannelInfo failed for \(fallbackChannelId). tvBrowse keys: \(topKeys). header keys: \(headerKeys). content keys: \(contentKeys)")
+            print("[Innertube] channel renderers for \(fallbackChannelId): \(rendererPaths)")
+            print("[Innertube] channel thumbnails for \(fallbackChannelId): \(thumbnailURLs)")
+        } else {
+            let topKeys = json.keys.sorted().joined(separator: ", ")
+            print("[Innertube] parseChannelInfo failed for \(fallbackChannelId). top-level keys: \(topKeys)")
+        }
+
+        return nil
+    }
+
+    private static func extractChannelId(from tile: [String: Any], firstLineItems: [[String: Any]]) -> String? {
+        let candidatePaths: [[[String]]] = [
+            [["lineItemRenderer"], ["navigationEndpoint"], ["browseEndpoint"], ["browseId"]],
+            [["lineItemRenderer"], ["onSelectCommand"], ["browseEndpoint"], ["browseId"]],
+            [["lineItemRenderer"], ["command"], ["browseEndpoint"], ["browseId"]],
+            [["lineItemRenderer"], ["text"], ["runs"], ["navigationEndpoint"], ["browseEndpoint"], ["browseId"]],
+            [["navigationEndpoint"], ["browseEndpoint"], ["browseId"]],
+            [["onSelectCommand"], ["browseEndpoint"], ["browseId"]]
+        ]
+
+        for item in firstLineItems {
+            for path in candidatePaths {
+                if let browseId = nestedValue(in: item, path: path) as? String,
+                   browseId.hasPrefix("UC") {
+                    return browseId
+                }
+            }
+        }
+
+        if let browseId = firstMatchingBrowseId(in: tile), browseId.hasPrefix("UC") {
+            return browseId
+        }
+
+        let snippet = String(describing: firstLineItems.prefix(1))
+        print("[Innertube] extractChannelId failed. First line items: \(snippet.prefix(500))")
+        return nil
+    }
+
+    private static func extractChannelAvatarURL(from tile: [String: Any]) -> String? {
+        let candidatePaths: [[[String]]] = [
+            [["metadata"], ["tileMetadataRenderer"], ["avatar"], ["thumbnails"]],
+            [["metadata"], ["tileMetadataRenderer"], ["thumbnail"], ["thumbnails"]],
+            [["metadata"], ["tileMetadataRenderer"], ["avatarThumbnail"], ["thumbnails"]],
+            [["avatar"], ["thumbnails"]],
+            [["channelThumbnailSupportedRenderers"], ["channelThumbnailWithLinkRenderer"], ["thumbnail"], ["thumbnails"]]
+        ]
+
+        for path in candidatePaths {
+            if let thumbnails = nestedValue(in: tile, path: path) as? [[String: Any]],
+               let url = thumbnails.last?["url"] as? String,
+               !url.isEmpty {
+                return url
+            }
+        }
+
+        return nil
+    }
+
+    private static func firstRenderer(in value: Any, named key: String) -> [String: Any]? {
+        if let dict = value as? [String: Any] {
+            if let renderer = dict[key] as? [String: Any] {
+                return renderer
+            }
+
+            for child in dict.values {
+                if let renderer = firstRenderer(in: child, named: key) {
+                    return renderer
+                }
+            }
+        } else if let array = value as? [Any] {
+            for child in array {
+                if let renderer = firstRenderer(in: child, named: key) {
+                    return renderer
+                }
+            }
+        }
+
+        return nil
+    }
+
+    private static func firstMatchingBrowseId(in value: Any) -> String? {
+        if let dict = value as? [String: Any] {
+            if let browseId = dict["browseId"] as? String, browseId.hasPrefix("UC") {
+                return browseId
+            }
+
+            for child in dict.values {
+                if let browseId = firstMatchingBrowseId(in: child) {
+                    return browseId
+                }
+            }
+        } else if let array = value as? [Any] {
+            for child in array {
+                if let browseId = firstMatchingBrowseId(in: child) {
+                    return browseId
+                }
+            }
+        }
+
+        return nil
+    }
+
+    private static func findChannelHeaderCandidate(in value: Any) -> [String: Any]? {
+        if let dict = value as? [String: Any] {
+            let hasAvatar = ((dict["avatar"] as? [String: Any])?["thumbnails"] as? [[String: Any]]) != nil
+            let hasBoxArt = ((dict["boxArt"] as? [String: Any])?["thumbnails"] as? [[String: Any]]) != nil
+            let hasTitle = dict["title"] != nil || dict["pageTitle"] != nil
+            let hasMetadata = dict["subscriberCountText"] != nil || dict["metadata"] != nil || dict["description"] != nil
+
+            if (hasAvatar || hasBoxArt) && hasTitle && hasMetadata {
+                return dict
+            }
+
+            for child in dict.values {
+                if let candidate = findChannelHeaderCandidate(in: child) {
+                    return candidate
+                }
+            }
+        } else if let array = value as? [Any] {
+            for child in array {
+                if let candidate = findChannelHeaderCandidate(in: child) {
+                    return candidate
+                }
+            }
+        }
+
+        return nil
+    }
+
+    private static func collectRendererKeys(in value: Any) -> Set<String> {
+        var result = Set<String>()
+
+        if let dict = value as? [String: Any] {
+            for (key, child) in dict {
+                if key.hasSuffix("Renderer") {
+                    result.insert(key)
+                }
+                result.formUnion(collectRendererKeys(in: child))
+            }
+        } else if let array = value as? [Any] {
+            for child in array {
+                result.formUnion(collectRendererKeys(in: child))
+            }
+        }
+
+        return result
+    }
+
+    private static func collectThumbnailURLs(in value: Any) -> Set<String> {
+        var result = Set<String>()
+
+        if let dict = value as? [String: Any] {
+            if let thumbnails = dict["thumbnails"] as? [[String: Any]] {
+                for thumbnail in thumbnails {
+                    if let url = thumbnail["url"] as? String, !url.isEmpty {
+                        result.insert(url)
+                    }
+                }
+            }
+
+            for child in dict.values {
+                result.formUnion(collectThumbnailURLs(in: child))
+            }
+        } else if let array = value as? [Any] {
+            for child in array {
+                result.formUnion(collectThumbnailURLs(in: child))
+            }
+        }
+
+        return result
+    }
+
+    private static func extractThumbnailURL(from value: Any?) -> String? {
+        if let dict = value as? [String: Any] {
+            if let thumbnails = dict["thumbnails"] as? [[String: Any]],
+               let url = thumbnails.last?["url"] as? String,
+               !url.isEmpty {
+                return normalizeThumbnailURL(url)
+            }
+
+            for child in dict.values {
+                if let url = extractThumbnailURL(from: child) {
+                    return url
+                }
+            }
+        } else if let array = value as? [Any] {
+            for child in array {
+                if let url = extractThumbnailURL(from: child) {
+                    return url
+                }
+            }
+        }
+
+        return nil
+    }
+
+    private static func normalizeThumbnailURL(_ url: String) -> String {
+        if url.hasPrefix("//") {
+            return "https:\(url)"
+        }
+        return url
+    }
+
+    private static func simpleText(from value: Any?) -> String? {
+        if let dict = value as? [String: Any] {
+            if let text = dict["simpleText"] as? String, !text.isEmpty {
+                return text
+            }
+
+            if let runs = dict["runs"] as? [[String: Any]] {
+                let text = runs.compactMap { $0["text"] as? String }.joined()
+                return text.isEmpty ? nil : text
+            }
+        }
+
+        return nil
+    }
+
+    private static func nestedValue(in root: [String: Any], path: [[String]]) -> Any? {
+        var current: Any? = root
+
+        for keys in path {
+            guard let dict = current as? [String: Any] else { return nil }
+
+            var next: Any?
+            for key in keys {
+                if let value = dict[key] {
+                    next = value
+                    break
+                }
+            }
+
+            guard let resolved = next else { return nil }
+            current = resolved
+        }
+
+        return current
     }
 }
