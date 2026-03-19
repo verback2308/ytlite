@@ -10,9 +10,12 @@ final class WatchViewController: UIViewController {
 
     private var watchPage: WatchPage?
     private var visibleRelatedVideos: [Video] = []
+    private var comments: [Comment] = []
+    private var commentsContinuation: String?
     private var playerViewController: AVPlayerViewController?
     private var descriptionExpanded = false
     private var relatedExpansionWorkItem: DispatchWorkItem?
+    private var isLoadingComments = false
 
     private let scrollView = UIScrollView()
     private let contentView = UIView()
@@ -33,6 +36,8 @@ final class WatchViewController: UIViewController {
     private let descriptionLabel = UILabel()
     private let descriptionButton = UIButton(type: .system)
     private let commentsLabel = UILabel()
+    private let commentsStackView = UIStackView()
+    private let loadMoreCommentsButton = UIButton(type: .system)
 
     private var playerAspectConstraint: NSLayoutConstraint!
     private var relatedHeightConstraint: NSLayoutConstraint!
@@ -47,6 +52,7 @@ final class WatchViewController: UIViewController {
     private var sidebarTrailingConstraint: NSLayoutConstraint!
     private var sidebarBottomConstraint: NSLayoutConstraint!
     private var sidebarWidthConstraint: NSLayoutConstraint!
+    private var contentBottomToCommentsConstraint: NSLayoutConstraint!
     private var relatedPortraitConstraints: [NSLayoutConstraint] = []
     private var relatedLandscapeConstraints: [NSLayoutConstraint] = []
     private var isShowingLandscapeRelated = false
@@ -119,7 +125,8 @@ final class WatchViewController: UIViewController {
         channelMetaLabel.textColor = theme.secondaryText
         descriptionLabel.textColor = theme.secondaryText
         descriptionButton.setTitleColor(theme.isDark ? .white : UIColor(red: 1, green: 0, blue: 0, alpha: 1), for: .normal)
-        commentsLabel.textColor = theme.secondaryText
+        commentsLabel.textColor = theme.primaryText
+        loadMoreCommentsButton.setTitleColor(theme.isDark ? .white : UIColor(red: 1, green: 0, blue: 0, alpha: 1), for: .normal)
         playerContainer.backgroundColor = .black
         playerStatusLabel.textColor = .lightGray
 
@@ -234,11 +241,23 @@ final class WatchViewController: UIViewController {
         descriptionButton.addTarget(self, action: #selector(toggleDescription), for: .touchUpInside)
         contentView.addSubview(descriptionButton)
 
-        commentsLabel.font = UIFont.systemFont(ofSize: 13)
+        commentsLabel.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
         commentsLabel.numberOfLines = 0
         commentsLabel.translatesAutoresizingMaskIntoConstraints = false
-        commentsLabel.text = "Comments are not wired yet."
+        commentsLabel.text = "Comments"
         contentView.addSubview(commentsLabel)
+
+        commentsStackView.axis = .vertical
+        commentsStackView.spacing = 12
+        commentsStackView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(commentsStackView)
+
+        loadMoreCommentsButton.translatesAutoresizingMaskIntoConstraints = false
+        loadMoreCommentsButton.contentHorizontalAlignment = .left
+        loadMoreCommentsButton.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .semibold)
+        loadMoreCommentsButton.setTitle("Load more comments", for: .normal)
+        loadMoreCommentsButton.addTarget(self, action: #selector(loadMoreCommentsTapped), for: .touchUpInside)
+        contentView.addSubview(loadMoreCommentsButton)
 
         relatedCollectionView.register(VideoCell.self, forCellWithReuseIdentifier: VideoCell.reuseId)
         relatedCollectionView.dataSource = self
@@ -290,10 +309,20 @@ final class WatchViewController: UIViewController {
             commentsLabel.topAnchor.constraint(equalTo: descriptionButton.bottomAnchor, constant: 20),
             commentsLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
             commentsLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
+
+            commentsStackView.topAnchor.constraint(equalTo: commentsLabel.bottomAnchor, constant: 12),
+            commentsStackView.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
+            commentsStackView.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
+
+        loadMoreCommentsButton.topAnchor.constraint(equalTo: commentsStackView.bottomAnchor, constant: 12),
+        loadMoreCommentsButton.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
+        loadMoreCommentsButton.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
         ])
 
+        contentBottomToCommentsConstraint = loadMoreCommentsButton.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -16)
+
         relatedPortraitConstraints = [
-            relatedCollectionView.topAnchor.constraint(equalTo: commentsLabel.bottomAnchor, constant: 20),
+            relatedCollectionView.topAnchor.constraint(equalTo: loadMoreCommentsButton.bottomAnchor, constant: 20),
             relatedCollectionView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             relatedCollectionView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             relatedHeightConstraint,
@@ -386,6 +415,7 @@ final class WatchViewController: UIViewController {
             sidebarContainer.isHidden = false
             playerTrailingConstraint.isActive = false
             playerToSidebarConstraint.isActive = true
+            contentBottomToCommentsConstraint.isActive = true
         } else {
             scrollToSidebarConstraint.isActive = false
             scrollTrailingConstraint.isActive = true
@@ -396,6 +426,7 @@ final class WatchViewController: UIViewController {
             sidebarContainer.isHidden = true
             playerToSidebarConstraint.isActive = false
             playerTrailingConstraint.isActive = true
+            contentBottomToCommentsConstraint.isActive = false
         }
 
         moveRelatedCollection(toLandscape: isLandscape)
@@ -429,6 +460,7 @@ final class WatchViewController: UIViewController {
         subscribeButton.setTitle("Subscribe", for: .normal)
         descriptionLabel.text = nil
         descriptionButton.isHidden = true
+        resetComments()
 
         if let avatarURL = initialVideo.channelAvatarURL, let url = URL(string: avatarURL) {
             channelAvatarView.setImage(url: url)
@@ -499,7 +531,153 @@ final class WatchViewController: UIViewController {
         relatedCollectionView.reloadData()
         scheduleRelatedExpansion(for: page)
         ChannelInfoStore.shared.preload(channelIds: page.relatedVideos.compactMap(\.channelId))
+        resetComments()
+        loadComments()
         view.setNeedsLayout()
+    }
+
+    private func resetComments() {
+        comments = []
+        commentsContinuation = nil
+        isLoadingComments = false
+        commentsLabel.text = "Comments"
+        renderComments()
+    }
+
+    private func loadComments(continuation: String? = nil) {
+        guard !isLoadingComments else { return }
+        isLoadingComments = true
+        loadMoreCommentsButton.isEnabled = false
+        loadMoreCommentsButton.isHidden = comments.isEmpty
+        loadMoreCommentsButton.setTitle("Loading comments...", for: .normal)
+        if comments.isEmpty {
+            commentsLabel.text = "Loading comments..."
+            renderComments()
+        }
+
+        client.fetchComments(videoId: initialVideo.id, continuation: continuation) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                self.isLoadingComments = false
+                switch result {
+                case .failure(let error):
+                    print("[WatchViewController] comments load failed \(self.initialVideo.id): \(error)")
+                    if self.comments.isEmpty {
+                        self.commentsLabel.text = "Comments unavailable"
+                    }
+                    self.renderComments()
+                case .success(let page):
+                    self.commentsContinuation = page.continuation
+                    if continuation == nil {
+                        self.comments = page.comments
+                    } else {
+                        let existingIds = Set(self.comments.map(\.id))
+                        self.comments.append(contentsOf: page.comments.filter { !existingIds.contains($0.id) })
+                    }
+                    self.commentsLabel.text = page.title ?? "Comments"
+                    self.renderComments()
+                }
+            }
+        }
+    }
+
+    private func renderComments() {
+        commentsStackView.arrangedSubviews.forEach { view in
+            commentsStackView.removeArrangedSubview(view)
+            view.removeFromSuperview()
+        }
+
+        if comments.isEmpty {
+            let emptyLabel = UILabel()
+            emptyLabel.numberOfLines = 0
+            emptyLabel.font = UIFont.systemFont(ofSize: 13)
+            emptyLabel.textColor = ThemeManager.shared.secondaryText
+            emptyLabel.text = isLoadingComments ? "Loading comments..." : "Comments are unavailable yet."
+            commentsStackView.addArrangedSubview(emptyLabel)
+        } else {
+            for comment in comments {
+                commentsStackView.addArrangedSubview(makeCommentView(comment))
+            }
+        }
+
+        loadMoreCommentsButton.setTitle(isLoadingComments ? "Loading comments..." : "Load more comments", for: .normal)
+        loadMoreCommentsButton.isEnabled = !isLoadingComments
+        loadMoreCommentsButton.isHidden = commentsContinuation == nil
+        view.setNeedsLayout()
+    }
+
+    private func makeCommentView(_ comment: Comment) -> UIView {
+        let container = UIView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+
+        let avatarView = ThumbnailImageView(frame: .zero)
+        avatarView.layer.cornerRadius = 16
+        avatarView.layer.masksToBounds = true
+        avatarView.translatesAutoresizingMaskIntoConstraints = false
+        if let urlString = comment.authorAvatarURL, let url = URL(string: urlString) {
+            avatarView.setImage(url: url)
+        }
+
+        let authorLabel = UILabel()
+        authorLabel.font = UIFont.systemFont(ofSize: 13, weight: .semibold)
+        authorLabel.textColor = ThemeManager.shared.primaryText
+        authorLabel.numberOfLines = 1
+        authorLabel.text = comment.isPinned ? "\(comment.authorName) • Pinned" : comment.authorName
+        authorLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        let metaLabel = UILabel()
+        metaLabel.font = UIFont.systemFont(ofSize: 11)
+        metaLabel.textColor = ThemeManager.shared.secondaryText
+        metaLabel.numberOfLines = 0
+        metaLabel.text = [comment.publishedTime, comment.likeCount.map { "\($0) likes" }, comment.replyCount.map { "\($0) replies" }]
+            .compactMap { $0 }
+            .filter { !$0.isEmpty }
+            .joined(separator: " • ")
+        metaLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        let contentLabel = UILabel()
+        contentLabel.font = UIFont.systemFont(ofSize: 13)
+        contentLabel.textColor = ThemeManager.shared.primaryText
+        contentLabel.numberOfLines = 0
+        contentLabel.text = comment.content
+        contentLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        let separator = UIView()
+        separator.translatesAutoresizingMaskIntoConstraints = false
+        separator.backgroundColor = ThemeManager.shared.separator
+
+        container.addSubview(avatarView)
+        container.addSubview(authorLabel)
+        container.addSubview(metaLabel)
+        container.addSubview(contentLabel)
+        container.addSubview(separator)
+
+        NSLayoutConstraint.activate([
+            avatarView.topAnchor.constraint(equalTo: container.topAnchor),
+            avatarView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            avatarView.widthAnchor.constraint(equalToConstant: 32),
+            avatarView.heightAnchor.constraint(equalToConstant: 32),
+
+            authorLabel.topAnchor.constraint(equalTo: container.topAnchor),
+            authorLabel.leadingAnchor.constraint(equalTo: avatarView.trailingAnchor, constant: 12),
+            authorLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+
+            metaLabel.topAnchor.constraint(equalTo: authorLabel.bottomAnchor, constant: 2),
+            metaLabel.leadingAnchor.constraint(equalTo: authorLabel.leadingAnchor),
+            metaLabel.trailingAnchor.constraint(equalTo: authorLabel.trailingAnchor),
+
+            contentLabel.topAnchor.constraint(equalTo: metaLabel.bottomAnchor, constant: 6),
+            contentLabel.leadingAnchor.constraint(equalTo: authorLabel.leadingAnchor),
+            contentLabel.trailingAnchor.constraint(equalTo: authorLabel.trailingAnchor),
+
+            separator.topAnchor.constraint(equalTo: contentLabel.bottomAnchor, constant: 12),
+            separator.leadingAnchor.constraint(equalTo: authorLabel.leadingAnchor),
+            separator.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            separator.heightAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale),
+            separator.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+        ])
+
+        return container
     }
 
     private func scheduleRelatedExpansion(for page: WatchPage) {
@@ -595,6 +773,11 @@ final class WatchViewController: UIViewController {
         navigationController?.pushViewController(ChannelViewController(channelId: channelId,
                                                                       channelName: sourceVideo.channelName),
                                                  animated: true)
+    }
+
+    @objc private func loadMoreCommentsTapped() {
+        guard let continuation = commentsContinuation else { return }
+        loadComments(continuation: continuation)
     }
 
     @objc private func handlePlayerTap() {

@@ -35,6 +35,24 @@ struct WatchPage {
     let relatedVideos: [Video]
 }
 
+struct Comment {
+    let id: String
+    let authorName: String
+    let authorChannelId: String?
+    let authorAvatarURL: String?
+    let content: String
+    let publishedTime: String?
+    let likeCount: String?
+    let replyCount: String?
+    let isPinned: Bool
+}
+
+struct CommentsPage {
+    let title: String?
+    let comments: [Comment]
+    let continuation: String?
+}
+
 final class ChannelInfoStore {
     static let shared = ChannelInfoStore()
 

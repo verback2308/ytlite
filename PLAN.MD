@@ -199,6 +199,21 @@ func fetchSubscriptionFeed(completion: @escaping (Result<[Video], Error>) -> Voi
 func searchVideos(query: String, completion: @escaping (Result<[SearchResult], Error>) -> Void)
 ```
 
+---
+
+## Backlog / QoL
+
+- Add `Return YouTube Dislike` integration on watch page.
+- Add `SponsorBlock` integration.
+- Replace proxy-based playback with direct YouTube stream playback from `Innertube player` response:
+  - investigate usable `streamingData` URLs,
+  - keep proxy as temporary fallback,
+  - later remove dependency on local `yt-dlp` proxy.
+- Improve player lifecycle cleanup on watch-page transitions:
+  - pause old player on navigation,
+  - release `AVPlayerItem` / detach player when leaving screen,
+  - reduce memory usage during watch-to-watch navigation.
+
 ### InnertubeClient.swift
 Wraps Innertube API for home feed. Base URL: `https://www.youtube.com/youtubei/v1`
 

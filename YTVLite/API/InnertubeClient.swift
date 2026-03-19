@@ -88,6 +88,12 @@ final class InnertubeClient: VideoService {
         }
     }
 
+    func fetchComments(videoId: String, continuation: String? = nil,
+                       completion: @escaping (Result<CommentsPage, Error>) -> Void) {
+        print("[Innertube] fetchComments start: \(videoId), continuation: \(continuation != nil)")
+        executeComments(videoId: videoId, continuation: continuation, completion: completion)
+    }
+
     // MARK: - Authenticated browse
 
     private func authenticatedBrowse(browseId: String, completion: @escaping (Result<FeedPage, Error>) -> Void) {
@@ -249,6 +255,49 @@ final class InnertubeClient: VideoService {
         }
     }
 
+    private func executeComments(videoId: String, continuation: String?,
+                                 completion: @escaping (Result<CommentsPage, Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/next") else {
+            completion(.failure(APIError.invalidURL))
+            return
+        }
+
+        var body = webContext
+        if let continuation {
+            body["continuation"] = continuation
+        } else {
+            body["continuation"] = Self.buildCommentsContinuation(videoId: videoId, sortBy: 0, commentId: nil)
+        }
+
+        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
+            completion(.failure(APIError.decodingFailed))
+            return
+        }
+
+        let headers = [
+            "Content-Type": "application/json",
+            "X-Youtube-Client-Name": "1",
+            "X-Youtube-Client-Version": "2.20231121.08.00"
+        ]
+
+        api.post(url: url, headers: headers, body: bodyData) { result in
+            switch result {
+            case .failure(let error):
+                print("[Innertube] comments request failed \(videoId): \(error)")
+                completion(.failure(error))
+            case .success(let data):
+                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let page = Self.parseCommentsPage(json)
+                else {
+                    print("[Innertube] comments parse failed for \(videoId)")
+                    completion(.failure(APIError.decodingFailed))
+                    return
+                }
+                completion(.success(page))
+            }
+        }
+    }
+
     // MARK: - JSON parsing
 
     private static func parseWatchPage(_ json: [String: Any], fallbackVideo: Video) -> WatchPage? {
@@ -283,6 +332,17 @@ final class InnertubeClient: VideoService {
                          subscribeButtonText: subscribeState.text,
                          isSubscribed: subscribeState.isSubscribed,
                          relatedVideos: relatedVideos)
+    }
+
+    private static func parseCommentsPage(_ json: [String: Any]) -> CommentsPage? {
+        let mutations = ((((json["frameworkUpdates"] as? [String: Any])?["entityBatchUpdate"] as? [String: Any])?["mutations"]) as? [[String: Any]]) ?? []
+        let threads = collectCommentThreads(in: json)
+        let comments = threads.compactMap { parseComment(from: $0, mutations: mutations) }
+        let continuation = findCommentsContinuation(in: json)
+        let title = findCommentsTitle(in: json)
+
+        guard !comments.isEmpty || continuation != nil else { return nil }
+        return CommentsPage(title: title, comments: comments, continuation: continuation)
     }
 
     private static func parsePageJSON(_ json: [String: Any]) -> FeedPage {
@@ -862,5 +922,218 @@ final class InnertubeClient: VideoService {
         }
 
         return current
+    }
+
+    private static func buildCommentsContinuation(videoId: String, sortBy: Int, commentId: String?) -> String {
+        let ctx = protoMessage([
+            protoString(field: 2, value: videoId)
+        ])
+
+        let opts = protoMessage([
+            protoString(field: 4, value: videoId),
+            protoInt32(field: 6, value: sortBy),
+            protoInt32(field: 15, value: 2),
+            commentId.flatMap { protoString(field: 16, value: $0) }
+        ].compactMap { $0 })
+
+        let params = protoMessage([
+            protoMessage(field: 4, value: opts),
+            protoString(field: 8, value: "comments-section")
+        ])
+
+        let root = protoMessage([
+            protoMessage(field: 2, value: ctx),
+            protoInt32(field: 3, value: 6),
+            protoMessage(field: 6, value: params)
+        ])
+
+        return percentEncode(base64URLEncoded(root))
+    }
+
+    private static func protoMessage(_ fields: [Data]) -> Data {
+        fields.reduce(into: Data(), { $0.append($1) })
+    }
+
+    private static func protoMessage(field: Int, value: Data) -> Data {
+        var data = Data()
+        data.append(protoKey(field: field, wireType: 2))
+        data.append(protoVarint(value.count))
+        data.append(value)
+        return data
+    }
+
+    private static func protoString(field: Int, value: String) -> Data {
+        protoMessage(field: field, value: Data(value.utf8))
+    }
+
+    private static func protoInt32(field: Int, value: Int) -> Data {
+        var data = Data()
+        data.append(protoKey(field: field, wireType: 0))
+        data.append(protoVarint(value))
+        return data
+    }
+
+    private static func protoKey(field: Int, wireType: Int) -> Data {
+        protoVarint((field << 3) | wireType)
+    }
+
+    private static func protoVarint(_ value: Int) -> Data {
+        var data = Data()
+        var current = UInt64(bitPattern: Int64(value))
+        while current >= 0x80 {
+            data.append(UInt8(current & 0x7F | 0x80))
+            current >>= 7
+        }
+        data.append(UInt8(current))
+        return data
+    }
+
+    private static func percentEncode(_ string: String) -> String {
+        let allowed = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.!~*'()")
+        return string.addingPercentEncoding(withAllowedCharacters: allowed) ?? string
+    }
+
+    private static func base64URLEncoded(_ data: Data) -> String {
+        data.base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+    }
+
+    private static func collectCommentThreads(in value: Any) -> [[String: Any]] {
+        var result: [[String: Any]] = []
+
+        if let dict = value as? [String: Any] {
+            if let renderer = dict["commentThreadRenderer"] as? [String: Any] {
+                result.append(renderer)
+            } else if dict["commentViewModel"] is [String: Any] {
+                result.append(dict)
+            }
+
+            for child in dict.values {
+                result.append(contentsOf: collectCommentThreads(in: child))
+            }
+        } else if let array = value as? [Any] {
+            for child in array {
+                result.append(contentsOf: collectCommentThreads(in: child))
+            }
+        }
+
+        return result
+    }
+
+    private static func parseComment(from thread: [String: Any], mutations: [[String: Any]]) -> Comment? {
+        guard let viewModel = thread["commentViewModel"] as? [String: Any] else { return nil }
+        guard let commentId = viewModel["commentId"] as? String else { return nil }
+
+        let commentKey = viewModel["commentKey"] as? String
+        let toolbarStateKey = viewModel["toolbarStateKey"] as? String
+        let toolbarSurfaceKey = viewModel["toolbarSurfaceKey"] as? String
+
+        let commentMutation = mutations.first {
+            (($0["payload"] as? [String: Any])?["commentEntityPayload"] as? [String: Any])?["key"] as? String == commentKey
+        }.flatMap { ($0["payload"] as? [String: Any])?["commentEntityPayload"] as? [String: Any] }
+
+        let toolbarStateMutation = mutations.first {
+            (($0["payload"] as? [String: Any])?["engagementToolbarStateEntityPayload"] as? [String: Any])?["key"] as? String == toolbarStateKey
+        }.flatMap { ($0["payload"] as? [String: Any])?["engagementToolbarStateEntityPayload"] as? [String: Any] }
+
+        let toolbarSurfaceMutation = mutations.first {
+            ($0["entityKey"] as? String) == toolbarSurfaceKey
+        }.flatMap { ($0["payload"] as? [String: Any])?["engagementToolbarSurfaceEntityPayload"] as? [String: Any] }
+
+        let author = (commentMutation?["author"] as? [String: Any]) ?? [:]
+        let toolbar = (commentMutation?["toolbar"] as? [String: Any]) ?? [:]
+        let properties = (commentMutation?["properties"] as? [String: Any]) ?? [:]
+        let avatar = commentMutation?["avatar"] as? [String: Any]
+
+        let authorName = (author["displayName"] as? String)
+            ?? simpleText(from: author["displayText"])
+            ?? "Unknown"
+        let authorChannelId = author["channelId"] as? String
+        let authorAvatarURL = extractThumbnailURL(from: avatar?["image"])
+        let content = attributedText(from: properties["content"]) ?? simpleText(from: properties["content"]) ?? ""
+        let publishedTime = properties["publishedTime"] as? String
+        let likeCount = (toolbar["likeCountNotliked"] as? String)
+            ?? (toolbar["likeCountLiked"] as? String)
+            ?? simpleText(from: toolbar["likeCountA11y"])
+        let replyCount = (toolbar["replyCount"] as? String)
+            ?? simpleText(from: toolbar["replyCountA11y"])
+        let isPinned = viewModel["pinnedText"] != nil || thread["pinnedCommentBadge"] != nil
+        let isDeleted = (toolbarStateMutation?["isDeleted"] as? Bool) == true
+        let hasSurface = toolbarSurfaceMutation != nil || toolbar.isEmpty == false
+
+        guard !isDeleted, !content.isEmpty || hasSurface else { return nil }
+
+        return Comment(id: commentId,
+                       authorName: authorName,
+                       authorChannelId: authorChannelId,
+                       authorAvatarURL: authorAvatarURL,
+                       content: content,
+                       publishedTime: publishedTime,
+                       likeCount: likeCount,
+                       replyCount: replyCount,
+                       isPinned: isPinned)
+    }
+
+    private static func attributedText(from value: Any?) -> String? {
+        guard let dict = value as? [String: Any] else { return nil }
+        if let content = dict["content"] as? String, !content.isEmpty {
+            return content
+        }
+        return simpleText(from: value)
+    }
+
+    private static func findCommentsContinuation(in value: Any) -> String? {
+        if let dict = value as? [String: Any] {
+            if let renderer = dict["continuationItemRenderer"] as? [String: Any],
+               let endpoint = renderer["continuationEndpoint"] as? [String: Any],
+               let command = endpoint["continuationCommand"] as? [String: Any],
+               let token = command["token"] as? String,
+               !token.isEmpty {
+                return token
+            }
+
+            for child in dict.values {
+                if let token = findCommentsContinuation(in: child) {
+                    return token
+                }
+            }
+        } else if let array = value as? [Any] {
+            for child in array {
+                if let token = findCommentsContinuation(in: child) {
+                    return token
+                }
+            }
+        }
+
+        return nil
+    }
+
+    private static func findCommentsTitle(in value: Any) -> String? {
+        if let dict = value as? [String: Any] {
+            if let renderer = dict["commentsHeaderRenderer"] as? [String: Any] {
+                return simpleText(from: renderer["countText"])
+                    ?? simpleText(from: renderer["commentsCount"])
+                    ?? simpleText(from: renderer["titleText"])
+            }
+
+            if let renderer = dict["commentsEntryPointHeaderRenderer"] as? [String: Any] {
+                return simpleText(from: renderer["commentCount"]) ?? simpleText(from: renderer["headerText"])
+            }
+
+            for child in dict.values {
+                if let title = findCommentsTitle(in: child) {
+                    return title
+                }
+            }
+        } else if let array = value as? [Any] {
+            for child in array {
+                if let title = findCommentsTitle(in: child) {
+                    return title
+                }
+            }
+        }
+
+        return nil
     }
 }
