@@ -488,7 +488,8 @@ final class InnertubeClient: VideoService {
 
         let tileHeader = (tile["header"] as? [String: Any])?["tileHeaderRenderer"] as? [String: Any]
         let thumbs = (tileHeader?["thumbnail"] as? [String: Any])?["thumbnails"] as? [[String: Any]] ?? []
-        let thumbURL = thumbs.last?["url"] as? String ?? ""
+        let rawThumbURL = thumbs.last?["url"] as? String ?? ""
+        let thumbURL = preferredThumbnailURL(videoId: videoId, fallbackURL: rawThumbURL)
 
         let overlays = tileHeader?["thumbnailOverlays"] as? [[String: Any]] ?? []
         let duration = overlays.compactMap {
@@ -512,6 +513,8 @@ final class InnertubeClient: VideoService {
                 }
             }
         }
+
+        logThumbnailChoice(videoId: videoId, chosenURL: thumbURL, fallbackURL: rawThumbURL)
 
         return Video(id: videoId, title: title, channelId: channelId,
                      channelName: channel, channelAvatarURL: channelAvatarURL,
@@ -543,10 +546,12 @@ final class InnertubeClient: VideoService {
             }.flatMap { ($0["browseEndpoint"] as? [String: Any])?["browseId"] as? String }
             let viewCount = (vr["viewCountText"] as? [String: Any])?["simpleText"] as? String
             let thumbs = (vr["thumbnail"] as? [String: Any])?["thumbnails"] as? [[String: Any]] ?? []
-            let thumbURL = thumbs.last?["url"] as? String ?? ""
+            let rawThumbURL = thumbs.last?["url"] as? String ?? ""
+            let thumbURL = preferredThumbnailURL(videoId: videoId, fallbackURL: rawThumbURL)
             let channelAvatarURL = (((vr["channelThumbnailSupportedRenderers"] as? [String: Any])?["channelThumbnailWithLinkRenderer"] as? [String: Any])?["thumbnail"] as? [String: Any])
                 .flatMap { ($0["thumbnails"] as? [[String: Any]])?.last?["url"] as? String }
             guard !videoId.isEmpty else { return nil }
+            logThumbnailChoice(videoId: videoId, chosenURL: thumbURL, fallbackURL: rawThumbURL)
             return Video(id: videoId, title: title, channelId: channelId,
                          channelName: channel, channelAvatarURL: channelAvatarURL,
                          thumbnailURL: thumbURL, viewCount: viewCount, publishedAt: nil, duration: nil)
@@ -886,6 +891,22 @@ final class InnertubeClient: VideoService {
             return "https:\(url)"
         }
         return url
+    }
+
+    private static func preferredThumbnailURL(videoId: String, fallbackURL: String) -> String {
+        guard !videoId.isEmpty else { return normalizeThumbnailURL(fallbackURL) }
+        return "https://i.ytimg.com/vi/\(videoId)/hqdefault.jpg"
+    }
+
+    private static func logThumbnailChoice(videoId: String, chosenURL: String, fallbackURL: String) {
+        let normalizedFallback = normalizeThumbnailURL(fallbackURL)
+        if normalizedFallback.isEmpty {
+            print("[Innertube] thumbnail for \(videoId): \(chosenURL)")
+        } else if normalizedFallback != chosenURL {
+            print("[Innertube] thumbnail for \(videoId): \(chosenURL) (tv: \(normalizedFallback))")
+        } else {
+            print("[Innertube] thumbnail for \(videoId): \(chosenURL)")
+        }
     }
 
     private static func simpleText(from value: Any?) -> String? {

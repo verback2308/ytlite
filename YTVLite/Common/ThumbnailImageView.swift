@@ -7,7 +7,9 @@ class ThumbnailImageView: UIImageView {
     private var currentURL: URL?
 
     static func clearCache() {
+        print("[ImageCache] clear all")
         cache.removeAllObjects()
+        diskCache.clear()
     }
 
     override init(frame: CGRect) {
@@ -93,6 +95,11 @@ private final class ImageDiskCache {
     func store(data: Data, for url: URL) {
         let fileURL = cacheDir.appendingPathComponent(cacheKey(for: url))
         try? data.write(to: fileURL, options: .atomic)
+    }
+
+    func clear() {
+        try? fm.removeItem(at: cacheDir)
+        try? fm.createDirectory(at: cacheDir, withIntermediateDirectories: true, attributes: nil)
     }
 
     private func cacheKey(for url: URL) -> String {

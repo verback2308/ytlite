@@ -10,6 +10,7 @@ class ProfileViewController: UIViewController {
 
     // Theme section
     private let themeSegment = UISegmentedControl(items: ["Dark", "Light"])
+    private let clearImageCacheButton = UIButton(type: .system)
 
     // Separator
     private let headerStack = UIView()
@@ -69,13 +70,20 @@ class ProfileViewController: UIViewController {
         themeSegment.addTarget(self, action: #selector(themeChanged), for: .valueChanged)
         themeSegment.translatesAutoresizingMaskIntoConstraints = false
 
+        clearImageCacheButton.setTitle("Clear Image Cache", for: .normal)
+        clearImageCacheButton.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
+        clearImageCacheButton.layer.cornerRadius = 10
+        clearImageCacheButton.contentEdgeInsets = UIEdgeInsets(top: 12, left: 18, bottom: 12, right: 18)
+        clearImageCacheButton.translatesAutoresizingMaskIntoConstraints = false
+        clearImageCacheButton.addTarget(self, action: #selector(clearImageCacheTapped), for: .touchUpInside)
+
         // Separator line
         let separator = UIView()
         separator.backgroundColor = UIColor(white: 0.3, alpha: 1)
         separator.translatesAutoresizingMaskIntoConstraints = false
 
         for v in [avatarView, nameLabel, handleLabel, subscribersLabel,
-                  separator, themeTitle, themeSegment] {
+                  separator, themeTitle, themeSegment, clearImageCacheButton] {
             view.addSubview(v)
         }
 
@@ -108,6 +116,9 @@ class ProfileViewController: UIViewController {
             themeSegment.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             themeSegment.widthAnchor.constraint(equalToConstant: 280),
             themeSegment.heightAnchor.constraint(equalToConstant: 32),
+
+            clearImageCacheButton.topAnchor.constraint(equalTo: themeSegment.bottomAnchor, constant: 20),
+            clearImageCacheButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
         ])
     }
 
@@ -118,10 +129,20 @@ class ProfileViewController: UIViewController {
         handleLabel.textColor = t.secondaryText
         subscribersLabel.textColor = t.secondaryText
         themeSegment.selectedSegmentIndex = t.isDark ? 0 : 1
+        clearImageCacheButton.backgroundColor = t.isDark ? UIColor(white: 0.16, alpha: 1) : .white
+        clearImageCacheButton.setTitleColor(t.isDark ? .white : UIColor(red: 1, green: 0, blue: 0, alpha: 1), for: .normal)
     }
 
     @objc private func themeChanged() {
         ThemeManager.shared.isDark = themeSegment.selectedSegmentIndex == 0
+    }
+
+    @objc private func clearImageCacheTapped() {
+        ThumbnailImageView.clearCache()
+
+        let alert = UIAlertController(title: "Done", message: "Image cache cleared.", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
     }
 
     private func loadProfile() {
