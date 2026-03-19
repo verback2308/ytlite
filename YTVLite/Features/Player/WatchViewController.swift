@@ -36,6 +36,11 @@ final class WatchViewController: UIViewController {
 
     private var playerAspectConstraint: NSLayoutConstraint!
     private var relatedHeightConstraint: NSLayoutConstraint!
+    private var playerTopConstraint: NSLayoutConstraint!
+    private var playerLeadingConstraint: NSLayoutConstraint!
+    private var playerTrailingConstraint: NSLayoutConstraint!
+    private var playerToSidebarConstraint: NSLayoutConstraint!
+    private var scrollTopToPlayerConstraint: NSLayoutConstraint!
     private var scrollTrailingConstraint: NSLayoutConstraint!
     private var scrollToSidebarConstraint: NSLayoutConstraint!
     private var sidebarTopConstraint: NSLayoutConstraint!
@@ -129,6 +134,9 @@ final class WatchViewController: UIViewController {
         scrollView.canCancelContentTouches = true
         scrollView.panGestureRecognizer.cancelsTouchesInView = false
         view.addSubview(scrollView)
+
+        playerContainer.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(playerContainer)
         sidebarContainer.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(sidebarContainer)
 
@@ -137,13 +145,24 @@ final class WatchViewController: UIViewController {
 
         scrollTrailingConstraint = scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
         scrollToSidebarConstraint = scrollView.trailingAnchor.constraint(equalTo: sidebarContainer.leadingAnchor)
+        playerTopConstraint = playerContainer.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor)
+        playerLeadingConstraint = playerContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor)
+        playerTrailingConstraint = playerContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor)
+        playerToSidebarConstraint = playerContainer.trailingAnchor.constraint(equalTo: sidebarContainer.leadingAnchor)
+        scrollTopToPlayerConstraint = scrollView.topAnchor.constraint(equalTo: playerContainer.bottomAnchor)
         sidebarTopConstraint = sidebarContainer.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor)
         sidebarTrailingConstraint = sidebarContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor)
         sidebarBottomConstraint = sidebarContainer.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         sidebarWidthConstraint = sidebarContainer.widthAnchor.constraint(equalToConstant: 340)
+        playerAspectConstraint = playerContainer.heightAnchor.constraint(equalTo: playerContainer.widthAnchor, multiplier: 9.0 / 16.0)
 
         NSLayoutConstraint.activate([
-            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            playerTopConstraint,
+            playerLeadingConstraint,
+            playerTrailingConstraint,
+            playerAspectConstraint,
+
+            scrollTopToPlayerConstraint,
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollTrailingConstraint,
             scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
@@ -154,10 +173,6 @@ final class WatchViewController: UIViewController {
             contentView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
             contentView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
         ])
-
-        playerContainer.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(playerContainer)
-        playerAspectConstraint = playerContainer.heightAnchor.constraint(equalTo: playerContainer.widthAnchor, multiplier: 9.0 / 16.0)
 
         playerSpinner.translatesAutoresizingMaskIntoConstraints = false
         playerSpinner.startAnimating()
@@ -229,18 +244,13 @@ final class WatchViewController: UIViewController {
         relatedHeightConstraint = relatedCollectionView.heightAnchor.constraint(equalToConstant: 0)
 
         NSLayoutConstraint.activate([
-            playerContainer.topAnchor.constraint(equalTo: contentView.topAnchor),
-            playerContainer.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            playerContainer.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            playerAspectConstraint,
-
             playerSpinner.centerXAnchor.constraint(equalTo: playerContainer.centerXAnchor),
             playerSpinner.centerYAnchor.constraint(equalTo: playerContainer.centerYAnchor, constant: -10),
             playerStatusLabel.topAnchor.constraint(equalTo: playerSpinner.bottomAnchor, constant: 14),
             playerStatusLabel.leadingAnchor.constraint(equalTo: playerContainer.leadingAnchor, constant: 24),
             playerStatusLabel.trailingAnchor.constraint(equalTo: playerContainer.trailingAnchor, constant: -24),
 
-            titleLabel.topAnchor.constraint(equalTo: playerContainer.bottomAnchor, constant: 16),
+            titleLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
             titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
 
@@ -369,6 +379,8 @@ final class WatchViewController: UIViewController {
             sidebarBottomConstraint.isActive = true
             sidebarWidthConstraint.isActive = true
             sidebarContainer.isHidden = false
+            playerTrailingConstraint.isActive = false
+            playerToSidebarConstraint.isActive = true
         } else {
             scrollToSidebarConstraint.isActive = false
             scrollTrailingConstraint.isActive = true
@@ -377,6 +389,8 @@ final class WatchViewController: UIViewController {
             sidebarBottomConstraint.isActive = false
             sidebarWidthConstraint.isActive = false
             sidebarContainer.isHidden = true
+            playerToSidebarConstraint.isActive = false
+            playerTrailingConstraint.isActive = true
         }
 
         moveRelatedCollection(toLandscape: isLandscape)
@@ -388,6 +402,8 @@ final class WatchViewController: UIViewController {
         if !isLandscape {
             relatedCollectionView.alpha = 1
         }
+        view.bringSubviewToFront(playerContainer)
+        view.bringSubviewToFront(sidebarContainer)
         if let superview = relatedCollectionView.superview {
             superview.setNeedsLayout()
             superview.layoutIfNeeded()
@@ -529,13 +545,18 @@ final class WatchViewController: UIViewController {
         playerVC.view.isUserInteractionEnabled = true
 
         addChild(playerVC)
-        playerVC.view.frame = playerContainer.bounds
-        playerVC.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        playerVC.view.translatesAutoresizingMaskIntoConstraints = false
         let tap = UITapGestureRecognizer(target: self, action: #selector(handlePlayerTap))
         tap.cancelsTouchesInView = false
         playerVC.view.addGestureRecognizer(tap)
         playerContainer.addSubview(playerVC.view)
         playerContainer.bringSubviewToFront(playerVC.view)
+        NSLayoutConstraint.activate([
+            playerVC.view.topAnchor.constraint(equalTo: playerContainer.topAnchor),
+            playerVC.view.leadingAnchor.constraint(equalTo: playerContainer.leadingAnchor),
+            playerVC.view.trailingAnchor.constraint(equalTo: playerContainer.trailingAnchor),
+            playerVC.view.bottomAnchor.constraint(equalTo: playerContainer.bottomAnchor),
+        ])
         playerVC.didMove(toParent: self)
         player.play()
         playerViewController = playerVC
