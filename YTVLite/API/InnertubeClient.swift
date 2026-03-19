@@ -1,15 +1,62 @@
 import Foundation
 
+enum DirectPlaybackClient: Equatable, CustomStringConvertible {
+    case tvHTML5
+    case web
+    case android
+
+    var clientName: String {
+        switch self {
+        case .tvHTML5:
+            return "TVHTML5"
+        case .web:
+            return "WEB"
+        case .android:
+            return "ANDROID"
+        }
+    }
+
+    var clientVersion: String {
+        switch self {
+        case .tvHTML5:
+            return "7.20230405.08.01"
+        case .web:
+            return "2.20231121.08.00"
+        case .android:
+            return "19.09.37"
+        }
+    }
+
+    var clientHeaderName: String {
+        switch self {
+        case .tvHTML5:
+            return "7"
+        case .web:
+            return "1"
+        case .android:
+            return "3"
+        }
+    }
+
+    var description: String {
+        clientName
+    }
+}
+
 final class InnertubeClient: VideoService {
 
     private let api = APIClient()
     private let baseURL = "https://www.youtube.com/youtubei/v1"
+    private let androidClientVersion = "19.09.37"
 
     private let webContext: [String: Any] = [
-        "context": ["client": ["clientName": "WEB", "clientVersion": "2.20231121.08.00", "hl": "en", "gl": "US"]]
+        "context": ["client": ["clientName": DirectPlaybackClient.web.clientName, "clientVersion": DirectPlaybackClient.web.clientVersion, "hl": "en", "gl": "US"]]
+    ]
+    private let androidContext: [String: Any] = [
+        "context": ["client": ["clientName": DirectPlaybackClient.android.clientName, "clientVersion": DirectPlaybackClient.android.clientVersion, "hl": "en", "gl": "US", "androidSdkVersion": 28]]
     ]
     private let tvContext: [String: Any] = [
-        "context": ["client": ["clientName": "TVHTML5", "clientVersion": "7.20230405.08.01", "hl": "en", "gl": "US"]]
+        "context": ["client": ["clientName": DirectPlaybackClient.tvHTML5.clientName, "clientVersion": DirectPlaybackClient.tvHTML5.clientVersion, "hl": "en", "gl": "US"]]
     ]
 
     // MARK: - VideoService
@@ -92,6 +139,31 @@ final class InnertubeClient: VideoService {
                        completion: @escaping (Result<CommentsPage, Error>) -> Void) {
         print("[Innertube] fetchComments start: \(videoId), continuation: \(continuation != nil)")
         executeComments(videoId: videoId, continuation: continuation, completion: completion)
+    }
+
+    func debugFetchPlayer(videoId: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        print("[Innertube] debugFetchPlayer start: \(videoId)")
+        OAuthClient.shared.validToken { [weak self] result in
+            switch result {
+            case .failure(let error):
+                completion(.failure(error))
+            case .success(let token):
+                self?.executePlayerDebug(videoId: videoId, token: token, completion: completion)
+            }
+        }
+    }
+
+    func fetchDirectPlayback(videoId: String, client: DirectPlaybackClient = .tvHTML5, poToken: String? = nil,
+                             completion: @escaping (Result<DirectPlaybackInfo, Error>) -> Void) {
+        print("[Innertube] fetchDirectPlayback start: \(videoId), client: \(client)")
+        OAuthClient.shared.validToken { [weak self] result in
+            switch result {
+            case .failure(let error):
+                completion(.failure(error))
+            case .success(let token):
+                self?.executeDirectPlayback(videoId: videoId, client: client, token: token, poToken: poToken, completion: completion)
+            }
+        }
     }
 
     // MARK: - Authenticated browse
@@ -276,8 +348,8 @@ final class InnertubeClient: VideoService {
 
         let headers = [
             "Content-Type": "application/json",
-            "X-Youtube-Client-Name": "1",
-            "X-Youtube-Client-Version": "2.20231121.08.00"
+            "X-Youtube-Client-Name": DirectPlaybackClient.web.clientHeaderName,
+            "X-Youtube-Client-Version": DirectPlaybackClient.web.clientVersion
         ]
 
         api.post(url: url, headers: headers, body: bodyData) { result in
@@ -294,6 +366,172 @@ final class InnertubeClient: VideoService {
                     return
                 }
                 completion(.success(page))
+            }
+        }
+    }
+
+    private func executePlayerDebug(videoId: String, token: String,
+                                    completion: @escaping (Result<Void, Error>) -> Void) {
+        let contexts: [(name: String, body: [String: Any], auth: Bool)] = [
+            ("TVHTML5", tvContext, true),
+            ("WEB", webContext, false),
+            ("ANDROID", androidContext, false)
+        ]
+
+        let group = DispatchGroup()
+        var firstError: Error?
+
+        for context in contexts {
+            group.enter()
+            executePlayer(videoId: videoId, contextName: context.name, context: context.body, token: context.auth ? token : nil) { result in
+                if case .failure(let error) = result, firstError == nil {
+                    firstError = error
+                }
+                group.leave()
+            }
+        }
+
+        group.notify(queue: .main) {
+            if let firstError {
+                completion(.failure(firstError))
+            } else {
+                completion(.success(()))
+            }
+        }
+    }
+
+    private func executeDirectPlayback(videoId: String, client: DirectPlaybackClient, token: String, poToken: String?,
+                                       completion: @escaping (Result<DirectPlaybackInfo, Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/player") else {
+            completion(.failure(APIError.invalidURL))
+            return
+        }
+
+        let context: [String: Any]
+        switch client {
+        case .tvHTML5:
+            context = tvContext
+        case .web:
+            context = webContext
+        case .android:
+            context = androidContext
+        }
+
+        var body = context
+        body["videoId"] = videoId
+        switch client {
+        case .tvHTML5:
+            break
+        case .web, .android:
+            body["contentCheckOk"] = true
+            body["racyCheckOk"] = true
+        }
+        if let poToken, !poToken.isEmpty {
+            body["serviceIntegrityDimensions"] = [
+                "poToken": poToken
+            ]
+        }
+
+        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
+            completion(.failure(APIError.decodingFailed))
+            return
+        }
+
+        let headers = [
+            "Content-Type": "application/json",
+            "Authorization": "Bearer \(token)"
+        ]
+        var requestHeaders = headers
+        switch client {
+        case .tvHTML5:
+            break
+        case .web:
+            requestHeaders["X-Youtube-Client-Name"] = DirectPlaybackClient.web.clientHeaderName
+            requestHeaders["X-Youtube-Client-Version"] = DirectPlaybackClient.web.clientVersion
+        case .android:
+            requestHeaders["X-Youtube-Client-Name"] = DirectPlaybackClient.android.clientHeaderName
+            requestHeaders["X-Youtube-Client-Version"] = DirectPlaybackClient.android.clientVersion
+        }
+
+        api.post(url: url, headers: requestHeaders, body: bodyData) { result in
+            switch result {
+            case .failure(let error):
+                print("[Innertube] direct playback request failed \(videoId), client: \(client): \(error)")
+                completion(.failure(error))
+            case .success(let data):
+                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let info = Self.parseDirectPlaybackInfo(json)
+                else {
+                    print("[Innertube] direct playback parse failed \(videoId), client: \(client)")
+                    if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                        Self.logPlayerDebug(videoId: videoId, contextName: client.description, json: json)
+                    }
+                    completion(.failure(APIError.decodingFailed))
+                    return
+                }
+
+                let progressive = info.progressiveURL?.absoluteString ?? "nil"
+                let video = info.videoURL?.absoluteString ?? "nil"
+                let audio = info.audioURL?.absoluteString ?? "nil"
+                let sabr = info.serverAbrStreamingURL?.absoluteString ?? "nil"
+                let videoUstreamerLength = info.videoPlaybackUstreamerConfig?.count ?? 0
+                let onesieUstreamerLength = info.onesieUstreamerConfig?.count ?? 0
+                print("[Innertube] direct playback selected \(videoId), client: \(client): progressive=\(progressive), video=\(video), audio=\(audio), sabr=\(sabr), ustreamer=\(info.hasVideoPlaybackUstreamerConfig), videoUstreamerLen=\(videoUstreamerLength), onesieUstreamerLen=\(onesieUstreamerLength)")
+                completion(.success(info))
+            }
+        }
+    }
+
+    private func executePlayer(videoId: String, contextName: String, context: [String: Any], token: String?,
+                               completion: @escaping (Result<Void, Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/player") else {
+            completion(.failure(APIError.invalidURL))
+            return
+        }
+
+        var body = context
+        body["videoId"] = videoId
+
+        if contextName != "TVHTML5" {
+            body["contentCheckOk"] = true
+            body["racyCheckOk"] = true
+        }
+
+        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
+            completion(.failure(APIError.decodingFailed))
+            return
+        }
+
+        var headers: [String: String] = [
+            "Content-Type": "application/json"
+        ]
+
+        if contextName == "WEB" {
+            headers["X-Youtube-Client-Name"] = DirectPlaybackClient.web.clientHeaderName
+            headers["X-Youtube-Client-Version"] = DirectPlaybackClient.web.clientVersion
+        } else if contextName == "ANDROID" {
+            headers["X-Youtube-Client-Name"] = "3"
+            headers["X-Youtube-Client-Version"] = androidClientVersion
+        }
+
+        if let token {
+            headers["Authorization"] = "Bearer \(token)"
+        }
+
+        api.post(url: url, headers: headers, body: bodyData) { result in
+            switch result {
+            case .failure(let error):
+                print("[Innertube] player debug request failed (\(contextName)) \(videoId): \(error)")
+                completion(.failure(error))
+            case .success(let data):
+                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                    print("[Innertube] player debug decode failed (\(contextName)) \(videoId)")
+                    completion(.failure(APIError.decodingFailed))
+                    return
+                }
+
+                Self.logPlayerDebug(videoId: videoId, contextName: contextName, json: json)
+                completion(.success(()))
             }
         }
     }
@@ -343,6 +581,231 @@ final class InnertubeClient: VideoService {
 
         guard !comments.isEmpty || continuation != nil else { return nil }
         return CommentsPage(title: title, comments: comments, continuation: continuation)
+    }
+
+    static func parsePlayerJSON(_ json: [String: Any]) -> DirectPlaybackInfo? {
+        let topKeys = json.keys.sorted().joined(separator: ", ")
+        print("[InnertubeClient] parsePlayerJSON topKeys: \(topKeys)")
+        if let sd = json["streamingData"] as? [String: Any] {
+            let formats = (sd["formats"] as? [[String: Any]])?.count ?? 0
+            let adaptive = (sd["adaptiveFormats"] as? [[String: Any]])?.count ?? 0
+            print("[InnertubeClient] streamingData found: formats=\(formats) adaptive=\(adaptive)")
+        } else {
+            print("[InnertubeClient] streamingData MISSING — playabilityStatus: \((json["playabilityStatus"] as? [String: Any])?["status"] ?? "nil")")
+        }
+        return parseDirectPlaybackInfo(json)
+    }
+
+    private static func parseDirectPlaybackInfo(_ json: [String: Any]) -> DirectPlaybackInfo? {
+        guard let streamingData = json["streamingData"] as? [String: Any] else { return nil }
+
+        let formats = streamingData["formats"] as? [[String: Any]] ?? []
+        let adaptiveFormats = streamingData["adaptiveFormats"] as? [[String: Any]] ?? []
+
+        func directURL(_ format: [String: Any]) -> URL? {
+            guard let value = format["url"] as? String, !value.isEmpty else { return nil }
+            return URL(string: value)
+        }
+
+        func mimeType(_ format: [String: Any]) -> String {
+            format["mimeType"] as? String ?? ""
+        }
+
+        func height(_ format: [String: Any]) -> Int {
+            format["height"] as? Int ?? 0
+        }
+
+        func bitrate(_ format: [String: Any]) -> Int {
+            format["bitrate"] as? Int ?? 0
+        }
+
+        func itag(_ format: [String: Any]) -> Int? {
+            format["itag"] as? Int
+        }
+
+        func sabrFormatInfo(_ format: [String: Any]) -> SabrFormatInfo? {
+            guard let formatItag = itag(format) else { return nil }
+            let audioTrack = format["audioTrack"] as? [String: Any]
+            return SabrFormatInfo(
+                itag: formatItag,
+                lastModified: (format["lastModified"] as? String) ?? (format["lmt"] as? String),
+                xtags: format["xtags"] as? String,
+                audioTrackId: audioTrack?["id"] as? String,
+                isDrc: (format["isDrc"] as? Bool) ?? ((format["xtags"] as? String)?.contains("drc=1") == true),
+                mimeType: format["mimeType"] as? String,
+                bitrate: format["bitrate"] as? Int,
+                width: format["width"] as? Int,
+                height: format["height"] as? Int
+            )
+        }
+
+        let progressive = formats
+            .filter { directURL($0) != nil && mimeType($0).contains("video/mp4") }
+            .sorted { bitrate($0) > bitrate($1) }
+            .first
+
+        let video = adaptiveFormats
+            .filter {
+                directURL($0) != nil &&
+                mimeType($0).contains("video/mp4") &&
+                mimeType($0).contains("avc1") &&
+                height($0) > 0 &&
+                height($0) <= 720
+            }
+            .sorted { lhs, rhs in
+                let lhsHeight = height(lhs)
+                let rhsHeight = height(rhs)
+                if lhsHeight == rhsHeight {
+                    return bitrate(lhs) > bitrate(rhs)
+                }
+                return lhsHeight > rhsHeight
+            }
+            .first
+
+        let audio = adaptiveFormats
+            .filter { directURL($0) != nil && mimeType($0).contains("audio/mp4") }
+            .sorted { bitrate($0) > bitrate($1) }
+            .first
+
+        let hlsManifestURL = (streamingData["hlsManifestUrl"] as? String).flatMap(URL.init(string:))
+        let dashManifestURL = (streamingData["dashManifestUrl"] as? String).flatMap(URL.init(string:))
+        let progressiveURL = progressive.flatMap(directURL)
+        let videoURL = video.flatMap(directURL)
+        let audioURL = audio.flatMap(directURL)
+        let serverAbrStreamingURL = (streamingData["serverAbrStreamingUrl"] as? String).flatMap(URL.init(string:))
+        let mediaCommonConfig = (json["playerConfig"] as? [String: Any])?["mediaCommonConfig"] as? [String: Any]
+        let mediaUstreamerRequestConfig = mediaCommonConfig?["mediaUstreamerRequestConfig"] as? [String: Any]
+        let videoPlaybackUstreamerConfig = mediaUstreamerRequestConfig?["videoPlaybackUstreamerConfig"] as? String
+        let onesieUstreamerConfig = mediaUstreamerRequestConfig?["onesieUstreamerConfig"] as? String
+        let hasVideoPlaybackUstreamerConfig = videoPlaybackUstreamerConfig?.isEmpty == false
+
+        guard hlsManifestURL != nil || dashManifestURL != nil || progressiveURL != nil || (videoURL != nil && audioURL != nil) || serverAbrStreamingURL != nil else {
+            return nil
+        }
+
+        return DirectPlaybackInfo(
+            hlsManifestURL: hlsManifestURL,
+            dashManifestURL: dashManifestURL,
+            progressiveURL: progressiveURL,
+            videoURL: videoURL,
+            audioURL: audioURL,
+            serverAbrStreamingURL: serverAbrStreamingURL,
+            videoPlaybackUstreamerConfig: videoPlaybackUstreamerConfig,
+            onesieUstreamerConfig: onesieUstreamerConfig,
+            sabrVideoFormat: video.flatMap(sabrFormatInfo),
+            sabrAudioFormat: audio.flatMap(sabrFormatInfo),
+            videoItag: video.flatMap(itag) ?? progressive.flatMap(itag),
+            audioItag: audio.flatMap(itag),
+            qualityLabel: (video?["qualityLabel"] as? String) ?? (progressive?["qualityLabel"] as? String),
+            visitorData: ((json["responseContext"] as? [String: Any])?["visitorData"] as? String),
+            hasVideoPlaybackUstreamerConfig: hasVideoPlaybackUstreamerConfig
+        )
+    }
+
+    private static func logPlayerDebug(videoId: String, contextName: String, json: [String: Any]) {
+        let playability = json["playabilityStatus"] as? [String: Any]
+        let status = playability?["status"] as? String ?? "nil"
+        let reason = playability?["reason"] as? String ?? "nil"
+        let streamingData = json["streamingData"] as? [String: Any]
+        let formats = streamingData?["formats"] as? [[String: Any]] ?? []
+        let adaptiveFormats = streamingData?["adaptiveFormats"] as? [[String: Any]] ?? []
+        let hlsManifestURL = streamingData?["hlsManifestUrl"] as? String ?? "nil"
+        let dashManifestURL = streamingData?["dashManifestUrl"] as? String ?? "nil"
+        let sabrURL = streamingData?["serverAbrStreamingUrl"] as? String ?? "nil"
+
+        func summarize(_ format: [String: Any]) -> String {
+            let itag = format["itag"] as? Int ?? -1
+            let mimeType = format["mimeType"] as? String ?? "nil"
+            let hasURL = (format["url"] as? String)?.isEmpty == false
+            let hasCipher = (format["signatureCipher"] as? String)?.isEmpty == false || (format["cipher"] as? String)?.isEmpty == false
+            let quality = (format["qualityLabel"] as? String) ?? (format["audioQuality"] as? String) ?? "nil"
+            return "itag=\(itag), quality=\(quality), mime=\(mimeType), url=\(hasURL), cipher=\(hasCipher)"
+        }
+
+        let formatSummary = formats.prefix(3).map(summarize).joined(separator: " | ")
+        let adaptiveSummary = adaptiveFormats.prefix(5).map(summarize).joined(separator: " | ")
+
+        print("[Innertube] player debug (\(contextName)) \(videoId): status=\(status), reason=\(reason)")
+        print("[Innertube] player debug (\(contextName)) manifests: hls=\(hlsManifestURL), dash=\(dashManifestURL), sabr=\(sabrURL)")
+        print("[Innertube] player debug (\(contextName)) formats=\(formats.count) [\(formatSummary)]")
+        print("[Innertube] player debug (\(contextName)) adaptive=\(adaptiveFormats.count) [\(adaptiveSummary)]")
+
+        if contextName == "TVHTML5" {
+            logDirectPlaybackCandidates(videoId: videoId, formats: formats, adaptiveFormats: adaptiveFormats)
+        }
+    }
+
+    private static func logDirectPlaybackCandidates(videoId: String, formats: [[String: Any]], adaptiveFormats: [[String: Any]]) {
+        func stringValue(_ format: [String: Any], key: String) -> String {
+            format[key] as? String ?? "nil"
+        }
+
+        func directURL(_ format: [String: Any]) -> String? {
+            let url = format["url"] as? String
+            return url?.isEmpty == false ? url : nil
+        }
+
+        func mimeType(_ format: [String: Any]) -> String {
+            format["mimeType"] as? String ?? ""
+        }
+
+        func height(_ format: [String: Any]) -> Int {
+            format["height"] as? Int ?? 0
+        }
+
+        func bitrate(_ format: [String: Any]) -> Int {
+            format["bitrate"] as? Int ?? 0
+        }
+
+        func itag(_ format: [String: Any]) -> Int {
+            format["itag"] as? Int ?? -1
+        }
+
+        let progressive = formats
+            .filter { directURL($0) != nil }
+            .sorted { bitrate($0) > bitrate($1) }
+
+        let videoCandidates = adaptiveFormats
+            .filter { directURL($0) != nil && mimeType($0).contains("video/mp4") && mimeType($0).contains("avc1") }
+            .sorted { lhs, rhs in
+                let lhsHeight = height(lhs)
+                let rhsHeight = height(rhs)
+                if lhsHeight == rhsHeight {
+                    return bitrate(lhs) > bitrate(rhs)
+                }
+                return lhsHeight > rhsHeight
+            }
+
+        let audioCandidates = adaptiveFormats
+            .filter { directURL($0) != nil && mimeType($0).contains("audio/mp4") }
+            .sorted { bitrate($0) > bitrate($1) }
+
+        if let bestProgressive = progressive.first, let url = directURL(bestProgressive) {
+            let quality = stringValue(bestProgressive, key: "qualityLabel")
+            print("[Innertube] player direct (\(videoId)) progressive: itag=\(itag(bestProgressive)), quality=\(quality), mime=\(mimeType(bestProgressive)), bitrate=\(bitrate(bestProgressive)), url=\(url)")
+        } else {
+            print("[Innertube] player direct (\(videoId)) progressive: none")
+        }
+
+        let topVideoSummary = videoCandidates.prefix(3).map {
+            let quality = stringValue($0, key: "qualityLabel")
+            return "itag=\(itag($0)), quality=\(quality), bitrate=\(bitrate($0)), mime=\(mimeType($0))"
+        }.joined(separator: " | ")
+        let topAudioSummary = audioCandidates.prefix(3).map {
+            let audioQuality = stringValue($0, key: "audioQuality")
+            return "itag=\(itag($0)), audio=\(audioQuality), bitrate=\(bitrate($0)), mime=\(mimeType($0))"
+        }.joined(separator: " | ")
+
+        print("[Innertube] player direct (\(videoId)) mp4 video candidates: \(videoCandidates.count) [\(topVideoSummary)]")
+        print("[Innertube] player direct (\(videoId)) mp4 audio candidates: \(audioCandidates.count) [\(topAudioSummary)]")
+
+        if let bestVideo = videoCandidates.first, let bestAudio = audioCandidates.first,
+           let videoURL = directURL(bestVideo), let audioURL = directURL(bestAudio) {
+            let videoQuality = stringValue(bestVideo, key: "qualityLabel")
+            let audioQuality = stringValue(bestAudio, key: "audioQuality")
+            print("[Innertube] player direct (\(videoId)) selected video: itag=\(itag(bestVideo)), quality=\(videoQuality), url=\(videoURL)")
+            print("[Innertube] player direct (\(videoId)) selected audio: itag=\(itag(bestAudio)), quality=\(audioQuality), url=\(audioURL)")
+        }
     }
 
     private static func parsePageJSON(_ json: [String: Any]) -> FeedPage {
@@ -899,14 +1362,9 @@ final class InnertubeClient: VideoService {
     }
 
     private static func logThumbnailChoice(videoId: String, chosenURL: String, fallbackURL: String) {
-        let normalizedFallback = normalizeThumbnailURL(fallbackURL)
-        if normalizedFallback.isEmpty {
-            print("[Innertube] thumbnail for \(videoId): \(chosenURL)")
-        } else if normalizedFallback != chosenURL {
-            print("[Innertube] thumbnail for \(videoId): \(chosenURL) (tv: \(normalizedFallback))")
-        } else {
-            print("[Innertube] thumbnail for \(videoId): \(chosenURL)")
-        }
+        _ = videoId
+        _ = chosenURL
+        _ = fallbackURL
     }
 
     private static func simpleText(from value: Any?) -> String? {

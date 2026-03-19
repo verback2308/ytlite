@@ -12,7 +12,9 @@ class VideoCell: UICollectionViewCell {
     private let metaLabel = UILabel()
     private var representedChannelId: String?
     private var avatarWidthConstraint: NSLayoutConstraint!
+    private var avatarMaxWidthConstraint: NSLayoutConstraint!
     private var avatarHeightConstraint: NSLayoutConstraint!
+    private var titleLeadingConstraint: NSLayoutConstraint!
     var onChannelTap: (() -> Void)?
 
     override init(frame: CGRect) {
@@ -68,7 +70,11 @@ class VideoCell: UICollectionViewCell {
         contentView.addSubview(metaLabel)
 
         avatarWidthConstraint = channelAvatarView.widthAnchor.constraint(equalToConstant: 32)
+        avatarWidthConstraint.priority = .defaultHigh
+        avatarMaxWidthConstraint = channelAvatarView.widthAnchor.constraint(lessThanOrEqualToConstant: 32)
         avatarHeightConstraint = channelAvatarView.heightAnchor.constraint(equalTo: channelAvatarView.widthAnchor)
+        titleLeadingConstraint = titleLabel.leadingAnchor.constraint(equalTo: channelAvatarView.trailingAnchor, constant: 10)
+        titleLeadingConstraint.priority = .defaultHigh
         channelAvatarView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         channelAvatarView.setContentHuggingPriority(.required, for: .horizontal)
         titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
@@ -89,10 +95,11 @@ class VideoCell: UICollectionViewCell {
             channelAvatarView.topAnchor.constraint(equalTo: thumbnail.bottomAnchor, constant: 8),
             channelAvatarView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 6),
             avatarWidthConstraint,
+            avatarMaxWidthConstraint,
             avatarHeightConstraint,
 
             titleLabel.topAnchor.constraint(equalTo: thumbnail.bottomAnchor, constant: 6),
-            titleLabel.leadingAnchor.constraint(equalTo: channelAvatarView.trailingAnchor, constant: 10),
+            titleLeadingConstraint,
             titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -6),
 
             channelLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 2),

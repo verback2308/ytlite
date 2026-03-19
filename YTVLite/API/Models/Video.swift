@@ -35,6 +35,36 @@ struct WatchPage {
     let relatedVideos: [Video]
 }
 
+struct DirectPlaybackInfo {
+    let hlsManifestURL: URL?
+    let dashManifestURL: URL?
+    let progressiveURL: URL?
+    let videoURL: URL?
+    let audioURL: URL?
+    let serverAbrStreamingURL: URL?
+    let videoPlaybackUstreamerConfig: String?
+    let onesieUstreamerConfig: String?
+    let sabrVideoFormat: SabrFormatInfo?
+    let sabrAudioFormat: SabrFormatInfo?
+    let videoItag: Int?
+    let audioItag: Int?
+    let qualityLabel: String?
+    let visitorData: String?
+    let hasVideoPlaybackUstreamerConfig: Bool
+}
+
+struct SabrFormatInfo {
+    let itag: Int
+    let lastModified: String?
+    let xtags: String?
+    let audioTrackId: String?
+    let isDrc: Bool
+    let mimeType: String?
+    let bitrate: Int?
+    let width: Int?
+    let height: Int?
+}
+
 struct Comment {
     let id: String
     let authorName: String

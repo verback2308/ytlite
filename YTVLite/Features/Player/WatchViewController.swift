@@ -1,11 +1,11 @@
 import UIKit
 import AVKit
+import WebKit
 
 final class WatchViewController: UIViewController {
 
     private let initialVideo: Video
     private let client = InnertubeClient()
-    private let proxy = ProxyClient()
     private let cache = AppCache.shared
 
     private var watchPage: WatchPage?
@@ -13,6 +13,11 @@ final class WatchViewController: UIViewController {
     private var comments: [Comment] = []
     private var commentsContinuation: String?
     private var playerViewController: AVPlayerViewController?
+    private var directPlayerView: SZAVPlayer?
+    private var manifestPlayerView: ManifestWebPlayerView?
+    private var playerItemContext = 0
+    private var activeDirectPlaybackClient: DirectPlaybackClient = .tvHTML5
+    private var retriedDirectPlaybackWithWeb = false
     private var descriptionExpanded = false
     private var relatedExpansionWorkItem: DispatchWorkItem?
     private var isLoadingComments = false
@@ -110,6 +115,17 @@ final class WatchViewController: UIViewController {
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         playerViewController?.player?.pause()
+        directPlayerView?.pause()
+        manifestPlayerView?.stop()
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+        manifestPlayerView?.stop()
+        if let item = playerViewController?.player?.currentItem {
+            stopObservingPlayerItem(item)
+        }
+        directPlayerView?.reset(cleanAsset: true)
     }
 
     @objc private func applyTheme() {
@@ -694,34 +710,474 @@ final class WatchViewController: UIViewController {
     }
 
     private func startPlayback() {
-        proxy.createSession(videoId: initialVideo.id) { [weak self] result in
+        startPlayback(using: .tvHTML5)
+    }
+
+    private func startPlayback(using client: DirectPlaybackClient) {
+        activeDirectPlaybackClient = client
+        playerStatusLabel.text = "Resolving direct stream..."
+        self.client.fetchDirectPlayback(videoId: initialVideo.id, client: client) { [weak self] result in
             switch result {
             case .failure(let error):
                 self?.showPlaybackError(error.localizedDescription)
-            case .success(let session):
-                DispatchQueue.main.async {
-                    self?.playerStatusLabel.text = session.ready ? "Ready, loading player..." : "Downloading video..."
-                }
+            case .success(let info):
+                self?.startDirectPlayback(info, client: client)
+            }
+        }
+    }
 
-                self?.proxy.waitUntilReady(session: session) { result in
-                    switch result {
-                    case .failure(let error):
-                        self?.showPlaybackError(error.localizedDescription)
-                    case .success(let url):
-                        DispatchQueue.main.async {
-                            self?.attachPlayer(url: url)
+    private func startDirectPlayback(_ info: DirectPlaybackInfo, client: DirectPlaybackClient) {
+        if let sabrURL = info.serverAbrStreamingURL {
+            let videoUstreamerLength = info.videoPlaybackUstreamerConfig?.count ?? 0
+            let onesieUstreamerLength = info.onesieUstreamerConfig?.count ?? 0
+            print("[WatchViewController] SABR candidate available (\(client)): \(sabrURL.absoluteString), ustreamer=\(info.hasVideoPlaybackUstreamerConfig), videoUstreamerLen=\(videoUstreamerLength), onesieUstreamerLen=\(onesieUstreamerLength)")
+        }
+        guard let visitorData = info.visitorData, !visitorData.isEmpty else {
+            showPlaybackError("Missing visitor data for onesie playback.")
+            return
+        }
+
+        DispatchQueue.main.async {
+            self.playerStatusLabel.text = "Minting WebPO tokens..."
+        }
+
+        let group = DispatchGroup()
+        var contentToken: String?
+
+        group.enter()
+        WebPoTokenService.shared.fetchSessionToken(identifier: self.initialVideo.id) { result in
+            if case .success(let token) = result {
+                contentToken = token
+            }
+            group.leave()
+        }
+
+        group.notify(queue: .main) { [weak self] in
+            guard let self else { return }
+            let contentPlaybackNonce = Self.makeContentPlaybackNonce()
+
+            guard let contentPoToken = contentToken, !contentPoToken.isEmpty else {
+                self.showPlaybackError("Failed to mint content WebPO token")
+                return
+            }
+
+            self.playerStatusLabel.text = "Fetching stream via onesie..."
+            OnesieService.shared.fetchPlaybackBootstrap(
+                videoId: self.initialVideo.id,
+                visitorData: visitorData,
+                poToken: contentPoToken,
+                contentPlaybackNonce: contentPlaybackNonce
+            ) { [weak self] onesieResult in
+                guard let self else { return }
+
+                switch onesieResult {
+                    case .success(let bootstrap):
+                        guard let refreshedInfo = InnertubeClient.parsePlayerJSON(bootstrap.playerJSON) else {
+                            print("[WatchViewController] onesie player JSON parse failed")
+                            self.showPlaybackError("Onesie returned an unusable player response.")
+                            return
                         }
+                        let effectiveInfo = DirectPlaybackInfo(
+                            hlsManifestURL: refreshedInfo.hlsManifestURL,
+                            dashManifestURL: refreshedInfo.dashManifestURL,
+                            progressiveURL: refreshedInfo.progressiveURL,
+                            videoURL: refreshedInfo.videoURL,
+                            audioURL: refreshedInfo.audioURL,
+                            serverAbrStreamingURL: refreshedInfo.serverAbrStreamingURL,
+                            videoPlaybackUstreamerConfig: refreshedInfo.videoPlaybackUstreamerConfig ?? info.videoPlaybackUstreamerConfig,
+                            onesieUstreamerConfig: refreshedInfo.onesieUstreamerConfig ?? info.onesieUstreamerConfig,
+                            sabrVideoFormat: refreshedInfo.sabrVideoFormat,
+                            sabrAudioFormat: refreshedInfo.sabrAudioFormat,
+                            videoItag: refreshedInfo.videoItag,
+                            audioItag: refreshedInfo.audioItag,
+                            qualityLabel: refreshedInfo.qualityLabel,
+                            visitorData: refreshedInfo.visitorData ?? info.visitorData,
+                            hasVideoPlaybackUstreamerConfig: refreshedInfo.hasVideoPlaybackUstreamerConfig || info.hasVideoPlaybackUstreamerConfig
+                        )
+                        self.startOnesiePlayback(effectiveInfo,
+                                                bootstrap: bootstrap,
+                                                client: client,
+                                                contentPoToken: contentPoToken,
+                                                contentPlaybackNonce: contentPlaybackNonce)
+
+                case .failure(let error):
+                    print("[WatchViewController] onesie failed (\(error))")
+                    self.showPlaybackError("Onesie bootstrap failed: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
+    private func playDirectStream(_ info: DirectPlaybackInfo, client: DirectPlaybackClient) {
+        let mediaVisitorData = info.visitorData
+
+        if let hlsManifestURL = info.hlsManifestURL {
+            DispatchQueue.main.async {
+                self.playerStatusLabel.text = "Loading HLS stream..."
+                self.attachPlayer(url: hlsManifestURL)
+            }
+            return
+        }
+
+        if let dashManifestURL = info.dashManifestURL {
+            DispatchQueue.main.async {
+                self.playerStatusLabel.text = "Loading DASH stream..."
+                self.attachManifestPlayer(url: dashManifestURL)
+            }
+            return
+        }
+
+        if let progressiveURL = info.progressiveURL {
+            let preparedURL = prepareDirectPlaybackURL(baseURL: progressiveURL, client: client, poToken: nil)
+            DispatchQueue.main.async {
+                self.playerStatusLabel.text = "Loading progressive stream..."
+                self.attachDirectPlayer(url: preparedURL, visitorData: mediaVisitorData, client: client)
+            }
+            return
+        }
+
+        if let videoURL = info.videoURL, let audioURL = info.audioURL {
+            let preparedVideoURL = prepareDirectPlaybackURL(baseURL: videoURL, client: client, poToken: nil)
+            let preparedAudioURL = prepareDirectPlaybackURL(baseURL: audioURL, client: client, poToken: nil)
+            let headers = makeDirectRequestHeaders(visitorData: mediaVisitorData, client: client)
+            DispatchQueue.main.async {
+                self.playerStatusLabel.text = "Loading adaptive stream..."
+                self.attachComposedPlayer(videoURL: preparedVideoURL,
+                                          audioURL: preparedAudioURL,
+                                          headers: headers) { [weak self] success in
+                    guard let self else { return }
+                    if success {
+                        return
+                    }
+                    if let progressiveURL = info.progressiveURL {
+                        let preparedURL = self.prepareDirectPlaybackURL(baseURL: progressiveURL, client: client, poToken: nil)
+                        self.playerStatusLabel.text = "Adaptive failed, loading progressive stream..."
+                        self.attachDirectPlayer(url: preparedURL, visitorData: mediaVisitorData, client: client)
+                    } else {
+                        self.showPlaybackError("No playable direct stream available.")
+                    }
+                }
+            }
+            return
+        }
+
+        showPlaybackError("No playable direct stream available.")
+    }
+
+    private func startOnesiePlayback(_ info: DirectPlaybackInfo,
+                                     bootstrap: OnesiePlaybackBootstrap,
+                                     client: DirectPlaybackClient,
+                                     contentPoToken: String,
+                                     contentPlaybackNonce: String) {
+        let typeSummary = bootstrap.responseParts
+            .map { "\($0.type)(c\($0.compressionType))" }
+            .joined(separator: ",")
+        print("[WatchViewController] onesie bootstrap ready proxy=\(bootstrap.proxyStatus) http=\(bootstrap.httpStatus) parts=[\(typeSummary)]")
+        if info.hlsManifestURL != nil || info.dashManifestURL != nil || info.progressiveURL != nil || (info.videoURL != nil && info.audioURL != nil) {
+            playDirectStream(info, client: client)
+            return
+        }
+        startSabrSessionIfPossible(info: info,
+                                   bootstrap: bootstrap,
+                                   client: client,
+                                   contentPoToken: contentPoToken,
+                                   contentPlaybackNonce: contentPlaybackNonce)
+    }
+
+    private func startSabrSessionIfPossible(info: DirectPlaybackInfo,
+                                            bootstrap: OnesiePlaybackBootstrap,
+                                            client: DirectPlaybackClient,
+                                            contentPoToken: String,
+                                            contentPlaybackNonce: String) {
+        guard let streamingURL = info.serverAbrStreamingURL,
+              let videoPlaybackUstreamerConfig = info.videoPlaybackUstreamerConfig,
+              let videoPlaybackUstreamerConfigData = SabrProbeService.decodeWebSafeBase64(videoPlaybackUstreamerConfig),
+              let audioFormat = info.sabrAudioFormat,
+              let videoFormat = info.sabrVideoFormat
+        else {
+            showPlaybackError("Onesie succeeded, but SABR transport fields are missing.")
+            return
+        }
+
+        DispatchQueue.main.async {
+            self.playerStatusLabel.text = "Starting SABR session..."
+        }
+
+        let configuration = SabrSessionConfiguration(
+            videoId: initialVideo.id,
+            streamingURL: streamingURL,
+            videoPlaybackUstreamerConfig: videoPlaybackUstreamerConfigData,
+            contentPoToken: contentPoToken,
+            contentPlaybackNonce: contentPlaybackNonce,
+            client: client,
+            visitorData: info.visitorData,
+            audioFormat: audioFormat,
+            videoFormat: videoFormat,
+            bootstrapParts: bootstrap.responseParts
+        )
+
+        SabrSessionService.shared.startSession(configuration: configuration) { result in
+            switch result {
+            case .failure(let error):
+                print("[WatchViewController] SABR session start failed (\(client)): \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    self.showPlaybackError("SABR session start failed: \(error.localizedDescription)")
+                }
+            case .success(let (session, response)):
+                print("[WatchViewController] SABR session started (\(client)): id=\(session.id.uuidString) status=\(response.statusCode), contentType=\(response.contentType ?? "nil"), bytes=\(response.bodySize), parts=\(response.umpPartTypes)")
+                if response.statusCode >= 400 {
+                    DispatchQueue.main.async {
+                        self.showPlaybackError("SABR startup rejected with HTTP \(response.statusCode).")
+                    }
+                } else {
+                    DispatchQueue.main.async {
+                        self.playerStatusLabel.text = "SABR startup accepted. Media transport is next."
                     }
                 }
             }
         }
     }
 
+    private static func makeContentPlaybackNonce(length: Int = 16) -> String {
+        let alphabet = Array("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_")
+        return String((0..<length).compactMap { _ in alphabet.randomElement() })
+    }
+
+    private func prepareDirectPlaybackURL(baseURL: URL, client: DirectPlaybackClient, poToken: String?) -> URL {
+        guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {
+            return baseURL
+        }
+
+        var items = components.queryItems ?? []
+        items.removeAll { $0.name == "pot" || $0.name == "cver" }
+        if let pot = poToken, !pot.isEmpty {
+            items.append(URLQueryItem(name: "pot", value: pot))
+        }
+        let cver: String
+        switch client {
+        case .tvHTML5:
+            cver = DirectPlaybackClient.tvHTML5.clientVersion
+        case .web:
+            cver = DirectPlaybackClient.web.clientVersion
+        case .android:
+            cver = DirectPlaybackClient.android.clientVersion
+        }
+        items.append(URLQueryItem(name: "cver", value: cver))
+        components.queryItems = items
+        let finalURL = components.url ?? baseURL
+        print("[WatchViewController] direct URL prepared with pot/cver for \(client)")
+        return finalURL
+    }
+
+    private func generateColdStartToken(identifier: String, clientState: UInt8 = 1) -> String? {
+        guard let identifierData = identifier.data(using: .utf8), identifierData.count <= 118 else {
+            return nil
+        }
+
+        let timestamp = UInt32(Date().timeIntervalSince1970)
+        let key0 = UInt8.random(in: 0...255)
+        let key1 = UInt8.random(in: 0...255)
+        let header: [UInt8] = [
+            key0,
+            key1,
+            0,
+            clientState,
+            UInt8((timestamp >> 24) & 0xFF),
+            UInt8((timestamp >> 16) & 0xFF),
+            UInt8((timestamp >> 8) & 0xFF),
+            UInt8(timestamp & 0xFF)
+        ]
+
+        let payloadLength = header.count + identifierData.count
+        guard payloadLength <= 255 else {
+            return nil
+        }
+
+        var packet = Data([34, UInt8(payloadLength)])
+        packet.append(contentsOf: header)
+        packet.append(identifierData)
+
+        var bytes = [UInt8](packet)
+        let payloadStart = 2
+        let keyLength = 2
+        guard bytes.count > payloadStart + keyLength else {
+            return nil
+        }
+
+        for index in (payloadStart + keyLength)..<bytes.count {
+            bytes[index] ^= bytes[payloadStart + ((index - payloadStart) % keyLength)]
+        }
+
+        return Data(bytes)
+            .base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
+    }
+
+    private func attachComposedPlayer(videoURL: URL,
+                                      audioURL: URL,
+                                      headers: [String: String],
+                                      completion: @escaping (Bool) -> Void) {
+        let assetOptions = ["AVURLAssetHTTPHeaderFieldsKey": headers]
+        let videoAsset = AVURLAsset(url: videoURL, options: assetOptions)
+        let audioAsset = AVURLAsset(url: audioURL, options: assetOptions)
+        let group = DispatchGroup()
+        let keys = ["tracks", "duration", "playable"]
+        var loadError = false
+
+        for key in keys {
+            group.enter()
+            videoAsset.loadValuesAsynchronously(forKeys: [key]) {
+                var error: NSError?
+                let status = videoAsset.statusOfValue(forKey: key, error: &error)
+                if status != .loaded {
+                    print("[WatchViewController] direct video asset key failed \(key): \(error?.localizedDescription ?? "unknown")")
+                    loadError = true
+                }
+                group.leave()
+            }
+
+            group.enter()
+            audioAsset.loadValuesAsynchronously(forKeys: [key]) {
+                var error: NSError?
+                let status = audioAsset.statusOfValue(forKey: key, error: &error)
+                if status != .loaded {
+                    print("[WatchViewController] direct audio asset key failed \(key): \(error?.localizedDescription ?? "unknown")")
+                    loadError = true
+                }
+                group.leave()
+            }
+        }
+
+        group.notify(queue: .main) { [weak self] in
+            guard let self = self, !loadError else {
+                completion(false)
+                return
+            }
+
+            guard let sourceVideoTrack = videoAsset.tracks(withMediaType: .video).first,
+                  let sourceAudioTrack = audioAsset.tracks(withMediaType: .audio).first
+            else {
+                completion(false)
+                return
+            }
+
+            let composition = AVMutableComposition()
+            guard let videoTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid),
+                  let audioTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
+            else {
+                completion(false)
+                return
+            }
+
+            let duration = CMTimeMinimum(videoAsset.duration, audioAsset.duration)
+
+            do {
+                try videoTrack.insertTimeRange(CMTimeRange(start: .zero, duration: duration), of: sourceVideoTrack, at: .zero)
+                try audioTrack.insertTimeRange(CMTimeRange(start: .zero, duration: duration), of: sourceAudioTrack, at: .zero)
+                videoTrack.preferredTransform = sourceVideoTrack.preferredTransform
+            } catch {
+                print("[WatchViewController] direct composition failed: \(error)")
+                completion(false)
+                return
+            }
+
+            let item = AVPlayerItem(asset: composition)
+            self.attachPlayer(item: item)
+            completion(true)
+        }
+    }
+
     private func attachPlayer(url: URL) {
+        attachPlayer(item: AVPlayerItem(url: url))
+    }
+
+    private func attachManifestPlayer(url: URL) {
+        resetPlaybackSurfaces()
+
+        let playerView = manifestPlayerView ?? {
+            let view = ManifestWebPlayerView()
+            view.translatesAutoresizingMaskIntoConstraints = false
+            playerContainer.addSubview(view)
+            NSLayoutConstraint.activate([
+                view.topAnchor.constraint(equalTo: playerContainer.topAnchor),
+                view.leadingAnchor.constraint(equalTo: playerContainer.leadingAnchor),
+                view.trailingAnchor.constraint(equalTo: playerContainer.trailingAnchor),
+                view.bottomAnchor.constraint(equalTo: playerContainer.bottomAnchor),
+            ])
+            manifestPlayerView = view
+            return view
+        }()
+
+        playerSpinner.stopAnimating()
+        playerStatusLabel.isHidden = true
+        playerContainer.bringSubviewToFront(playerView)
+        playerView.load(manifestURL: url) { [weak self] message in
+            self?.showPlaybackError(message)
+        }
+    }
+
+    private func attachDirectPlayer(url: URL, visitorData: String?, client: DirectPlaybackClient) {
+        resetPlaybackSurfaces()
+
+        let headers = makeDirectRequestHeaders(visitorData: visitorData, client: client)
+        print("[WatchViewController] direct request headers (\(client)): \(headers)")
+        let assetOptions = ["AVURLAssetHTTPHeaderFieldsKey": headers]
+        let asset = AVURLAsset(url: url, options: assetOptions)
+        let item = AVPlayerItem(asset: asset)
+        attachPlayer(item: item)
+    }
+
+    private func makeDirectRequestHeaders(visitorData: String?, client: DirectPlaybackClient) -> [String: String] {
+        var headers: [String: String]
+        switch client {
+        case .tvHTML5:
+            headers = [
+                "Accept": "*/*",
+                "Accept-Language": "*",
+                "User-Agent": "Mozilla/5.0 (ChromiumStylePlatform) Cobalt/Version",
+                "Referer": "https://www.youtube.com/tv",
+                "Origin": "https://www.youtube.com",
+                "X-Origin": "https://www.youtube.com",
+                "X-Youtube-Client-Name": DirectPlaybackClient.tvHTML5.clientHeaderName,
+                "X-Youtube-Client-Version": DirectPlaybackClient.tvHTML5.clientVersion
+            ]
+        case .web:
+            headers = [
+                "Accept": "*/*",
+                "Accept-Language": "*",
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                "Referer": "https://www.youtube.com/",
+                "Origin": "https://www.youtube.com",
+                "X-Origin": "https://www.youtube.com",
+                "X-Youtube-Client-Name": DirectPlaybackClient.web.clientHeaderName,
+                "X-Youtube-Client-Version": DirectPlaybackClient.web.clientVersion
+            ]
+        case .android:
+            headers = [
+                "Accept": "*/*",
+                "Accept-Language": "*",
+                "User-Agent": "com.google.android.youtube/19.09.37 (Linux; U; Android 9; en_US)",
+                "X-Youtube-Client-Name": DirectPlaybackClient.android.clientHeaderName,
+                "X-Youtube-Client-Version": DirectPlaybackClient.android.clientVersion
+            ]
+        }
+        if let visitorData, !visitorData.isEmpty {
+            headers["X-Goog-Visitor-Id"] = visitorData
+        }
+        return headers
+    }
+
+    private func attachPlayer(item: AVPlayerItem) {
+        resetPlaybackSurfaces()
+
         playerSpinner.stopAnimating()
         playerStatusLabel.isHidden = true
 
-        let player = AVPlayer(url: url)
+        startObservingPlayerItem(item)
+
+        let player = AVPlayer(playerItem: item)
         let playerVC = AVPlayerViewController()
         playerVC.player = player
         playerVC.showsPlaybackControls = true
@@ -743,6 +1199,80 @@ final class WatchViewController: UIViewController {
         playerVC.didMove(toParent: self)
         player.play()
         playerViewController = playerVC
+    }
+
+    private func resetPlaybackSurfaces() {
+        manifestPlayerView?.stop()
+        manifestPlayerView?.removeFromSuperview()
+        manifestPlayerView = nil
+
+        directPlayerView?.pause()
+        directPlayerView?.reset(cleanAsset: true)
+        directPlayerView?.removeFromSuperview()
+        directPlayerView = nil
+
+        if let existingItem = playerViewController?.player?.currentItem {
+            stopObservingPlayerItem(existingItem)
+        }
+        playerViewController?.player?.pause()
+        playerViewController?.willMove(toParent: nil)
+        playerViewController?.view.removeFromSuperview()
+        playerViewController?.removeFromParent()
+        playerViewController = nil
+    }
+
+    private func startObservingPlayerItem(_ item: AVPlayerItem) {
+        item.addObserver(self, forKeyPath: #keyPath(AVPlayerItem.status), options: [.initial, .new], context: &playerItemContext)
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(playerItemDidFailToPlayToEnd(_:)),
+                                               name: .AVPlayerItemFailedToPlayToEndTime,
+                                               object: item)
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(playerItemNewErrorLogEntry(_:)),
+                                               name: .AVPlayerItemNewErrorLogEntry,
+                                               object: item)
+    }
+
+    private func stopObservingPlayerItem(_ item: AVPlayerItem) {
+        NotificationCenter.default.removeObserver(self, name: .AVPlayerItemFailedToPlayToEndTime, object: item)
+        NotificationCenter.default.removeObserver(self, name: .AVPlayerItemNewErrorLogEntry, object: item)
+        item.removeObserver(self, forKeyPath: #keyPath(AVPlayerItem.status), context: &playerItemContext)
+    }
+
+    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+        guard context == &playerItemContext,
+              keyPath == #keyPath(AVPlayerItem.status),
+              let item = object as? AVPlayerItem else {
+            super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
+            return
+        }
+
+        switch item.status {
+        case .readyToPlay:
+            print("[WatchViewController] player item ready")
+        case .failed:
+            print("[WatchViewController] player item failed: \(item.error?.localizedDescription ?? "unknown")")
+        case .unknown:
+            print("[WatchViewController] player item status unknown")
+        @unknown default:
+            print("[WatchViewController] player item status unexpected")
+        }
+    }
+
+    @objc private func playerItemDidFailToPlayToEnd(_ note: Notification) {
+        let error = (note.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error)?.localizedDescription ?? "unknown"
+        print("[WatchViewController] player item failed to end: \(error)")
+    }
+
+    @objc private func playerItemNewErrorLogEntry(_ note: Notification) {
+        guard let item = note.object as? AVPlayerItem,
+              let events = item.errorLog()?.events,
+              let last = events.last else {
+            print("[WatchViewController] player item new error log entry")
+            return
+        }
+
+        print("[WatchViewController] player error log: domain=\(last.errorDomain ?? "nil"), code=\(last.errorStatusCode), comment=\(last.errorComment ?? "nil"), uri=\(last.uri ?? "nil")")
     }
 
     private func showPlaybackError(_ message: String) {
@@ -814,5 +1344,49 @@ extension WatchViewController: UICollectionViewDelegate {
         guard visibleRelatedVideos.indices.contains(indexPath.item) else { return }
         let video = visibleRelatedVideos[indexPath.item]
         navigationController?.pushViewController(WatchViewController(video: video), animated: true)
+    }
+}
+
+extension WatchViewController: SZAVPlayerDelegate {
+    func avplayer(_ avplayer: SZAVPlayer, refreshed currentTime: Float64, loadedTime: Float64, totalTime: Float64) {}
+
+    func avplayer(_ avplayer: SZAVPlayer, didChanged status: SZAVPlayerStatus) {
+        print("[WatchViewController] SZAVPlayer status: \(status)")
+        switch status {
+        case .readyToPlay:
+            retriedDirectPlaybackWithWeb = false
+            playerSpinner.stopAnimating()
+            playerStatusLabel.isHidden = true
+            avplayer.play()
+        case .loading:
+            playerSpinner.startAnimating()
+            playerStatusLabel.isHidden = false
+            playerStatusLabel.text = "Loading direct stream..."
+        case .loadingFailed:
+            if activeDirectPlaybackClient == .tvHTML5, !retriedDirectPlaybackWithWeb {
+                retriedDirectPlaybackWithWeb = true
+                playerStatusLabel.isHidden = false
+                playerStatusLabel.textColor = ThemeManager.shared.primaryText
+                playerStatusLabel.text = "TV playback blocked, retrying WEB client..."
+                avplayer.pause()
+                avplayer.reset(cleanAsset: true)
+                startPlayback(using: .web)
+                return
+            }
+            playerSpinner.stopAnimating()
+            playerStatusLabel.isHidden = false
+            playerStatusLabel.textColor = .systemRed
+            playerStatusLabel.text = "Direct playback failed"
+        case .bufferBegin:
+            playerSpinner.startAnimating()
+        case .bufferEnd:
+            playerSpinner.stopAnimating()
+        case .playEnd, .playbackStalled:
+            break
+        }
+    }
+
+    func avplayer(_ avplayer: SZAVPlayer, didReceived remoteCommand: SZAVPlayerRemoteCommand) -> Bool {
+        return false
     }
 }
