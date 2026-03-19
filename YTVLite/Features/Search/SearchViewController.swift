@@ -99,7 +99,7 @@ extension SearchViewController: UICollectionViewDataSource {
 
 extension SearchViewController: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let videoId = results[indexPath.item].id
-        navigationController?.pushViewController(PlayerViewController(videoId: videoId), animated: true)
+        let video = results[indexPath.item]
+        navigationController?.pushViewController(WatchViewController(video: video), animated: true)
     }
 }

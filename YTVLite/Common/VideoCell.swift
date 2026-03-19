@@ -11,6 +11,8 @@ class VideoCell: UICollectionViewCell {
     private let channelLabel = UILabel()
     private let metaLabel = UILabel()
     private var representedChannelId: String?
+    private var avatarWidthConstraint: NSLayoutConstraint!
+    private var avatarHeightConstraint: NSLayoutConstraint!
     var onChannelTap: (() -> Void)?
 
     override init(frame: CGRect) {
@@ -65,6 +67,14 @@ class VideoCell: UICollectionViewCell {
         metaLabel.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(metaLabel)
 
+        avatarWidthConstraint = channelAvatarView.widthAnchor.constraint(equalToConstant: 32)
+        avatarHeightConstraint = channelAvatarView.heightAnchor.constraint(equalTo: channelAvatarView.widthAnchor)
+        channelAvatarView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        channelAvatarView.setContentHuggingPriority(.required, for: .horizontal)
+        titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        channelLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        metaLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
         NSLayoutConstraint.activate([
             thumbnail.topAnchor.constraint(equalTo: contentView.topAnchor),
             thumbnail.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
@@ -78,8 +88,8 @@ class VideoCell: UICollectionViewCell {
 
             channelAvatarView.topAnchor.constraint(equalTo: thumbnail.bottomAnchor, constant: 8),
             channelAvatarView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 6),
-            channelAvatarView.widthAnchor.constraint(equalToConstant: 32),
-            channelAvatarView.heightAnchor.constraint(equalToConstant: 32),
+            avatarWidthConstraint,
+            avatarHeightConstraint,
 
             titleLabel.topAnchor.constraint(equalTo: thumbnail.bottomAnchor, constant: 6),
             titleLabel.leadingAnchor.constraint(equalTo: channelAvatarView.trailingAnchor, constant: 10),

@@ -26,6 +26,15 @@ struct ChannelPage {
     let isSubscribed: Bool
 }
 
+struct WatchPage {
+    let video: Video
+    let description: String?
+    let channelInfo: ChannelInfo?
+    let subscribeButtonText: String?
+    let isSubscribed: Bool
+    let relatedVideos: [Video]
+}
+
 final class ChannelInfoStore {
     static let shared = ChannelInfoStore()
 
@@ -70,6 +79,13 @@ final class ChannelInfoStore {
                     }
                 }
             }
+        }
+    }
+
+    func preload(channelIds: [String]) {
+        let uniqueIds = Array(Set(channelIds))
+        uniqueIds.forEach { channelId in
+            fetch(channelId: channelId) { _ in }
         }
     }
 }

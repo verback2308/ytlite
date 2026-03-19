@@ -56,6 +56,10 @@ class VideosViewController: UIViewController {
                                                  animated: true)
     }
 
+    func openVideo(_ video: Video) {
+        navigationController?.pushViewController(WatchViewController(video: video), animated: true)
+    }
+
     func endRefreshing() {
         collectionView.refreshControl?.endRefreshing()
     }
@@ -134,8 +138,7 @@ extension VideosViewController: UICollectionViewDataSource {
 
 extension VideosViewController: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let videoId = videos[indexPath.item].id
-        navigationController?.pushViewController(PlayerViewController(videoId: videoId), animated: true)
+        openVideo(videos[indexPath.item])
     }
 
     func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {

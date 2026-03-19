@@ -75,6 +75,19 @@ final class InnertubeClient: VideoService {
         }
     }
 
+    func fetchWatchPage(video: Video, completion: @escaping (Result<WatchPage, Error>) -> Void) {
+        print("[Innertube] fetchWatchPage start: \(video.id)")
+        OAuthClient.shared.validToken { [weak self] result in
+            switch result {
+            case .failure(let error):
+                print("[Innertube] fetchWatchPage token failure for \(video.id): \(error)")
+                completion(.failure(error))
+            case .success(let token):
+                self?.executeWatchNext(video: video, token: token, completion: completion)
+            }
+        }
+    }
+
     // MARK: - Authenticated browse
 
     private func authenticatedBrowse(browseId: String, completion: @escaping (Result<FeedPage, Error>) -> Void) {
@@ -202,7 +215,75 @@ final class InnertubeClient: VideoService {
         }
     }
 
+    private func executeWatchNext(video: Video, token: String,
+                                  completion: @escaping (Result<WatchPage, Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/next") else {
+            completion(.failure(APIError.invalidURL))
+            return
+        }
+
+        var body = tvContext
+        body["videoId"] = video.id
+
+        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
+            completion(.failure(APIError.decodingFailed))
+            return
+        }
+
+        let headers = ["Content-Type": "application/json", "Authorization": "Bearer \(token)"]
+        api.post(url: url, headers: headers, body: bodyData) { result in
+            switch result {
+            case .failure(let error):
+                print("[Innertube] watch next request failed \(video.id): \(error)")
+                completion(.failure(error))
+            case .success(let data):
+                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let page = InnertubeClient.parseWatchPage(json, fallbackVideo: video)
+                else {
+                    print("[Innertube] watch next parse failed for \(video.id)")
+                    completion(.failure(APIError.decodingFailed))
+                    return
+                }
+                completion(.success(page))
+            }
+        }
+    }
+
     // MARK: - JSON parsing
+
+    private static func parseWatchPage(_ json: [String: Any], fallbackVideo: Video) -> WatchPage? {
+        let metadata = parseWatchMetadata(json)
+        let channelInfo = parseWatchChannelInfo(json, fallbackVideo: fallbackVideo)
+        let subscribeState = parseSubscribeState(json)
+        let description = parseWatchDescription(json)
+
+        let resolvedVideo = Video(
+            id: fallbackVideo.id,
+            title: metadata.title ?? fallbackVideo.title,
+            channelId: channelInfo?.id ?? fallbackVideo.channelId,
+            channelName: channelInfo?.title.isEmpty == false ? channelInfo!.title : fallbackVideo.channelName,
+            channelAvatarURL: channelInfo?.avatarURL ?? fallbackVideo.channelAvatarURL,
+            thumbnailURL: fallbackVideo.thumbnailURL,
+            viewCount: metadata.viewCountText ?? fallbackVideo.viewCount,
+            publishedAt: metadata.publishedText ?? fallbackVideo.publishedAt,
+            duration: fallbackVideo.duration
+        )
+
+        let relatedVideos = collectTileRenderers(in: json)
+            .compactMap(parseTileRenderer)
+            .filter { $0.id != fallbackVideo.id }
+            .reduce(into: [Video]()) { partialResult, video in
+                if partialResult.contains(where: { $0.id == video.id }) { return }
+                partialResult.append(video)
+            }
+
+        return WatchPage(video: resolvedVideo,
+                         description: description,
+                         channelInfo: channelInfo,
+                         subscribeButtonText: subscribeState.text,
+                         isSubscribed: subscribeState.isSubscribed,
+                         relatedVideos: relatedVideos)
+    }
 
     private static func parsePageJSON(_ json: [String: Any]) -> FeedPage {
         // Continuation response
@@ -262,6 +343,73 @@ final class InnertubeClient: VideoService {
             .first.flatMap { ($0["nextContinuationData"] as? [String: Any])?["continuation"] as? String }
 
         return FeedPage(videos: videos, continuation: continuation)
+    }
+
+    private static func parseWatchMetadata(_ json: [String: Any]) -> (title: String?, viewCountText: String?, publishedText: String?) {
+        if let renderer = firstRenderer(in: json, named: "slimVideoMetadataRenderer") {
+            let title = simpleText(from: renderer["title"])
+            let lines = renderer["lines"] as? [[String: Any]] ?? []
+            var parts: [String] = []
+
+            for line in lines {
+                let items = (line["lineRenderer"] as? [String: Any])?["items"] as? [[String: Any]] ?? []
+                for item in items {
+                    if let text = simpleText(from: (item["lineItemRenderer"] as? [String: Any])?["text"]),
+                       !text.isEmpty,
+                       text != "•" {
+                        parts.append(text)
+                    }
+                }
+            }
+
+            return (title, parts.first, parts.dropFirst().first)
+        }
+
+        if let renderer = firstRenderer(in: json, named: "videoMetadataRenderer") {
+            let title = simpleText(from: renderer["title"])
+            let viewCountText = simpleText(from: renderer["viewCountText"])
+            let publishedText = simpleText(from: renderer["dateText"])
+            return (title, viewCountText, publishedText)
+        }
+
+        return (nil, nil, nil)
+    }
+
+    private static func parseWatchDescription(_ json: [String: Any]) -> String? {
+        if let renderer = firstRenderer(in: json, named: "expandableVideoDescriptionBodyRenderer") {
+            return simpleText(from: renderer["descriptionBodyText"]) ?? simpleText(from: renderer["showMoreText"])
+        }
+
+        if let renderer = firstRenderer(in: json, named: "videoMetadataRenderer") {
+            return simpleText(from: renderer["description"])
+        }
+
+        return nil
+    }
+
+    private static func parseWatchChannelInfo(_ json: [String: Any], fallbackVideo: Video) -> ChannelInfo? {
+        if let lockup = firstRenderer(in: json, named: "avatarLockupRenderer") {
+            let avatarURL = extractThumbnailURL(from: lockup["avatar"]) ??
+                extractThumbnailURL(from: lockup["thumbnail"])
+            let title = simpleText(from: lockup["title"]) ?? fallbackVideo.channelName
+            let subtitle = simpleText(from: lockup["subtitle"])
+            let channelId = firstMatchingBrowseId(in: lockup) ?? fallbackVideo.channelId ?? ""
+
+            if !title.isEmpty || avatarURL != nil {
+                return ChannelInfo(id: channelId, title: title,
+                                   avatarURL: avatarURL,
+                                   subscriberCountText: subtitle)
+            }
+        }
+
+        if let fallbackId = fallbackVideo.channelId {
+            return ChannelInfo(id: fallbackId,
+                               title: fallbackVideo.channelName,
+                               avatarURL: fallbackVideo.channelAvatarURL,
+                               subscriberCountText: nil)
+        }
+
+        return nil
     }
 
     private static func parseTileRenderer(_ tile: [String: Any]) -> Video? {
@@ -623,6 +771,26 @@ final class InnertubeClient: VideoService {
         } else if let array = value as? [Any] {
             for child in array {
                 result.formUnion(collectThumbnailURLs(in: child))
+            }
+        }
+
+        return result
+    }
+
+    private static func collectTileRenderers(in value: Any) -> [[String: Any]] {
+        var result: [[String: Any]] = []
+
+        if let dict = value as? [String: Any] {
+            if let tile = dict["tileRenderer"] as? [String: Any] {
+                result.append(tile)
+            }
+
+            for child in dict.values {
+                result.append(contentsOf: collectTileRenderers(in: child))
+            }
+        } else if let array = value as? [Any] {
+            for child in array {
+                result.append(contentsOf: collectTileRenderers(in: child))
             }
         }
 

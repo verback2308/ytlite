@@ -20,6 +20,10 @@ class ThumbnailImageView: UIImageView {
     required init?(coder: NSCoder) { fatalError() }
 
     func setImage(url: URL) {
+        if currentURL == url, image != nil {
+            return
+        }
+
         currentURL = url
 
         if let cached = ThumbnailImageView.cache.object(forKey: url.absoluteString as NSString) {

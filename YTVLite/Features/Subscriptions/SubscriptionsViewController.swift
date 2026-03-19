@@ -148,8 +148,8 @@ extension SubscriptionsViewController: UITableViewDataSource {
 
 extension SubscriptionsViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let videoId = videos[indexPath.row].id
-        navigationController?.pushViewController(PlayerViewController(videoId: videoId), animated: true)
+        let video = videos[indexPath.row]
+        navigationController?.pushViewController(WatchViewController(video: video), animated: true)
     }
 
     func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
