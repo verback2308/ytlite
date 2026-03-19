@@ -101,6 +101,11 @@ final class WatchViewController: UIViewController {
         })
     }
 
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        playerViewController?.player?.pause()
+    }
+
     @objc private func applyTheme() {
         let theme = ThemeManager.shared
         view.backgroundColor = theme.background
