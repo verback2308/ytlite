@@ -96,7 +96,7 @@ final class ChannelInfoStore {
     func fetch(channelId: String, completion: @escaping (Result<ChannelInfo, Error>) -> Void) {
         queue.async {
             if let cached = self.cache[channelId] {
-                print("[ChannelInfoStore] cache hit for \(channelId)")
+                //print("[ChannelInfoStore] cache hit for \(channelId)")
                 DispatchQueue.main.async {
                     completion(.success(cached))
                 }
@@ -104,18 +104,18 @@ final class ChannelInfoStore {
             }
 
             if self.pending[channelId] != nil {
-                print("[ChannelInfoStore] joined pending request for \(channelId)")
+                //print("[ChannelInfoStore] joined pending request for \(channelId)")
                 self.pending[channelId]?.append(completion)
                 return
             }
 
-            print("[ChannelInfoStore] fetching channel info for \(channelId)")
+            //print("[ChannelInfoStore] fetching channel info for \(channelId)")
             self.pending[channelId] = [completion]
 
             self.client.fetchChannelInfo(channelId: channelId) { result in
                 self.queue.async {
                     if case .success(let info) = result {
-                        print("[ChannelInfoStore] fetched \(channelId), avatar: \(info.avatarURL ?? "nil"), title: \(info.title)")
+                        //print("[ChannelInfoStore] fetched \(channelId), avatar: \(info.avatarURL ?? "nil"), title: \(info.title)")
                         self.cache[channelId] = info
                     } else if case .failure(let error) = result {
                         print("[ChannelInfoStore] failed \(channelId): \(error)")

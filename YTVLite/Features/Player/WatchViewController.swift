@@ -710,7 +710,7 @@ final class WatchViewController: UIViewController {
     }
 
     private func startPlayback() {
-        startPlayback(using: .tvHTML5)
+        startPlayback(using: .androidVR)
     }
 
     private func startPlayback(using client: DirectPlaybackClient) {
@@ -727,10 +727,19 @@ final class WatchViewController: UIViewController {
     }
 
     private func startDirectPlayback(_ info: DirectPlaybackInfo, client: DirectPlaybackClient) {
+        print("[WatchViewController] startDirectPlayback (\(client)): progressive=\(info.progressiveURL?.absoluteString.prefix(80) ?? "nil") hls=\(info.hlsManifestURL != nil) dash=\(info.dashManifestURL != nil) video=\(info.videoURL != nil) audio=\(info.audioURL != nil) sabr=\(info.serverAbrStreamingURL != nil) quality=\(info.qualityLabel ?? "nil") visitorData=\(info.visitorData?.prefix(20) ?? "nil")")
+
+        // For clients that don't require JS player (Android), try direct playback first
+        if info.progressiveURL != nil || info.hlsManifestURL != nil || info.dashManifestURL != nil || (info.videoURL != nil && info.audioURL != nil) {
+            print("[WatchViewController] trying direct playback (skip onesie) for \(client)")
+            playDirectStream(info, client: client)
+            return
+        }
+
         if let sabrURL = info.serverAbrStreamingURL {
             let videoUstreamerLength = info.videoPlaybackUstreamerConfig?.count ?? 0
             let onesieUstreamerLength = info.onesieUstreamerConfig?.count ?? 0
-            print("[WatchViewController] SABR candidate available (\(client)): \(sabrURL.absoluteString), ustreamer=\(info.hasVideoPlaybackUstreamerConfig), videoUstreamerLen=\(videoUstreamerLength), onesieUstreamerLen=\(onesieUstreamerLength)")
+            print("[WatchViewController] SABR candidate available (\(client)): \(sabrURL.absoluteString.prefix(80)), ustreamer=\(info.hasVideoPlaybackUstreamerConfig), videoUstreamerLen=\(videoUstreamerLength), onesieUstreamerLen=\(onesieUstreamerLength)")
         }
         guard let visitorData = info.visitorData, !visitorData.isEmpty else {
             showPlaybackError("Missing visitor data for onesie playback.")
@@ -810,8 +819,10 @@ final class WatchViewController: UIViewController {
 
     private func playDirectStream(_ info: DirectPlaybackInfo, client: DirectPlaybackClient) {
         let mediaVisitorData = info.visitorData
+        print("[WatchViewController] playDirectStream: hls=\(info.hlsManifestURL != nil) dash=\(info.dashManifestURL != nil) progressive=\(info.progressiveURL != nil) video+audio=\(info.videoURL != nil && info.audioURL != nil) sabr=\(info.serverAbrStreamingURL != nil)")
 
         if let hlsManifestURL = info.hlsManifestURL {
+            print("[WatchViewController] choosing HLS: \(hlsManifestURL.absoluteString.prefix(120))...")
             DispatchQueue.main.async {
                 self.playerStatusLabel.text = "Loading HLS stream..."
                 self.attachPlayer(url: hlsManifestURL)
@@ -820,6 +831,7 @@ final class WatchViewController: UIViewController {
         }
 
         if let dashManifestURL = info.dashManifestURL {
+            print("[WatchViewController] choosing DASH: \(dashManifestURL.absoluteString.prefix(120))...")
             DispatchQueue.main.async {
                 self.playerStatusLabel.text = "Loading DASH stream..."
                 self.attachManifestPlayer(url: dashManifestURL)
@@ -829,9 +841,50 @@ final class WatchViewController: UIViewController {
 
         if let progressiveURL = info.progressiveURL {
             let preparedURL = prepareDirectPlaybackURL(baseURL: progressiveURL, client: client, poToken: nil)
+            let components = URLComponents(url: preparedURL, resolvingAgainstBaseURL: false)
+            let nParam = components?.queryItems?.first(where: { $0.name == "n" })?.value ?? "MISSING"
+            let itag = components?.queryItems?.first(where: { $0.name == "itag" })?.value ?? "?"
+            let mime = components?.queryItems?.first(where: { $0.name == "mime" })?.value ?? "?"
+            let host = preparedURL.host ?? "?"
+            print("[WatchViewController] choosing progressive: host=\(host) itag=\(itag) mime=\(mime) n=\(nParam)")
+
+            // ANDROID_VR URLs don't need n-param decoding (REQUIRE_JS_PLAYER=false)
+            if client == .androidVR {
+                print("[WatchViewController] ANDROID_VR: skipping n-param decode, playing directly")
+                self.probeURL(preparedURL, visitorData: mediaVisitorData, client: client) {
+                    DispatchQueue.main.async {
+                        self.playerStatusLabel.text = "Loading progressive stream..."
+                        self.attachDirectPlayer(url: preparedURL, visitorData: mediaVisitorData, client: client)
+                    }
+                }
+                return
+            }
+
             DispatchQueue.main.async {
-                self.playerStatusLabel.text = "Loading progressive stream..."
-                self.attachDirectPlayer(url: preparedURL, visitorData: mediaVisitorData, client: client)
+                self.playerStatusLabel.text = "Decoding n parameter..."
+            }
+
+            NParamDecoder.shared.decodeURL(preparedURL) { [weak self] result in
+                guard let self = self else { return }
+                switch result {
+                case .success(let decodedURL):
+                    print("[WatchViewController] n-param decoded, probing...")
+                    self.probeURL(decodedURL, visitorData: mediaVisitorData, client: client) {
+                        DispatchQueue.main.async {
+                            self.playerStatusLabel.text = "Loading progressive stream..."
+                            self.attachDirectPlayer(url: decodedURL, visitorData: mediaVisitorData, client: client)
+                        }
+                    }
+                case .failure(let error):
+                    print("[WatchViewController] n-param decode failed: \(error), trying raw URL...")
+                    // Fallback: try the URL without decoding (might work for some clients)
+                    self.probeURL(preparedURL, visitorData: mediaVisitorData, client: client) {
+                        DispatchQueue.main.async {
+                            self.playerStatusLabel.text = "Loading progressive stream..."
+                            self.attachDirectPlayer(url: preparedURL, visitorData: mediaVisitorData, client: client)
+                        }
+                    }
+                }
             }
             return
         }
@@ -961,6 +1014,8 @@ final class WatchViewController: UIViewController {
             cver = DirectPlaybackClient.web.clientVersion
         case .android:
             cver = DirectPlaybackClient.android.clientVersion
+        case .androidVR:
+            cver = DirectPlaybackClient.androidVR.clientVersion
         }
         items.append(URLQueryItem(name: "cver", value: cver))
         components.queryItems = items
@@ -1089,6 +1144,47 @@ final class WatchViewController: UIViewController {
         }
     }
 
+    /// Sends a HEAD request to check URL accessibility before AVPlayer tries it.
+    /// Always calls completion (even on failure) so playback attempt proceeds regardless.
+    private func probeURL(_ url: URL, visitorData: String?, client: DirectPlaybackClient, completion: @escaping () -> Void) {
+        var request = URLRequest(url: url)
+        request.httpMethod = "HEAD"
+        let headers = makeDirectRequestHeaders(visitorData: visitorData, client: client)
+        for (key, value) in headers {
+            request.setValue(value, forHTTPHeaderField: key)
+        }
+        print("[WatchViewController] probe HEAD start: \(url.host ?? "?")")
+        URLSession.shared.dataTask(with: request) { _, response, error in
+            let httpResponse = response as? HTTPURLResponse
+            let status = httpResponse?.statusCode ?? 0
+            let contentType = (httpResponse?.allHeaderFields["Content-Type"] as? String) ?? "nil"
+            let contentLength = (httpResponse?.allHeaderFields["Content-Length"] as? String) ?? "nil"
+            if let error = error {
+                print("[WatchViewController] probe HEAD error: \(error.localizedDescription)")
+            } else {
+                print("[WatchViewController] probe HEAD result: status=\(status) contentType=\(contentType) contentLength=\(contentLength)")
+            }
+            if status == 403 {
+                // Also try a GET with Range to see if response differs
+                var getRequest = URLRequest(url: url)
+                getRequest.httpMethod = "GET"
+                for (key, value) in headers {
+                    getRequest.setValue(value, forHTTPHeaderField: key)
+                }
+                getRequest.setValue("bytes=0-1023", forHTTPHeaderField: "Range")
+                URLSession.shared.dataTask(with: getRequest) { data, response2, error2 in
+                    let httpResponse2 = response2 as? HTTPURLResponse
+                    let status2 = httpResponse2?.statusCode ?? 0
+                    let body = data.flatMap { String(data: $0, encoding: .utf8) } ?? "nil"
+                    print("[WatchViewController] probe GET result: status=\(status2) bodyLen=\(data?.count ?? 0) body=\(body.prefix(500))")
+                    completion()
+                }.resume()
+            } else {
+                completion()
+            }
+        }.resume()
+    }
+
     private func attachPlayer(url: URL) {
         attachPlayer(item: AVPlayerItem(url: url))
     }
@@ -1122,7 +1218,8 @@ final class WatchViewController: UIViewController {
         resetPlaybackSurfaces()
 
         let headers = makeDirectRequestHeaders(visitorData: visitorData, client: client)
-        print("[WatchViewController] direct request headers (\(client)): \(headers)")
+        print("[WatchViewController] attachDirectPlayer (\(client)): url=\(url.absoluteString.prefix(120))...")
+        print("[WatchViewController] attachDirectPlayer headers: \(headers)")
         let assetOptions = ["AVURLAssetHTTPHeaderFieldsKey": headers]
         let asset = AVURLAsset(url: url, options: assetOptions)
         let item = AVPlayerItem(asset: asset)
@@ -1161,6 +1258,14 @@ final class WatchViewController: UIViewController {
                 "User-Agent": "com.google.android.youtube/19.09.37 (Linux; U; Android 9; en_US)",
                 "X-Youtube-Client-Name": DirectPlaybackClient.android.clientHeaderName,
                 "X-Youtube-Client-Version": DirectPlaybackClient.android.clientVersion
+            ]
+        case .androidVR:
+            headers = [
+                "Accept": "*/*",
+                "Accept-Language": "*",
+                "User-Agent": "com.google.android.apps.youtube.vr.oculus/1.71.26 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip",
+                "X-Youtube-Client-Name": DirectPlaybackClient.androidVR.clientHeaderName,
+                "X-Youtube-Client-Version": DirectPlaybackClient.androidVR.clientVersion
             ]
         }
         if let visitorData, !visitorData.isEmpty {
@@ -1249,9 +1354,15 @@ final class WatchViewController: UIViewController {
 
         switch item.status {
         case .readyToPlay:
-            print("[WatchViewController] player item ready")
+            let duration = CMTimeGetSeconds(item.duration)
+            let tracks = item.tracks.map { "\($0.assetTrack?.mediaType.rawValue ?? "?")" }.joined(separator: ",")
+            print("[WatchViewController] player item ready: duration=\(duration)s tracks=[\(tracks)]")
         case .failed:
-            print("[WatchViewController] player item failed: \(item.error?.localizedDescription ?? "unknown")")
+            let nsError = item.error as NSError?
+            print("[WatchViewController] player item FAILED: \(item.error?.localizedDescription ?? "unknown") domain=\(nsError?.domain ?? "nil") code=\(nsError?.code ?? 0)")
+            if let underlyingError = nsError?.userInfo[NSUnderlyingErrorKey] as? NSError {
+                print("[WatchViewController] underlying error: \(underlyingError.domain) code=\(underlyingError.code) \(underlyingError.localizedDescription)")
+            }
         case .unknown:
             print("[WatchViewController] player item status unknown")
         @unknown default:

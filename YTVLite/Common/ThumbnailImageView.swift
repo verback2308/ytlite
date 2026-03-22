@@ -29,19 +29,19 @@ class ThumbnailImageView: UIImageView {
         currentURL = url
 
         if let cached = ThumbnailImageView.cache.object(forKey: url.absoluteString as NSString) {
-            print("[ImageCache] memory hit \(url.absoluteString)")
+            //print("[ImageCache] memory hit \(url.absoluteString)")
             image = cached
             return
         }
 
         if let cached = ThumbnailImageView.diskCache.image(for: url) {
-            print("[ImageCache] disk hit \(url.absoluteString)")
+            //print("[ImageCache] disk hit \(url.absoluteString)")
             ThumbnailImageView.cache.setObject(cached, forKey: url.absoluteString as NSString)
             image = cached
             return
         }
 
-        print("[ImageCache] network fetch \(url.absoluteString)")
+        //print("[ImageCache] network fetch \(url.absoluteString)")
         image = nil
 
         URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in

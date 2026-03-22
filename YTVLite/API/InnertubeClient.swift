@@ -4,6 +4,7 @@ enum DirectPlaybackClient: Equatable, CustomStringConvertible {
     case tvHTML5
     case web
     case android
+    case androidVR
 
     var clientName: String {
         switch self {
@@ -13,6 +14,8 @@ enum DirectPlaybackClient: Equatable, CustomStringConvertible {
             return "WEB"
         case .android:
             return "ANDROID"
+        case .androidVR:
+            return "ANDROID_VR"
         }
     }
 
@@ -24,6 +27,8 @@ enum DirectPlaybackClient: Equatable, CustomStringConvertible {
             return "2.20231121.08.00"
         case .android:
             return "19.09.37"
+        case .androidVR:
+            return "1.71.26"
         }
     }
 
@@ -35,6 +40,8 @@ enum DirectPlaybackClient: Equatable, CustomStringConvertible {
             return "1"
         case .android:
             return "3"
+        case .androidVR:
+            return "28"
         }
     }
 
@@ -57,6 +64,21 @@ final class InnertubeClient: VideoService {
     ]
     private let tvContext: [String: Any] = [
         "context": ["client": ["clientName": DirectPlaybackClient.tvHTML5.clientName, "clientVersion": DirectPlaybackClient.tvHTML5.clientVersion, "hl": "en", "gl": "US"]]
+    ]
+    private let androidVRContext: [String: Any] = [
+        "context": ["client": [
+            "clientName": DirectPlaybackClient.androidVR.clientName,
+            "clientVersion": DirectPlaybackClient.androidVR.clientVersion,
+            "hl": "en",
+            "timeZone": "UTC",
+            "utcOffsetMinutes": 0,
+            "deviceMake": "Oculus",
+            "deviceModel": "Quest 3",
+            "androidSdkVersion": 32,
+            "osName": "Android",
+            "osVersion": "12L",
+            "userAgent": "com.google.android.apps.youtube.vr.oculus/1.71.26 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip"
+        ]]
     ]
 
     // MARK: - VideoService
@@ -97,7 +119,7 @@ final class InnertubeClient: VideoService {
     }
 
     func fetchChannelInfo(channelId: String, completion: @escaping (Result<ChannelInfo, Error>) -> Void) {
-        print("[Innertube] fetchChannelInfo start: \(channelId)")
+       // print("[Innertube] fetchChannelInfo start: \(channelId)")
         OAuthClient.shared.validToken { [weak self] result in
             switch result {
             case .failure(let error):
@@ -156,14 +178,91 @@ final class InnertubeClient: VideoService {
     func fetchDirectPlayback(videoId: String, client: DirectPlaybackClient = .tvHTML5, poToken: String? = nil,
                              completion: @escaping (Result<DirectPlaybackInfo, Error>) -> Void) {
         print("[Innertube] fetchDirectPlayback start: \(videoId), client: \(client)")
+
+        if client == .androidVR {
+            // ANDROID_VR uses cookie-based auth from a preflight webpage fetch, not OAuth
+            fetchVisitorData(videoId: videoId) { [weak self] visitorData in
+                self?.executeDirectPlayback(videoId: videoId, client: client, token: "", poToken: poToken, visitorData: visitorData, completion: completion)
+            }
+            return
+        }
+
         OAuthClient.shared.validToken { [weak self] result in
             switch result {
             case .failure(let error):
                 completion(.failure(error))
             case .success(let token):
-                self?.executeDirectPlayback(videoId: videoId, client: client, token: token, poToken: poToken, completion: completion)
+                self?.executeDirectPlayback(videoId: videoId, client: client, token: token, poToken: poToken, visitorData: nil, completion: completion)
             }
         }
+    }
+
+    /// Fetches the YouTube watch page to collect session cookies and extract visitorData.
+    /// URLSession.shared automatically stores cookies for subsequent requests.
+    private func fetchVisitorData(videoId: String, completion: @escaping (String?) -> Void) {
+        guard let url = URL(string: "https://www.youtube.com/watch?v=\(videoId)&bpctr=9999999999&has_verified=1") else {
+            completion(nil)
+            return
+        }
+        print("[Innertube] fetching visitor data for \(videoId)...")
+        var request = URLRequest(url: url)
+        request.setValue("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36", forHTTPHeaderField: "User-Agent")
+        request.setValue("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", forHTTPHeaderField: "Accept")
+        request.setValue("en-us,en;q=0.5", forHTTPHeaderField: "Accept-Language")
+
+        // Set initial cookies like yt-dlp does
+        let cookieProps1: [HTTPCookiePropertyKey: Any] = [
+            .name: "PREF", .value: "hl=en&tz=UTC",
+            .domain: ".youtube.com", .path: "/"
+        ]
+        let cookieProps2: [HTTPCookiePropertyKey: Any] = [
+            .name: "SOCS", .value: "CAI",
+            .domain: ".youtube.com", .path: "/"
+        ]
+        if let c1 = HTTPCookie(properties: cookieProps1) {
+            HTTPCookieStorage.shared.setCookie(c1)
+        }
+        if let c2 = HTTPCookie(properties: cookieProps2) {
+            HTTPCookieStorage.shared.setCookie(c2)
+        }
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("[Innertube] visitor data fetch failed: \(error.localizedDescription)")
+                completion(nil)
+                return
+            }
+
+            // Log cookies received
+            if let cookies = HTTPCookieStorage.shared.cookies(for: URL(string: "https://www.youtube.com")!) {
+                let names = cookies.map { $0.name }.joined(separator: ", ")
+                print("[Innertube] cookies after preflight: \(names)")
+            }
+
+            // Extract visitorData from ytcfg or construct from VISITOR_INFO1_LIVE cookie
+            var visitorData: String?
+            if let data = data, let html = String(data: data, encoding: .utf8) {
+                // Try to extract from ytcfg.set: "VISITOR_DATA":"..."
+                if let range = html.range(of: "\"VISITOR_DATA\":\""),
+                   let endRange = html[range.upperBound...].range(of: "\"") {
+                    visitorData = String(html[range.upperBound..<endRange.lowerBound])
+                    print("[Innertube] extracted visitorData from ytcfg: \(visitorData?.prefix(30) ?? "nil")...")
+                }
+            }
+
+            // Fallback: use VISITOR_INFO1_LIVE cookie + VISITOR_PRIVACY_METADATA to build visitor ID
+            if visitorData == nil {
+                if let cookies = HTTPCookieStorage.shared.cookies(for: URL(string: "https://www.youtube.com")!),
+                   let visitorCookie = cookies.first(where: { $0.name == "VISITOR_INFO1_LIVE" }),
+                   let privacyCookie = cookies.first(where: { $0.name == "VISITOR_PRIVACY_METADATA" }) {
+                    // The X-Goog-Visitor-Id is a protobuf-encoded combination of these
+                    // For now, just pass the raw cookie value
+                    print("[Innertube] VISITOR_INFO1_LIVE=\(visitorCookie.value.prefix(20))..., VISITOR_PRIVACY_METADATA=\(privacyCookie.value.prefix(20))...")
+                }
+            }
+
+            completion(visitorData)
+        }.resume()
     }
 
     // MARK: - Authenticated browse
@@ -212,7 +311,7 @@ final class InnertubeClient: VideoService {
 
     private func executeChannelBrowse(channelId: String, token: String,
                                       completion: @escaping (Result<ChannelInfo, Error>) -> Void) {
-        print("[Innertube] channel browse TV attempt: \(channelId)")
+        //print("[Innertube] channel browse TV attempt: \(channelId)")
         executeChannelBrowse(channelId: channelId, token: token, context: tvContext, completion: completion)
     }
 
@@ -247,7 +346,7 @@ final class InnertubeClient: VideoService {
                     completion(.failure(APIError.decodingFailed))
                     return
                 }
-                print("[Innertube] parsed channel info (\(clientName)) \(channelId), avatar: \(info.avatarURL ?? "nil"), title: \(info.title)")
+                //print("[Innertube] parsed channel info (\(clientName)) \(channelId), avatar: \(info.avatarURL ?? "nil"), title: \(info.title)")
                 completion(.success(info))
             }
         }
@@ -401,8 +500,10 @@ final class InnertubeClient: VideoService {
     }
 
     private func executeDirectPlayback(videoId: String, client: DirectPlaybackClient, token: String, poToken: String?,
+                                       visitorData: String? = nil,
                                        completion: @escaping (Result<DirectPlaybackInfo, Error>) -> Void) {
-        guard let url = URL(string: "\(baseURL)/player") else {
+        let urlStr = client == .androidVR ? "\(baseURL)/player?prettyPrint=false" : "\(baseURL)/player"
+        guard let url = URL(string: urlStr) else {
             completion(.failure(APIError.invalidURL))
             return
         }
@@ -415,6 +516,8 @@ final class InnertubeClient: VideoService {
             context = webContext
         case .android:
             context = androidContext
+        case .androidVR:
+            context = androidVRContext
         }
 
         var body = context
@@ -422,9 +525,14 @@ final class InnertubeClient: VideoService {
         switch client {
         case .tvHTML5:
             break
-        case .web, .android:
+        case .web, .android, .androidVR:
             body["contentCheckOk"] = true
             body["racyCheckOk"] = true
+            body["playbackContext"] = [
+                "contentPlaybackContext": [
+                    "html5Preference": "HTML5_PREF_WANTS"
+                ]
+            ]
         }
         if let poToken, !poToken.isEmpty {
             body["serviceIntegrityDimensions"] = [
@@ -437,11 +545,12 @@ final class InnertubeClient: VideoService {
             return
         }
 
-        let headers = [
-            "Content-Type": "application/json",
-            "Authorization": "Bearer \(token)"
+        var requestHeaders: [String: String] = [
+            "Content-Type": "application/json"
         ]
-        var requestHeaders = headers
+        if client != .androidVR {
+            requestHeaders["Authorization"] = "Bearer \(token)"
+        }
         switch client {
         case .tvHTML5:
             break
@@ -451,7 +560,17 @@ final class InnertubeClient: VideoService {
         case .android:
             requestHeaders["X-Youtube-Client-Name"] = DirectPlaybackClient.android.clientHeaderName
             requestHeaders["X-Youtube-Client-Version"] = DirectPlaybackClient.android.clientVersion
+        case .androidVR:
+            requestHeaders["X-YouTube-Client-Name"] = DirectPlaybackClient.androidVR.clientHeaderName
+            requestHeaders["X-YouTube-Client-Version"] = DirectPlaybackClient.androidVR.clientVersion
+            requestHeaders["User-Agent"] = "com.google.android.apps.youtube.vr.oculus/1.71.26 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip"
+            requestHeaders["Origin"] = "https://www.youtube.com"
+            if let visitorData = visitorData, !visitorData.isEmpty {
+                requestHeaders["X-Goog-Visitor-Id"] = visitorData
+            }
         }
+
+        print("[Innertube] sending \(client) request to \(url.absoluteString), bodySize=\(bodyData.count), headers=\(requestHeaders.keys.sorted().joined(separator: ","))")
 
         api.post(url: url, headers: requestHeaders, body: bodyData) { result in
             switch result {
@@ -462,9 +581,19 @@ final class InnertubeClient: VideoService {
                 guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                       let info = Self.parseDirectPlaybackInfo(json)
                 else {
-                    print("[Innertube] direct playback parse failed \(videoId), client: \(client)")
+                    print("[Innertube] direct playback parse failed \(videoId), client: \(client), responseBytes=\(data.count)")
                     if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                        print("[Innertube] response topKeys (\(client)): \(json.keys.sorted().joined(separator: ", "))")
+                        if let errorObj = json["error"] {
+                            if let errorData = try? JSONSerialization.data(withJSONObject: errorObj, options: .prettyPrinted),
+                               let errorStr = String(data: errorData, encoding: .utf8) {
+                                print("[Innertube] error body (\(client)): \(errorStr)")
+                            }
+                        }
                         Self.logPlayerDebug(videoId: videoId, contextName: client.description, json: json)
+                    } else {
+                        let preview = String(data: data.prefix(500), encoding: .utf8) ?? "binary"
+                        print("[Innertube] response not JSON (\(client)): \(preview)")
                     }
                     completion(.failure(APIError.decodingFailed))
                     return
@@ -1038,7 +1167,7 @@ final class InnertubeClient: VideoService {
             let channelId = header["channelId"] as? String ?? fallbackChannelId
 
             if !title.isEmpty || avatarURL != nil {
-                print("[Innertube] parseChannelInfo: channelHeaderRenderer matched for \(fallbackChannelId)")
+                //print("[Innertube] parseChannelInfo: channelHeaderRenderer matched for \(fallbackChannelId)")
                 return ChannelInfo(id: channelId, title: title,
                                    avatarURL: avatarURL,
                                    subscriberCountText: subscriberCountText)
@@ -1058,7 +1187,7 @@ final class InnertubeClient: VideoService {
             let channelId = firstMatchingBrowseId(in: avatarLockup) ?? fallbackChannelId
 
             if !title.isEmpty || avatarURL != nil {
-                print("[Innertube] parseChannelInfo: avatarLockupRenderer matched for \(fallbackChannelId)")
+                //print("[Innertube] parseChannelInfo: avatarLockupRenderer matched for \(fallbackChannelId)")
                 return ChannelInfo(id: channelId, title: title,
                                    avatarURL: avatarURL,
                                    subscriberCountText: subscriberCountText)
@@ -1108,7 +1237,7 @@ final class InnertubeClient: VideoService {
             let channelId = header["channelId"] as? String ?? fallbackChannelId
 
             if !title.isEmpty || avatarURL != nil {
-                print("[Innertube] parseChannelInfo: heuristic header matched for \(fallbackChannelId)")
+                //print("[Innertube] parseChannelInfo: heuristic header matched for \(fallbackChannelId)")
                 return ChannelInfo(id: channelId, title: title,
                                    avatarURL: avatarURL,
                                    subscriberCountText: subscriberCountText)
