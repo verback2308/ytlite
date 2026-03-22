@@ -143,7 +143,7 @@ class VideoCell: UICollectionViewCell {
             channelAvatarView.isHidden = false
             channelAvatarView.setImage(url: url)
         } else if let channelId = video.channelId {
-            print("[VideoCell] resolving avatar for video \(video.id), channel \(channelId)")
+           // print("[VideoCell] resolving avatar for video \(video.id), channel \(channelId)")
             channelAvatarView.isHidden = false
             channelAvatarView.cancel()
             ChannelInfoStore.shared.fetch(channelId: channelId) { [weak self] result in
