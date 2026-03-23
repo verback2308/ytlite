@@ -1,17 +1,35 @@
 import UIKit
 
+/// Navigation controller that forwards rotation queries to the top view controller.
+final class RotatingNavigationController: UINavigationController {
+    override var shouldAutorotate: Bool {
+        topViewController?.shouldAutorotate ?? super.shouldAutorotate
+    }
+    override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
+        topViewController?.supportedInterfaceOrientations ?? super.supportedInterfaceOrientations
+    }
+}
+
 class MainTabBarController: UITabBarController {
+
+    override var shouldAutorotate: Bool {
+        selectedViewController?.shouldAutorotate ?? super.shouldAutorotate
+    }
+
+    override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
+        selectedViewController?.supportedInterfaceOrientations ?? super.supportedInterfaceOrientations
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        let home = UINavigationController(rootViewController: HomeViewController())
+        let home = RotatingNavigationController(rootViewController: HomeViewController())
         home.tabBarItem = UITabBarItem(title: "Home", image: TabBarIcons.home(), tag: 0)
 
-        let subs = UINavigationController(rootViewController: SubscriptionsViewController())
+        let subs = RotatingNavigationController(rootViewController: SubscriptionsViewController())
         subs.tabBarItem = UITabBarItem(title: "Subscriptions", image: TabBarIcons.subscriptions(), tag: 1)
 
-        let profile = UINavigationController(rootViewController: ProfileViewController())
+        let profile = RotatingNavigationController(rootViewController: ProfileViewController())
         profile.tabBarItem = UITabBarItem(title: "Profile", image: TabBarIcons.profile(), tag: 2)
 
         viewControllers = [home, subs, profile]

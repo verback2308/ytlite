@@ -13,6 +13,7 @@ final class WatchViewController: UIViewController {
     private var comments: [Comment] = []
     private var commentsContinuation: String?
     private var playerViewController: AVPlayerViewController?
+    private var videoPlayerView: VideoPlayerView?
     private var directPlayerView: SZAVPlayer?
     private var manifestPlayerView: ManifestWebPlayerView?
     private var playerItemContext = 0
@@ -84,6 +85,12 @@ final class WatchViewController: UIViewController {
 
     required init?(coder: NSCoder) { fatalError() }
 
+    override var shouldAutorotate: Bool { true }
+
+    override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
+        .allButUpsideDown
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         title = initialVideo.title
@@ -117,6 +124,7 @@ final class WatchViewController: UIViewController {
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         playerViewController?.player?.pause()
+        videoPlayerView?.player?.pause()
         directPlayerView?.pause()
         manifestPlayerView?.stop()
     }
@@ -125,6 +133,9 @@ final class WatchViewController: UIViewController {
         NotificationCenter.default.removeObserver(self)
         manifestPlayerView?.stop()
         if let item = playerViewController?.player?.currentItem {
+            stopObservingPlayerItem(item)
+        }
+        if let item = videoPlayerView?.player?.currentItem {
             stopObservingPlayerItem(item)
         }
         directPlayerView?.reset(cleanAsset: true)
@@ -1195,7 +1206,7 @@ final class WatchViewController: UIViewController {
             }
 
             // Switch from progressive to adaptive
-            guard let player = self.playerViewController?.player else { return }
+            guard let player = self.videoPlayerView?.player ?? self.playerViewController?.player else { return }
             let currentTime = player.currentTime()
             let wasPlaying = player.rate > 0
 
@@ -1556,27 +1567,25 @@ final class WatchViewController: UIViewController {
         if !minimizeStalling {
             player.automaticallyWaitsToMinimizeStalling = false
         }
-        let playerVC = AVPlayerViewController()
-        playerVC.player = player
-        playerVC.showsPlaybackControls = true
-        playerVC.view.isUserInteractionEnabled = true
 
-        addChild(playerVC)
-        playerVC.view.translatesAutoresizingMaskIntoConstraints = false
-        let tap = UITapGestureRecognizer(target: self, action: #selector(handlePlayerTap))
-        tap.cancelsTouchesInView = false
-        playerVC.view.addGestureRecognizer(tap)
-        playerContainer.addSubview(playerVC.view)
-        playerContainer.bringSubviewToFront(playerVC.view)
-        NSLayoutConstraint.activate([
-            playerVC.view.topAnchor.constraint(equalTo: playerContainer.topAnchor),
-            playerVC.view.leadingAnchor.constraint(equalTo: playerContainer.leadingAnchor),
-            playerVC.view.trailingAnchor.constraint(equalTo: playerContainer.trailingAnchor),
-            playerVC.view.bottomAnchor.constraint(equalTo: playerContainer.bottomAnchor),
-        ])
-        playerVC.didMove(toParent: self)
+        let pv = videoPlayerView ?? {
+            let v = VideoPlayerView()
+            v.translatesAutoresizingMaskIntoConstraints = false
+            v.delegate = self
+            playerContainer.addSubview(v)
+            NSLayoutConstraint.activate([
+                v.topAnchor.constraint(equalTo: playerContainer.topAnchor),
+                v.leadingAnchor.constraint(equalTo: playerContainer.leadingAnchor),
+                v.trailingAnchor.constraint(equalTo: playerContainer.trailingAnchor),
+                v.bottomAnchor.constraint(equalTo: playerContainer.bottomAnchor),
+            ])
+            videoPlayerView = v
+            return v
+        }()
+
+        playerContainer.bringSubviewToFront(pv)
+        pv.attach(player: player)
         player.play()
-        playerViewController = playerVC
     }
 
     private func resetPlaybackSurfaces() {
@@ -1597,6 +1606,12 @@ final class WatchViewController: UIViewController {
         playerViewController?.view.removeFromSuperview()
         playerViewController?.removeFromParent()
         playerViewController = nil
+
+        if let existing = videoPlayerView?.player?.currentItem {
+            stopObservingPlayerItem(existing)
+        }
+        videoPlayerView?.detach()
+        // Keep the view — reuse it on next attach
     }
 
     private func startObservingPlayerItem(_ item: AVPlayerItem) {
@@ -1703,6 +1718,41 @@ final class WatchViewController: UIViewController {
     }
 }
 
+extension WatchViewController: VideoPlayerViewDelegate {
+    func videoPlayerViewDidTapSettings(_ playerView: VideoPlayerView) {
+        let alert = UIAlertController(title: "Playback settings", message: nil, preferredStyle: .actionSheet)
+        alert.addAction(UIAlertAction(title: "Quality", style: .default) { [weak self] _ in
+            self?.showQualityPicker()
+        })
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        if let pop = alert.popoverPresentationController {
+            pop.sourceView = playerView
+            pop.sourceRect = CGRect(x: playerView.bounds.maxX - 50, y: 20, width: 1, height: 1)
+        }
+        present(alert, animated: true)
+    }
+
+    func videoPlayerViewDidTapFullscreen(_ playerView: VideoPlayerView) {
+        guard let player = videoPlayerView?.player else { return }
+        // Detach the player from the inline view so fullscreen view owns it exclusively
+        videoPlayerView?.detach()
+        let fsVC = FullscreenPlayerViewController(player: player)
+        fsVC.onDismiss = { [weak self, weak player] in
+            // Reattach the inline view when fullscreen closes
+            if let p = player { self?.videoPlayerView?.attach(player: p) }
+            self?.videoPlayerView?.isFullscreen = false
+        }
+        present(fsVC, animated: true)
+    }
+
+    private func showQualityPicker() {
+        // Placeholder — will be wired to real quality options later
+        let alert = UIAlertController(title: "Quality", message: "Coming soon", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+    }
+}
+
 extension WatchViewController: UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         visibleRelatedVideos.count
@@ -1772,5 +1822,60 @@ extension WatchViewController: SZAVPlayerDelegate {
 
     func avplayer(_ avplayer: SZAVPlayer, didReceived remoteCommand: SZAVPlayerRemoteCommand) -> Bool {
         return false
+    }
+}
+
+// MARK: - Fullscreen player
+
+private final class FullscreenPlayerViewController: UIViewController {
+
+    var onDismiss: (() -> Void)?
+
+    private let player: AVPlayer
+    private var fsPlayerView: VideoPlayerView?
+
+    override var supportedInterfaceOrientations: UIInterfaceOrientationMask { .landscape }
+    override var shouldAutorotate: Bool { true }
+    override var prefersStatusBarHidden: Bool { true }
+
+    init(player: AVPlayer) {
+        self.player = player
+        super.init(nibName: nil, bundle: nil)
+        modalPresentationStyle = .fullScreen
+        modalTransitionStyle = .crossDissolve
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .black
+
+        let pv = VideoPlayerView()
+        pv.delegate = self
+        pv.isFullscreen = true
+        pv.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(pv)
+        NSLayoutConstraint.activate([
+            pv.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            pv.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            pv.topAnchor.constraint(equalTo: view.topAnchor),
+            pv.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+        pv.attach(player: player)
+        fsPlayerView = pv
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        fsPlayerView?.detach()
+        onDismiss?()
+    }
+}
+
+extension FullscreenPlayerViewController: VideoPlayerViewDelegate {
+    func videoPlayerViewDidTapSettings(_ playerView: VideoPlayerView) {}
+    func videoPlayerViewDidTapFullscreen(_ playerView: VideoPlayerView) {
+        dismiss(animated: true)
     }
 }
