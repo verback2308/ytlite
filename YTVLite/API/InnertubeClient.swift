@@ -5,6 +5,7 @@ enum DirectPlaybackClient: Equatable, CustomStringConvertible {
     case web
     case android
     case androidVR
+    case ios
 
     var clientName: String {
         switch self {
@@ -16,6 +17,8 @@ enum DirectPlaybackClient: Equatable, CustomStringConvertible {
             return "ANDROID"
         case .androidVR:
             return "ANDROID_VR"
+        case .ios:
+            return "IOS"
         }
     }
 
@@ -29,6 +32,8 @@ enum DirectPlaybackClient: Equatable, CustomStringConvertible {
             return "19.09.37"
         case .androidVR:
             return "1.71.26"
+        case .ios:
+            return "19.45.4"
         }
     }
 
@@ -42,6 +47,18 @@ enum DirectPlaybackClient: Equatable, CustomStringConvertible {
             return "3"
         case .androidVR:
             return "28"
+        case .ios:
+            return "5"
+        }
+    }
+
+    /// Whether this client uses cookie-based auth (preflight) instead of OAuth
+    var usesCookieAuth: Bool {
+        switch self {
+        case .androidVR, .ios:
+            return true
+        default:
+            return false
         }
     }
 
@@ -78,6 +95,20 @@ final class InnertubeClient: VideoService {
             "osName": "Android",
             "osVersion": "12L",
             "userAgent": "com.google.android.apps.youtube.vr.oculus/1.71.26 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip"
+        ]]
+    ]
+    private let iosContext: [String: Any] = [
+        "context": ["client": [
+            "clientName": DirectPlaybackClient.ios.clientName,
+            "clientVersion": DirectPlaybackClient.ios.clientVersion,
+            "hl": "en",
+            "timeZone": "UTC",
+            "utcOffsetMinutes": 0,
+            "deviceMake": "Apple",
+            "deviceModel": "iPhone16,2",
+            "osName": "iPhone",
+            "osVersion": "17.5.1.21F90",
+            "userAgent": "com.google.ios.youtube/19.45.4 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X;)"
         ]]
     ]
 
@@ -179,8 +210,8 @@ final class InnertubeClient: VideoService {
                              completion: @escaping (Result<DirectPlaybackInfo, Error>) -> Void) {
         print("[Innertube] fetchDirectPlayback start: \(videoId), client: \(client)")
 
-        if client == .androidVR {
-            // ANDROID_VR uses cookie-based auth from a preflight webpage fetch, not OAuth
+        if client.usesCookieAuth {
+            // Cookie-based auth clients (ANDROID_VR, IOS) use preflight webpage fetch, not OAuth
             fetchVisitorData(videoId: videoId) { [weak self] visitorData in
                 self?.executeDirectPlayback(videoId: videoId, client: client, token: "", poToken: poToken, visitorData: visitorData, completion: completion)
             }
@@ -502,7 +533,13 @@ final class InnertubeClient: VideoService {
     private func executeDirectPlayback(videoId: String, client: DirectPlaybackClient, token: String, poToken: String?,
                                        visitorData: String? = nil,
                                        completion: @escaping (Result<DirectPlaybackInfo, Error>) -> Void) {
-        let urlStr = client == .androidVR ? "\(baseURL)/player?prettyPrint=false" : "\(baseURL)/player"
+        let urlStr: String
+        switch client {
+        case .ios:
+            urlStr = "\(baseURL)/player?prettyPrint=false&key=AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc"
+        default:
+            urlStr = client.usesCookieAuth ? "\(baseURL)/player?prettyPrint=false" : "\(baseURL)/player"
+        }
         guard let url = URL(string: urlStr) else {
             completion(.failure(APIError.invalidURL))
             return
@@ -518,6 +555,8 @@ final class InnertubeClient: VideoService {
             context = androidContext
         case .androidVR:
             context = androidVRContext
+        case .ios:
+            context = iosContext
         }
 
         var body = context
@@ -525,7 +564,7 @@ final class InnertubeClient: VideoService {
         switch client {
         case .tvHTML5:
             break
-        case .web, .android, .androidVR:
+        case .web, .android, .androidVR, .ios:
             body["contentCheckOk"] = true
             body["racyCheckOk"] = true
             body["playbackContext"] = [
@@ -548,7 +587,7 @@ final class InnertubeClient: VideoService {
         var requestHeaders: [String: String] = [
             "Content-Type": "application/json"
         ]
-        if client != .androidVR {
+        if !client.usesCookieAuth {
             requestHeaders["Authorization"] = "Bearer \(token)"
         }
         switch client {
@@ -564,6 +603,14 @@ final class InnertubeClient: VideoService {
             requestHeaders["X-YouTube-Client-Name"] = DirectPlaybackClient.androidVR.clientHeaderName
             requestHeaders["X-YouTube-Client-Version"] = DirectPlaybackClient.androidVR.clientVersion
             requestHeaders["User-Agent"] = "com.google.android.apps.youtube.vr.oculus/1.71.26 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip"
+            requestHeaders["Origin"] = "https://www.youtube.com"
+            if let visitorData = visitorData, !visitorData.isEmpty {
+                requestHeaders["X-Goog-Visitor-Id"] = visitorData
+            }
+        case .ios:
+            requestHeaders["X-YouTube-Client-Name"] = DirectPlaybackClient.ios.clientHeaderName
+            requestHeaders["X-YouTube-Client-Version"] = DirectPlaybackClient.ios.clientVersion
+            requestHeaders["User-Agent"] = "com.google.ios.youtube/19.45.4 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X;)"
             requestHeaders["Origin"] = "https://www.youtube.com"
             if let visitorData = visitorData, !visitorData.isEmpty {
                 requestHeaders["X-Goog-Visitor-Id"] = visitorData
@@ -796,6 +843,48 @@ final class InnertubeClient: VideoService {
             .sorted { bitrate($0) > bitrate($1) }
             .first
 
+        // Extract DASH format info (initRange/indexRange) for MPD generation
+        func dashFormatInfo(_ format: [String: Any]) -> DashFormatInfo? {
+            guard let url = directURL(format),
+                  let formatItag = itag(format),
+                  let initRange = format["initRange"] as? [String: Any],
+                  let initEnd = (initRange["end"] as? String).flatMap(Int.init) ?? (initRange["end"] as? Int),
+                  let indexRange = format["indexRange"] as? [String: Any],
+                  let indexStart = (indexRange["start"] as? String).flatMap(Int.init) ?? (indexRange["start"] as? Int),
+                  let indexEnd = (indexRange["end"] as? String).flatMap(Int.init) ?? (indexRange["end"] as? Int),
+                  let clen = (format["contentLength"] as? String).flatMap(Int64.init) else {
+                return nil
+            }
+            let mime = mimeType(format)
+            // Extract codecs from mimeType like "video/mp4; codecs=\"avc1.4d401f\""
+            let codecs: String
+            if let range = mime.range(of: "codecs=\""), let endRange = mime[range.upperBound...].range(of: "\"") {
+                codecs = String(mime[range.upperBound..<endRange.lowerBound])
+            } else {
+                codecs = ""
+            }
+            return DashFormatInfo(
+                url: url, itag: formatItag, mimeType: mime, codecs: codecs,
+                bitrate: bitrate(format), contentLength: clen,
+                initRangeEnd: initEnd, indexRangeStart: indexStart, indexRangeEnd: indexEnd,
+                width: format["width"] as? Int, height: format["height"] as? Int,
+                fps: format["fps"] as? Int
+            )
+        }
+
+        let dashVideoFormat = video.flatMap(dashFormatInfo)
+        let dashAudioFormat = audio.flatMap(dashFormatInfo)
+        if let dv = dashVideoFormat {
+            print("[Innertube] DASH video: itag=\(dv.itag) init=0-\(dv.initRangeEnd) index=\(dv.indexRangeStart)-\(dv.indexRangeEnd) clen=\(dv.contentLength) codecs=\(dv.codecs)")
+        }
+        if let da = dashAudioFormat {
+            print("[Innertube] DASH audio: itag=\(da.itag) init=0-\(da.initRangeEnd) index=\(da.indexRangeStart)-\(da.indexRangeEnd) clen=\(da.contentLength) codecs=\(da.codecs)")
+        }
+
+        // Extract duration from format
+        let videoDuration = (video?["approxDurationMs"] as? String).flatMap(Double.init).map { $0 / 1000.0 }
+            ?? (audio?["approxDurationMs"] as? String).flatMap(Double.init).map { $0 / 1000.0 }
+
         let hlsManifestURL = (streamingData["hlsManifestUrl"] as? String).flatMap(URL.init(string:))
         let dashManifestURL = (streamingData["dashManifestUrl"] as? String).flatMap(URL.init(string:))
         let progressiveURL = progressive.flatMap(directURL)
@@ -827,7 +916,10 @@ final class InnertubeClient: VideoService {
             audioItag: audio.flatMap(itag),
             qualityLabel: (video?["qualityLabel"] as? String) ?? (progressive?["qualityLabel"] as? String),
             visitorData: ((json["responseContext"] as? [String: Any])?["visitorData"] as? String),
-            hasVideoPlaybackUstreamerConfig: hasVideoPlaybackUstreamerConfig
+            hasVideoPlaybackUstreamerConfig: hasVideoPlaybackUstreamerConfig,
+            dashVideoFormat: dashVideoFormat,
+            dashAudioFormat: dashAudioFormat,
+            duration: videoDuration
         )
     }
 

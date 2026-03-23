@@ -22,6 +22,7 @@ final class WatchViewController: UIViewController {
     private var relatedExpansionWorkItem: DispatchWorkItem?
     private var isLoadingComments = false
     private var fastStartLoaders: [FastStartResourceLoader] = []
+    private var hlsPlaylistLoader: HLSPlaylistLoader?
 
     private let scrollView = UIScrollView()
     private let contentView = UIView()
@@ -802,7 +803,10 @@ final class WatchViewController: UIViewController {
                             audioItag: refreshedInfo.audioItag,
                             qualityLabel: refreshedInfo.qualityLabel,
                             visitorData: refreshedInfo.visitorData ?? info.visitorData,
-                            hasVideoPlaybackUstreamerConfig: refreshedInfo.hasVideoPlaybackUstreamerConfig || info.hasVideoPlaybackUstreamerConfig
+                            hasVideoPlaybackUstreamerConfig: refreshedInfo.hasVideoPlaybackUstreamerConfig || info.hasVideoPlaybackUstreamerConfig,
+                            dashVideoFormat: refreshedInfo.dashVideoFormat,
+                            dashAudioFormat: refreshedInfo.dashAudioFormat,
+                            duration: refreshedInfo.duration
                         )
                         self.startOnesiePlayback(effectiveInfo,
                                                 bootstrap: bootstrap,
@@ -837,6 +841,22 @@ final class WatchViewController: UIViewController {
                 self.playerStatusLabel.text = "Loading DASH stream..."
                 self.attachManifestPlayer(url: dashManifestURL)
             }
+            return
+        }
+
+        // Generated HLS from adaptive format info — instant 720p via native AVPlayer
+        if let dashVideo = info.dashVideoFormat, let dashAudio = info.dashAudioFormat {
+            let videoURL = prepareDirectPlaybackURL(baseURL: dashVideo.url, client: client, poToken: nil)
+            let audioURL = prepareDirectPlaybackURL(baseURL: dashAudio.url, client: client, poToken: nil)
+            let quality = info.qualityLabel ?? "720p"
+            let headers = makeDirectRequestHeaders(visitorData: mediaVisitorData, client: client)
+            print("[WatchViewController] choosing generated HLS (\(quality)): video itag=\(dashVideo.itag) audio itag=\(dashAudio.itag)")
+            DispatchQueue.main.async {
+                self.playerStatusLabel.text = "Loading \(quality) stream..."
+            }
+            buildHLSAndPlay(videoURL: videoURL, audioURL: audioURL,
+                            videoFormat: dashVideo, audioFormat: dashAudio,
+                            headers: headers, quality: quality)
             return
         }
 
@@ -977,6 +997,8 @@ final class WatchViewController: UIViewController {
             cver = DirectPlaybackClient.android.clientVersion
         case .androidVR:
             cver = DirectPlaybackClient.androidVR.clientVersion
+        case .ios:
+            cver = DirectPlaybackClient.ios.clientVersion
         }
         items.append(URLQueryItem(name: "cver", value: cver))
         components.queryItems = items
@@ -1237,6 +1259,168 @@ final class WatchViewController: UIViewController {
         }.resume()
     }
 
+    private func generateDashMPD(video: DashFormatInfo, audio: DashFormatInfo, duration: Double) -> String {
+        let hours = Int(duration) / 3600
+        let minutes = (Int(duration) % 3600) / 60
+        let seconds = duration - Double(hours * 3600 + minutes * 60)
+        let ptDuration = String(format: "PT%dH%dM%.3fS", hours, minutes, seconds)
+
+        // XML-escape URLs (& → &amp;)
+        let videoURLEscaped = video.url.absoluteString.replacingOccurrences(of: "&", with: "&amp;")
+        let audioURLEscaped = audio.url.absoluteString.replacingOccurrences(of: "&", with: "&amp;")
+
+        let videoAttrs: String
+        if let w = video.width, let h = video.height {
+            videoAttrs = "width=\"\(w)\" height=\"\(h)\" "
+        } else {
+            videoAttrs = ""
+        }
+        let fpsAttr = video.fps.map { " frameRate=\"\($0)\"" } ?? ""
+
+        return """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <MPD xmlns="urn:mpeg:dash:schema:mpd:2011" type="static" mediaPresentationDuration="\(ptDuration)" minBufferTime="PT2S" profiles="urn:mpeg:dash:profile:isoff-main:2011">
+          <Period>
+            <AdaptationSet mimeType="video/mp4" \(videoAttrs)subsegmentAlignment="true">
+              <Representation id="\(video.itag)" bandwidth="\(video.bitrate)" codecs="\(video.codecs)" \(videoAttrs)\(fpsAttr)>
+                <BaseURL>\(videoURLEscaped)</BaseURL>
+                <SegmentBase indexRange="\(video.indexRangeStart)-\(video.indexRangeEnd)">
+                  <Initialization range="0-\(video.initRangeEnd)"/>
+                </SegmentBase>
+              </Representation>
+            </AdaptationSet>
+            <AdaptationSet mimeType="audio/mp4" subsegmentAlignment="true">
+              <Representation id="\(audio.itag)" bandwidth="\(audio.bitrate)" codecs="\(audio.codecs)">
+                <BaseURL>\(audioURLEscaped)</BaseURL>
+                <SegmentBase indexRange="\(audio.indexRangeStart)-\(audio.indexRangeEnd)">
+                  <Initialization range="0-\(audio.initRangeEnd)"/>
+                </SegmentBase>
+              </Representation>
+            </AdaptationSet>
+          </Period>
+        </MPD>
+        """
+    }
+
+    private func buildHLSAndPlay(videoURL: URL, audioURL: URL,
+                                 videoFormat: DashFormatInfo, audioFormat: DashFormatInfo,
+                                 headers: [String: String], quality: String) {
+        let startTime = CACurrentMediaTime()
+
+        // Fetch sidx (index) data for both streams in parallel
+        let group = DispatchGroup()
+        var videoSidxData: Data?
+        var audioSidxData: Data?
+
+        let videoIndexStart = videoFormat.indexRangeStart
+        let videoIndexEnd = videoFormat.indexRangeEnd
+        let audioIndexStart = audioFormat.indexRangeStart
+        let audioIndexEnd = audioFormat.indexRangeEnd
+
+        group.enter()
+        fetchRangeData(url: videoURL, start: Int64(videoIndexStart), end: Int64(videoIndexEnd), headers: headers) { data in
+            videoSidxData = data
+            group.leave()
+        }
+
+        group.enter()
+        fetchRangeData(url: audioURL, start: Int64(audioIndexStart), end: Int64(audioIndexEnd), headers: headers) { data in
+            audioSidxData = data
+            group.leave()
+        }
+
+        group.notify(queue: .global(qos: .userInitiated)) { [weak self] in
+            guard let self = self else { return }
+
+            guard let vData = videoSidxData, let aData = audioSidxData else {
+                print("[WatchViewController] HLS: failed to fetch sidx data")
+                self.fallbackToProgressivePlayback()
+                return
+            }
+
+            guard let videoSegments = HLSGenerator.parseSidx(data: vData),
+                  let audioSegments = HLSGenerator.parseSidx(data: aData) else {
+                print("[WatchViewController] HLS: failed to parse sidx (video=\(vData.count)B audio=\(aData.count)B)")
+                self.fallbackToProgressivePlayback()
+                return
+            }
+
+            let fetchElapsed = CACurrentMediaTime() - startTime
+            print(String(format: "[WatchViewController] HLS: sidx parsed in %.1fs — video: %d segments, audio: %d segments",
+                         fetchElapsed, videoSegments.count, audioSegments.count))
+
+            // Generate HLS playlists
+            let videoInitBytes = videoFormat.initRangeEnd + 1
+            let audioInitBytes = audioFormat.initRangeEnd + 1
+            let videoDataStart = Int64(videoFormat.indexRangeEnd + 1)
+            let audioDataStart = Int64(audioFormat.indexRangeEnd + 1)
+
+            let videoPlaylist = HLSGenerator.mediaPlaylist(url: videoURL, initBytes: videoInitBytes,
+                                                           dataStartOffset: videoDataStart, segments: videoSegments)
+            let audioPlaylist = HLSGenerator.mediaPlaylist(url: audioURL, initBytes: audioInitBytes,
+                                                           dataStartOffset: audioDataStart, segments: audioSegments)
+
+            let videoWidth = videoFormat.width ?? 1280
+            let videoHeight = videoFormat.height ?? 720
+            let masterPlaylist = HLSGenerator.masterPlaylist(
+                videoBandwidth: videoFormat.bitrate,
+                videoCodecs: videoFormat.codecs,
+                audioCodecs: audioFormat.codecs,
+                width: videoWidth, height: videoHeight,
+                videoPlaylistURI: "\(HLSGenerator.scheme)://video.m3u8",
+                audioPlaylistURI: "\(HLSGenerator.scheme)://audio.m3u8"
+            )
+
+            // Serve playlists via AVAssetResourceLoaderDelegate with custom scheme
+            let loader = HLSPlaylistLoader()
+            loader.register(path: "master.m3u8", content: masterPlaylist)
+            loader.register(path: "video.m3u8", content: videoPlaylist)
+            loader.register(path: "audio.m3u8", content: audioPlaylist)
+
+            let totalElapsed = CACurrentMediaTime() - startTime
+            print(String(format: "[WatchViewController] HLS: playlists ready in %.1fs", totalElapsed))
+
+            DispatchQueue.main.async {
+                self.hlsPlaylistLoader = loader
+                let masterURL = URL(string: "\(HLSGenerator.scheme)://master.m3u8")!
+                let assetOptions: [String: Any] = ["AVURLAssetHTTPHeaderFieldsKey": headers]
+                let asset = AVURLAsset(url: masterURL, options: assetOptions)
+                asset.resourceLoader.setDelegate(loader, queue: loader.loaderQueue)
+                let item = AVPlayerItem(asset: asset)
+                item.preferredForwardBufferDuration = 5.0
+                self.attachPlayer(item: item)
+                print(String(format: "[WatchViewController] HLS: player attached for %@ (%.1fs total)", quality, CACurrentMediaTime() - startTime))
+            }
+        }
+    }
+
+    private func fetchRangeData(url: URL, start: Int64, end: Int64, headers: [String: String], completion: @escaping (Data?) -> Void) {
+        var request = URLRequest(url: url)
+        for (k, v) in headers { request.setValue(v, forHTTPHeaderField: k) }
+        request.setValue("bytes=\(start)-\(end)", forHTTPHeaderField: "Range")
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("[WatchViewController] HLS: range fetch failed: \(error.localizedDescription)")
+                completion(nil)
+                return
+            }
+            let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+            if status != 206 && status != 200 {
+                print("[WatchViewController] HLS: range fetch status \(status)")
+            }
+            completion(data)
+        }.resume()
+    }
+
+    private func fallbackToProgressivePlayback() {
+        print("[WatchViewController] HLS: falling back to progressive + adaptive upgrade")
+        // Re-trigger playback without DASH format info to hit progressive path
+        // For now just show error since we'd need stored playback info
+        DispatchQueue.main.async {
+            self.showPlaybackError("HLS generation failed — no fallback available")
+        }
+    }
+
     private func attachPlayer(url: URL) {
         attachPlayer(item: AVPlayerItem(url: url))
     }
@@ -1262,6 +1446,32 @@ final class WatchViewController: UIViewController {
         playerStatusLabel.isHidden = true
         playerContainer.bringSubviewToFront(playerView)
         playerView.load(manifestURL: url) { [weak self] message in
+            self?.showPlaybackError(message)
+        }
+    }
+
+    private func attachManifestPlayerWithMPD(_ mpd: String) {
+        resetPlaybackSurfaces()
+
+        let playerView = manifestPlayerView ?? {
+            let view = ManifestWebPlayerView()
+            view.translatesAutoresizingMaskIntoConstraints = false
+            playerContainer.addSubview(view)
+            NSLayoutConstraint.activate([
+                view.topAnchor.constraint(equalTo: playerContainer.topAnchor),
+                view.leadingAnchor.constraint(equalTo: playerContainer.leadingAnchor),
+                view.trailingAnchor.constraint(equalTo: playerContainer.trailingAnchor),
+                view.bottomAnchor.constraint(equalTo: playerContainer.bottomAnchor),
+            ])
+            manifestPlayerView = view
+            return view
+        }()
+
+        playerSpinner.stopAnimating()
+        playerStatusLabel.isHidden = true
+        playerContainer.bringSubviewToFront(playerView)
+        playerView.loadMPDContent(mpd) { [weak self] message in
+            print("[WatchViewController] generated DASH playback error: \(message)")
             self?.showPlaybackError(message)
         }
     }
@@ -1318,6 +1528,14 @@ final class WatchViewController: UIViewController {
                 "User-Agent": "com.google.android.apps.youtube.vr.oculus/1.71.26 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip",
                 "X-Youtube-Client-Name": DirectPlaybackClient.androidVR.clientHeaderName,
                 "X-Youtube-Client-Version": DirectPlaybackClient.androidVR.clientVersion
+            ]
+        case .ios:
+            headers = [
+                "Accept": "*/*",
+                "Accept-Language": "*",
+                "User-Agent": "com.google.ios.youtube/19.45.4 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X;)",
+                "X-Youtube-Client-Name": DirectPlaybackClient.ios.clientHeaderName,
+                "X-Youtube-Client-Version": DirectPlaybackClient.ios.clientVersion
             ]
         }
         if let visitorData, !visitorData.isEmpty {

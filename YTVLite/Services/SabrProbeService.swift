@@ -437,6 +437,9 @@ final class SabrProbeService {
             case .androidVR:
                 clientName = 28
                 clientVersion = DirectPlaybackClient.androidVR.clientVersion
+            case .ios:
+                clientName = 5
+                clientVersion = DirectPlaybackClient.ios.clientVersion
             }
             deviceMake = "Google"
             deviceModel = "Chromecast"

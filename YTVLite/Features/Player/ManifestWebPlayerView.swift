@@ -39,10 +39,26 @@ final class ManifestWebPlayerView: UIView, WKNavigationDelegate, WKScriptMessage
         webView.configuration.userContentController.removeScriptMessageHandler(forName: "playerEvent")
     }
     
+    private var pendingMPDContent: String?
+
     func load(manifestURL: URL, onError: @escaping (String) -> Void) {
         pendingManifestURL = manifestURL
+        pendingMPDContent = nil
         self.onError = onError
         webView.loadHTMLString(Self.html, baseURL: nil)
+    }
+
+    func loadMPDContent(_ mpd: String, onError: @escaping (String) -> Void) {
+        pendingManifestURL = nil
+        pendingMPDContent = nil
+        self.onError = onError
+        // Embed the MPD directly in the HTML as a base64-encoded global variable
+        let mpdBase64 = Data(mpd.utf8).base64EncodedString()
+        let htmlWithMPD = Self.html.replacingOccurrences(
+            of: "/*MPD_PLACEHOLDER*/",
+            with: "window._mpdBase64 = '\(mpdBase64)'; window.addEventListener('load', function() { setTimeout(function() { if (window.loadMPDFromBase64) window.loadMPDFromBase64(); }, 100); });"
+        )
+        webView.loadHTMLString(htmlWithMPD, baseURL: nil)
     }
     
     func stop() {
@@ -107,6 +123,7 @@ final class ManifestWebPlayerView: UIView, WKNavigationDelegate, WKScriptMessage
 <body>
   <video id="video" playsinline autoplay controls></video>
   <script>
+    /*MPD_PLACEHOLDER*/
     let player = null;
     const video = document.getElementById('video');
 
@@ -122,6 +139,17 @@ final class ManifestWebPlayerView: UIView, WKNavigationDelegate, WKScriptMessage
         throw new Error('Shaka failed to load');
       }
       shaka.polyfill.installAll();
+      shaka.net.NetworkingEngine.registerScheme('inline', (uri, request, requestType) => {
+        const content = window._inlineMPD || '';
+        const data = new TextEncoder().encode(content);
+        return shaka.util.AbortableOperation.completed({
+          uri: uri,
+          originalUri: uri,
+          data: data.buffer,
+          headers: { 'content-type': 'application/dash+xml' },
+          timeMs: 0
+        });
+      });
       player = new shaka.Player(video);
       player.addEventListener('error', (event) => {
         const detail = event && event.detail ? JSON.stringify(event.detail) : 'Unknown Shaka error';
@@ -129,6 +157,19 @@ final class ManifestWebPlayerView: UIView, WKNavigationDelegate, WKScriptMessage
       });
       return player;
     }
+
+    window.loadMPDFromBase64 = async function() {
+      try {
+        if (!window._mpdBase64) return;
+        const mpdString = atob(window._mpdBase64);
+        const activePlayer = await ensurePlayer();
+        window._inlineMPD = mpdString;
+        await activePlayer.load('inline://mpd', undefined, 'application/dash+xml');
+        await video.play();
+      } catch (error) {
+        post('error', error && error.message ? error.message : String(error));
+      }
+    };
 
     window.loadManifest = async function(url) {
       try {

@@ -35,6 +35,21 @@ struct WatchPage {
     let relatedVideos: [Video]
 }
 
+struct DashFormatInfo {
+    let url: URL
+    let itag: Int
+    let mimeType: String       // e.g. "video/mp4; codecs=\"avc1.4d401f\""
+    let codecs: String         // e.g. "avc1.4d401f"
+    let bitrate: Int
+    let contentLength: Int64
+    let initRangeEnd: Int      // e.g. 739
+    let indexRangeStart: Int   // e.g. 740
+    let indexRangeEnd: Int     // e.g. 11739
+    let width: Int?
+    let height: Int?
+    let fps: Int?
+}
+
 struct DirectPlaybackInfo {
     let hlsManifestURL: URL?
     let dashManifestURL: URL?
@@ -51,6 +66,9 @@ struct DirectPlaybackInfo {
     let qualityLabel: String?
     let visitorData: String?
     let hasVideoPlaybackUstreamerConfig: Bool
+    let dashVideoFormat: DashFormatInfo?
+    let dashAudioFormat: DashFormatInfo?
+    let duration: Double?
 }
 
 struct SabrFormatInfo {
