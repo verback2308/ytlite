@@ -21,6 +21,7 @@ final class WatchViewController: UIViewController {
     private var descriptionExpanded = false
     private var relatedExpansionWorkItem: DispatchWorkItem?
     private var isLoadingComments = false
+    private var fastStartLoaders: [FastStartResourceLoader] = []
 
     private let scrollView = UIScrollView()
     private let contentView = UIView()
@@ -841,75 +842,35 @@ final class WatchViewController: UIViewController {
 
         if let progressiveURL = info.progressiveURL {
             let preparedURL = prepareDirectPlaybackURL(baseURL: progressiveURL, client: client, poToken: nil)
-            let components = URLComponents(url: preparedURL, resolvingAgainstBaseURL: false)
-            let nParam = components?.queryItems?.first(where: { $0.name == "n" })?.value ?? "MISSING"
-            let itag = components?.queryItems?.first(where: { $0.name == "itag" })?.value ?? "?"
-            let mime = components?.queryItems?.first(where: { $0.name == "mime" })?.value ?? "?"
-            let host = preparedURL.host ?? "?"
-            print("[WatchViewController] choosing progressive: host=\(host) itag=\(itag) mime=\(mime) n=\(nParam)")
-
-            // ANDROID_VR URLs don't need n-param decoding (REQUIRE_JS_PLAYER=false)
-            if client == .androidVR {
-                print("[WatchViewController] ANDROID_VR: skipping n-param decode, playing directly")
-                self.probeURL(preparedURL, visitorData: mediaVisitorData, client: client) {
-                    DispatchQueue.main.async {
-                        self.playerStatusLabel.text = "Loading progressive stream..."
-                        self.attachDirectPlayer(url: preparedURL, visitorData: mediaVisitorData, client: client)
-                    }
-                }
-                return
-            }
+            print("[WatchViewController] starting progressive (360p) immediately")
 
             DispatchQueue.main.async {
-                self.playerStatusLabel.text = "Decoding n parameter..."
+                self.playerStatusLabel.text = "Loading stream..."
+                self.attachDirectPlayer(url: preparedURL, visitorData: mediaVisitorData, client: client)
             }
 
-            NParamDecoder.shared.decodeURL(preparedURL) { [weak self] result in
-                guard let self = self else { return }
-                switch result {
-                case .success(let decodedURL):
-                    print("[WatchViewController] n-param decoded, probing...")
-                    self.probeURL(decodedURL, visitorData: mediaVisitorData, client: client) {
-                        DispatchQueue.main.async {
-                            self.playerStatusLabel.text = "Loading progressive stream..."
-                            self.attachDirectPlayer(url: decodedURL, visitorData: mediaVisitorData, client: client)
-                        }
-                    }
-                case .failure(let error):
-                    print("[WatchViewController] n-param decode failed: \(error), trying raw URL...")
-                    // Fallback: try the URL without decoding (might work for some clients)
-                    self.probeURL(preparedURL, visitorData: mediaVisitorData, client: client) {
-                        DispatchQueue.main.async {
-                            self.playerStatusLabel.text = "Loading progressive stream..."
-                            self.attachDirectPlayer(url: preparedURL, visitorData: mediaVisitorData, client: client)
-                        }
-                    }
-                }
+            // Background: prepare adaptive (720p) composition, then upgrade
+            if let videoURL = info.videoURL, let audioURL = info.audioURL {
+                let preparedVideoURL = prepareDirectPlaybackURL(baseURL: videoURL, client: client, poToken: nil)
+                let preparedAudioURL = prepareDirectPlaybackURL(baseURL: audioURL, client: client, poToken: nil)
+                let headers = makeDirectRequestHeaders(visitorData: mediaVisitorData, client: client)
+                let quality = info.qualityLabel ?? "720p"
+                print("[WatchViewController] background: preparing \(quality) adaptive...")
+                prepareAdaptiveUpgrade(videoURL: preparedVideoURL, audioURL: preparedAudioURL, headers: headers, quality: quality)
             }
             return
         }
 
+        // No progressive — try adaptive directly (will be slow but works)
         if let videoURL = info.videoURL, let audioURL = info.audioURL {
             let preparedVideoURL = prepareDirectPlaybackURL(baseURL: videoURL, client: client, poToken: nil)
             let preparedAudioURL = prepareDirectPlaybackURL(baseURL: audioURL, client: client, poToken: nil)
             let headers = makeDirectRequestHeaders(visitorData: mediaVisitorData, client: client)
+            let quality = info.qualityLabel ?? "?"
+            print("[WatchViewController] choosing adaptive (no progressive fallback): quality=\(quality)")
             DispatchQueue.main.async {
-                self.playerStatusLabel.text = "Loading adaptive stream..."
-                self.attachComposedPlayer(videoURL: preparedVideoURL,
-                                          audioURL: preparedAudioURL,
-                                          headers: headers) { [weak self] success in
-                    guard let self else { return }
-                    if success {
-                        return
-                    }
-                    if let progressiveURL = info.progressiveURL {
-                        let preparedURL = self.prepareDirectPlaybackURL(baseURL: progressiveURL, client: client, poToken: nil)
-                        self.playerStatusLabel.text = "Adaptive failed, loading progressive stream..."
-                        self.attachDirectPlayer(url: preparedURL, visitorData: mediaVisitorData, client: client)
-                    } else {
-                        self.showPlaybackError("No playable direct stream available.")
-                    }
-                }
+                self.playerStatusLabel.text = "Loading \(quality) stream..."
+                self.attachComposedPlayer(videoURL: preparedVideoURL, audioURL: preparedAudioURL, headers: headers) { _ in }
             }
             return
         }
@@ -1074,39 +1035,45 @@ final class WatchViewController: UIViewController {
                                       audioURL: URL,
                                       headers: [String: String],
                                       completion: @escaping (Bool) -> Void) {
+        let startTime = CACurrentMediaTime()
         let assetOptions = ["AVURLAssetHTTPHeaderFieldsKey": headers]
         let videoAsset = AVURLAsset(url: videoURL, options: assetOptions)
         let audioAsset = AVURLAsset(url: audioURL, options: assetOptions)
         let group = DispatchGroup()
-        let keys = ["tracks", "duration", "playable"]
         var loadError = false
 
-        for key in keys {
-            group.enter()
-            videoAsset.loadValuesAsynchronously(forKeys: [key]) {
-                var error: NSError?
-                let status = videoAsset.statusOfValue(forKey: key, error: &error)
-                if status != .loaded {
-                    print("[WatchViewController] direct video asset key failed \(key): \(error?.localizedDescription ?? "unknown")")
-                    loadError = true
-                }
-                group.leave()
-            }
+        print("[WatchViewController] composedPlayer: loading asset metadata...")
 
-            group.enter()
-            audioAsset.loadValuesAsynchronously(forKeys: [key]) {
-                var error: NSError?
-                let status = audioAsset.statusOfValue(forKey: key, error: &error)
-                if status != .loaded {
-                    print("[WatchViewController] direct audio asset key failed \(key): \(error?.localizedDescription ?? "unknown")")
-                    loadError = true
-                }
-                group.leave()
+        group.enter()
+        videoAsset.loadValuesAsynchronously(forKeys: ["tracks"]) {
+            let elapsed = CACurrentMediaTime() - startTime
+            var error: NSError?
+            if videoAsset.statusOfValue(forKey: "tracks", error: &error) != .loaded {
+                print("[WatchViewController] video tracks failed (%.1fs): \(error?.localizedDescription ?? "unknown")")
+                loadError = true
+            } else {
+                print(String(format: "[WatchViewController] video tracks loaded (%.1fs)", elapsed))
             }
+            group.leave()
+        }
+
+        group.enter()
+        audioAsset.loadValuesAsynchronously(forKeys: ["tracks"]) {
+            let elapsed = CACurrentMediaTime() - startTime
+            var error: NSError?
+            if audioAsset.statusOfValue(forKey: "tracks", error: &error) != .loaded {
+                print("[WatchViewController] audio tracks failed (%.1fs): \(error?.localizedDescription ?? "unknown")")
+                loadError = true
+            } else {
+                print(String(format: "[WatchViewController] audio tracks loaded (%.1fs)", elapsed))
+            }
+            group.leave()
         }
 
         group.notify(queue: .main) { [weak self] in
+            let elapsed = CACurrentMediaTime() - startTime
             guard let self = self, !loadError else {
+                print(String(format: "[WatchViewController] composedPlayer: metadata failed (%.1fs)", elapsed))
                 completion(false)
                 return
             }
@@ -1114,6 +1081,7 @@ final class WatchViewController: UIViewController {
             guard let sourceVideoTrack = videoAsset.tracks(withMediaType: .video).first,
                   let sourceAudioTrack = audioAsset.tracks(withMediaType: .audio).first
             else {
+                print("[WatchViewController] no video/audio tracks found")
                 completion(false)
                 return
             }
@@ -1126,7 +1094,11 @@ final class WatchViewController: UIViewController {
                 return
             }
 
-            let duration = CMTimeMinimum(videoAsset.duration, audioAsset.duration)
+            let videoDuration = videoAsset.duration
+            let audioDuration = audioAsset.duration
+            let duration = CMTimeMinimum(videoDuration, audioDuration)
+            print(String(format: "[WatchViewController] composedPlayer: video=%.1fs audio=%.1fs using=%.1fs (%.1fs elapsed)",
+                         CMTimeGetSeconds(videoDuration), CMTimeGetSeconds(audioDuration), CMTimeGetSeconds(duration), elapsed))
 
             do {
                 try videoTrack.insertTimeRange(CMTimeRange(start: .zero, duration: duration), of: sourceVideoTrack, at: .zero)
@@ -1139,8 +1111,88 @@ final class WatchViewController: UIViewController {
             }
 
             let item = AVPlayerItem(asset: composition)
-            self.attachPlayer(item: item)
+            item.preferredForwardBufferDuration = 2.0
+            print(String(format: "[WatchViewController] composedPlayer: attaching player (%.1fs elapsed)", elapsed))
+            self.attachPlayer(item: item, minimizeStalling: false)
             completion(true)
+        }
+    }
+
+    /// Prepares adaptive (720p) composition in background, then seamlessly switches from progressive.
+    private func prepareAdaptiveUpgrade(videoURL: URL, audioURL: URL, headers: [String: String], quality: String) {
+        let startTime = CACurrentMediaTime()
+        let assetOptions = ["AVURLAssetHTTPHeaderFieldsKey": headers]
+        let videoAsset = AVURLAsset(url: videoURL, options: assetOptions)
+        let audioAsset = AVURLAsset(url: audioURL, options: assetOptions)
+        let group = DispatchGroup()
+        var loadError = false
+
+        group.enter()
+        videoAsset.loadValuesAsynchronously(forKeys: ["tracks"]) {
+            var error: NSError?
+            if videoAsset.statusOfValue(forKey: "tracks", error: &error) != .loaded {
+                print(String(format: "[WatchViewController] adaptive upgrade: video tracks failed (%.1fs)", CACurrentMediaTime() - startTime))
+                loadError = true
+            }
+            group.leave()
+        }
+
+        group.enter()
+        audioAsset.loadValuesAsynchronously(forKeys: ["tracks"]) {
+            var error: NSError?
+            if audioAsset.statusOfValue(forKey: "tracks", error: &error) != .loaded {
+                print(String(format: "[WatchViewController] adaptive upgrade: audio tracks failed (%.1fs)", CACurrentMediaTime() - startTime))
+                loadError = true
+            }
+            group.leave()
+        }
+
+        group.notify(queue: .main) { [weak self] in
+            guard let self = self, !loadError else {
+                print(String(format: "[WatchViewController] adaptive upgrade: failed (%.1fs)", CACurrentMediaTime() - startTime))
+                return
+            }
+
+            guard let sourceVideoTrack = videoAsset.tracks(withMediaType: .video).first,
+                  let sourceAudioTrack = audioAsset.tracks(withMediaType: .audio).first
+            else { return }
+
+            let composition = AVMutableComposition()
+            guard let videoTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid),
+                  let audioTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
+            else { return }
+
+            let duration = CMTimeMinimum(videoAsset.duration, audioAsset.duration)
+            do {
+                try videoTrack.insertTimeRange(CMTimeRange(start: .zero, duration: duration), of: sourceVideoTrack, at: .zero)
+                try audioTrack.insertTimeRange(CMTimeRange(start: .zero, duration: duration), of: sourceAudioTrack, at: .zero)
+                videoTrack.preferredTransform = sourceVideoTrack.preferredTransform
+            } catch {
+                print("[WatchViewController] adaptive upgrade: composition failed: \(error)")
+                return
+            }
+
+            // Switch from progressive to adaptive
+            guard let player = self.playerViewController?.player else { return }
+            let currentTime = player.currentTime()
+            let wasPlaying = player.rate > 0
+
+            let oldItem = player.currentItem
+            if let oldItem = oldItem {
+                self.stopObservingPlayerItem(oldItem)
+            }
+
+            let newItem = AVPlayerItem(asset: composition)
+            newItem.preferredForwardBufferDuration = 2.0
+            self.startObservingPlayerItem(newItem)
+            player.replaceCurrentItem(with: newItem)
+            player.seek(to: currentTime, toleranceBefore: .zero, toleranceAfter: .zero)
+            if wasPlaying {
+                player.play()
+            }
+
+            let elapsed = CACurrentMediaTime() - startTime
+            print(String(format: "[WatchViewController] adaptive upgrade: switched to %@ (%.1fs)", quality, elapsed))
         }
     }
 
@@ -1274,7 +1326,7 @@ final class WatchViewController: UIViewController {
         return headers
     }
 
-    private func attachPlayer(item: AVPlayerItem) {
+    private func attachPlayer(item: AVPlayerItem, minimizeStalling: Bool = true) {
         resetPlaybackSurfaces()
 
         playerSpinner.stopAnimating()
@@ -1283,6 +1335,9 @@ final class WatchViewController: UIViewController {
         startObservingPlayerItem(item)
 
         let player = AVPlayer(playerItem: item)
+        if !minimizeStalling {
+            player.automaticallyWaitsToMinimizeStalling = false
+        }
         let playerVC = AVPlayerViewController()
         playerVC.player = player
         playerVC.showsPlaybackControls = true
