@@ -25,6 +25,12 @@ final class WatchViewController: UIViewController {
     private var fastStartLoaders: [FastStartResourceLoader] = []
     private var hlsPlaylistLoader: HLSPlaylistLoader?
 
+    // Quality switching context — set when HLS playback starts
+    private var activePlaybackInfo: DirectPlaybackInfo?
+    private var activePlaybackClient: DirectPlaybackClient = .androidVR
+    private var activePlaybackHeaders: [String: String] = [:]
+    private var activeVideoFormat: DashFormatInfo?
+
     private let scrollView = UIScrollView()
     private let contentView = UIView()
     private let relatedCollectionView: UICollectionView
@@ -817,6 +823,7 @@ final class WatchViewController: UIViewController {
                             hasVideoPlaybackUstreamerConfig: refreshedInfo.hasVideoPlaybackUstreamerConfig || info.hasVideoPlaybackUstreamerConfig,
                             dashVideoFormat: refreshedInfo.dashVideoFormat,
                             dashAudioFormat: refreshedInfo.dashAudioFormat,
+                            allDashVideoFormats: refreshedInfo.allDashVideoFormats,
                             duration: refreshedInfo.duration
                         )
                         self.startOnesiePlayback(effectiveInfo,
@@ -857,6 +864,8 @@ final class WatchViewController: UIViewController {
 
         // Generated HLS from adaptive format info — instant 720p via native AVPlayer
         if let dashVideo = info.dashVideoFormat, let dashAudio = info.dashAudioFormat {
+            activePlaybackInfo = info
+            activePlaybackClient = client
             let videoURL = prepareDirectPlaybackURL(baseURL: dashVideo.url, client: client, poToken: nil)
             let audioURL = prepareDirectPlaybackURL(baseURL: dashAudio.url, client: client, poToken: nil)
             let quality = info.qualityLabel ?? "720p"
@@ -1316,6 +1325,8 @@ final class WatchViewController: UIViewController {
     private func buildHLSAndPlay(videoURL: URL, audioURL: URL,
                                  videoFormat: DashFormatInfo, audioFormat: DashFormatInfo,
                                  headers: [String: String], quality: String) {
+        activeVideoFormat = videoFormat
+        activePlaybackHeaders = headers
         let startTime = CACurrentMediaTime()
 
         // Fetch sidx (index) data for both streams in parallel
@@ -1746,10 +1757,49 @@ extension WatchViewController: VideoPlayerViewDelegate {
     }
 
     private func showQualityPicker() {
-        // Placeholder — will be wired to real quality options later
-        let alert = UIAlertController(title: "Quality", message: "Coming soon", preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        guard let info = activePlaybackInfo,
+              let audioFormat = info.dashAudioFormat else { return }
+
+        let formats = info.allDashVideoFormats
+        guard !formats.isEmpty else { return }
+
+        let alert = UIAlertController(title: "Quality", message: nil, preferredStyle: .actionSheet)
+
+        for format in formats {
+            let label = qualityLabel(for: format)
+            let isCurrent = format.itag == activeVideoFormat?.itag
+            let title = isCurrent ? "✓ \(label)" : label
+            alert.addAction(UIAlertAction(title: title, style: .default) { [weak self] _ in
+                guard let self = self, format.itag != self.activeVideoFormat?.itag else { return }
+                let client = self.activePlaybackClient
+                let videoURL = self.prepareDirectPlaybackURL(baseURL: format.url, client: client, poToken: nil)
+                let audioURL = self.prepareDirectPlaybackURL(baseURL: audioFormat.url, client: client, poToken: nil)
+                DispatchQueue.main.async {
+                    self.playerStatusLabel.text = "Loading \(label)..."
+                    self.playerStatusLabel.isHidden = false
+                }
+                self.buildHLSAndPlay(videoURL: videoURL, audioURL: audioURL,
+                                     videoFormat: format, audioFormat: audioFormat,
+                                     headers: self.activePlaybackHeaders, quality: label)
+            })
+        }
+
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+
+        if let pop = alert.popoverPresentationController,
+           let playerView = videoPlayerView {
+            pop.sourceView = playerView
+            pop.sourceRect = CGRect(x: playerView.bounds.maxX - 50, y: 20, width: 1, height: 1)
+        }
         present(alert, animated: true)
+    }
+
+    private func qualityLabel(for format: DashFormatInfo) -> String {
+        guard let h = format.height else { return "itag \(format.itag)" }
+        if let fps = format.fps, fps > 30 {
+            return "\(h)p\(fps)"
+        }
+        return "\(h)p"
     }
 }
 

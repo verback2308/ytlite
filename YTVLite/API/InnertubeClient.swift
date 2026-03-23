@@ -825,8 +825,7 @@ final class InnertubeClient: VideoService {
                 directURL($0) != nil &&
                 mimeType($0).contains("video/mp4") &&
                 mimeType($0).contains("avc1") &&
-                height($0) > 0 &&
-                height($0) <= 720
+                height($0) > 0
             }
             .sorted { lhs, rhs in
                 let lhsHeight = height(lhs)
@@ -874,6 +873,21 @@ final class InnertubeClient: VideoService {
 
         let dashVideoFormat = video.flatMap(dashFormatInfo)
         let dashAudioFormat = audio.flatMap(dashFormatInfo)
+
+        // All video qualities with DASH support (initRange/indexRange present), sorted best→worst
+        let allDashVideoFormats: [DashFormatInfo] = adaptiveFormats
+            .filter {
+                directURL($0) != nil &&
+                mimeType($0).contains("video/mp4") &&
+                mimeType($0).contains("avc1") &&
+                height($0) > 0
+            }
+            .compactMap(dashFormatInfo)
+            .sorted { lhs, rhs in
+                let lh = lhs.height ?? 0, rh = rhs.height ?? 0
+                if lh == rh { return lhs.bitrate > rhs.bitrate }
+                return lh > rh
+            }
         if let dv = dashVideoFormat {
             print("[Innertube] DASH video: itag=\(dv.itag) init=0-\(dv.initRangeEnd) index=\(dv.indexRangeStart)-\(dv.indexRangeEnd) clen=\(dv.contentLength) codecs=\(dv.codecs)")
         }
@@ -919,6 +933,7 @@ final class InnertubeClient: VideoService {
             hasVideoPlaybackUstreamerConfig: hasVideoPlaybackUstreamerConfig,
             dashVideoFormat: dashVideoFormat,
             dashAudioFormat: dashAudioFormat,
+            allDashVideoFormats: allDashVideoFormats,
             duration: videoDuration
         )
     }

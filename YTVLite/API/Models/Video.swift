@@ -68,6 +68,7 @@ struct DirectPlaybackInfo {
     let hasVideoPlaybackUstreamerConfig: Bool
     let dashVideoFormat: DashFormatInfo?
     let dashAudioFormat: DashFormatInfo?
+    let allDashVideoFormats: [DashFormatInfo]
     let duration: Double?
 }
 
