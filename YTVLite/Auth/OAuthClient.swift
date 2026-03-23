@@ -23,6 +23,11 @@ final class OAuthClient {
     private(set) var tokens: OAuthTokens?
     var isSignedIn: Bool { tokens != nil }
 
+    var isAnonymous: Bool {
+        get { tokens == nil && UserDefaults.standard.bool(forKey: "isAnonymous") }
+        set { UserDefaults.standard.set(newValue, forKey: "isAnonymous") }
+    }
+
     private init() { tokens = loadFromKeychain() }
 
     // MARK: - Device flow
@@ -131,7 +136,9 @@ final class OAuthClient {
 
     func validToken(completion: @escaping (Result<String, Error>) -> Void) {
         guard let tokens = tokens else {
-            NotificationCenter.default.post(name: .authorizationRequired, object: nil)
+            if !isAnonymous {
+                NotificationCenter.default.post(name: .authorizationRequired, object: nil)
+            }
             completion(.failure(APIError.unauthorized))
             return
         }
@@ -169,7 +176,11 @@ final class OAuthClient {
         }.resume()
     }
 
-    func signOut() { tokens = nil; deleteFromKeychain() }
+    func signOut() {
+        tokens = nil
+        isAnonymous = false
+        deleteFromKeychain()
+    }
 
     // MARK: - Fetch client credentials from YouTube TV page
 

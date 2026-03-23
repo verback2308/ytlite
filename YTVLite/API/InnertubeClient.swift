@@ -115,11 +115,59 @@ final class InnertubeClient: VideoService {
     // MARK: - VideoService
 
     func fetchHomeFeed(completion: @escaping (Result<FeedPage, Error>) -> Void) {
-        authenticatedBrowse(browseId: "FEwhat_to_watch", completion: completion)
+        if OAuthClient.shared.isAnonymous {
+            executeBrowseAnonymous(browseId: "FEwhat_to_watch", completion: completion)
+        } else {
+            authenticatedBrowse(browseId: "FEwhat_to_watch", completion: completion)
+        }
     }
 
     func fetchSubscriptionFeed(completion: @escaping (Result<FeedPage, Error>) -> Void) {
         authenticatedBrowse(browseId: "FEsubscriptions", completion: completion)
+    }
+
+    func fetchHistory(completion: @escaping (Result<FeedPage, Error>) -> Void) {
+        authenticatedBrowse(browseId: "FEhistory", completion: completion)
+    }
+
+    func fetchPlaylists(completion: @escaping (Result<[Playlist], Error>) -> Void) {
+        OAuthClient.shared.validToken { [weak self] result in
+            switch result {
+            case .failure(let e): completion(.failure(e))
+            case .success(let token): self?.executePlaylistsFetch(token: token, completion: completion)
+            }
+        }
+    }
+
+    private func executePlaylistsFetch(token: String,
+                                       completion: @escaping (Result<[Playlist], Error>) -> Void) {
+        guard let url = URL(string:
+            "https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=50")
+        else { completion(.failure(APIError.invalidURL)); return }
+        let headers = ["Authorization": "Bearer \(token)"]
+        api.get(url: url, headers: headers) { result in
+            switch result {
+            case .failure(let e): completion(.failure(e))
+            case .success(let data):
+                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let items = json["items"] as? [[String: Any]]
+                else { completion(.failure(APIError.decodingFailed)); return }
+                let playlists: [Playlist] = items.compactMap { item in
+                    guard let id = item["id"] as? String,
+                          let snippet = item["snippet"] as? [String: Any],
+                          let title = snippet["title"] as? String
+                    else { return nil }
+                    let desc = snippet["description"] as? String ?? ""
+                    let thumbs = snippet["thumbnails"] as? [String: Any] ?? [:]
+                    let thumb = (thumbs["medium"] ?? thumbs["default"]) as? [String: Any]
+                    let thumbURL = thumb?["url"] as? String
+                    let count = (item["contentDetails"] as? [String: Any])?["itemCount"] as? Int
+                    return Playlist(id: id, title: title, description: desc,
+                                    thumbnailURL: thumbURL, itemCount: count)
+                }
+                completion(.success(playlists))
+            }
+        }
     }
 
     func fetchNextPage(continuation: String, completion: @escaping (Result<FeedPage, Error>) -> Void) {
@@ -304,6 +352,32 @@ final class InnertubeClient: VideoService {
             case .failure(let e): completion(.failure(e))
             case .success(let token): self?.executeBrowse(browseId: browseId, continuation: nil,
                                                           token: token, completion: completion)
+            }
+        }
+    }
+
+    private func executeBrowseAnonymous(browseId: String, completion: @escaping (Result<FeedPage, Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/browse") else {
+            completion(.failure(APIError.invalidURL)); return
+        }
+        var body = webContext
+        body["browseId"] = browseId
+        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
+            completion(.failure(APIError.decodingFailed)); return
+        }
+        api.post(url: url, headers: ["Content-Type": "application/json"], body: bodyData) { result in
+            switch result {
+            case .failure(let e): completion(.failure(e))
+            case .success(let data):
+                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                    completion(.failure(APIError.decodingFailed)); return
+                }
+                let page = InnertubeClient.parsePageJSON(json)
+                if page.videos.isEmpty {
+                    completion(.failure(APIError.decodingFailed))
+                } else {
+                    completion(.success(page))
+                }
             }
         }
     }
@@ -820,12 +894,15 @@ final class InnertubeClient: VideoService {
             .sorted { bitrate($0) > bitrate($1) }
             .first
 
+        let preferredMaxHeight = VideoQualityStore.maxHeight   // nil = Auto
+
         let video = adaptiveFormats
             .filter {
                 directURL($0) != nil &&
                 mimeType($0).contains("video/mp4") &&
                 mimeType($0).contains("avc1") &&
-                height($0) > 0
+                height($0) > 0 &&
+                (preferredMaxHeight == nil || height($0) <= preferredMaxHeight!)
             }
             .sorted { lhs, rhs in
                 let lhsHeight = height(lhs)

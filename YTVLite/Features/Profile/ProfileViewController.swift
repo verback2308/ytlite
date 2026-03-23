@@ -29,12 +29,8 @@ class ProfileViewController: UIViewController {
 
     @objc private func signOut() {
         OAuthClient.shared.signOut()
-        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
-        let auth = AuthViewController()
-        auth.onAuthorized = {
-            appDelegate.window?.rootViewController = MainTabBarController()
-        }
-        appDelegate.window?.rootViewController = auth
+        UserProfileStore.shared.clear()
+        (UIApplication.shared.delegate as? AppDelegate)?.showAuth()
     }
 
     private func setupUI() {

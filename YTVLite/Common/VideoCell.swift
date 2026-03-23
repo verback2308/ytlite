@@ -130,7 +130,16 @@ class VideoCell: UICollectionViewCell {
         metaLabel.textColor = t.secondaryText
     }
 
+    func configureSkeleton() {
+        hideSkeleton()
+        titleLabel.text = nil; channelLabel.text = nil; metaLabel.text = nil
+        thumbnail.image = nil; channelAvatarView.image = nil
+        durationLabel.isHidden = true
+        contentView.showSkeleton()
+    }
+
     func configure(with video: Video) {
+        hideSkeleton()
         applyTheme()
         representedChannelId = video.channelId
         titleLabel.text = video.title
@@ -177,6 +186,7 @@ class VideoCell: UICollectionViewCell {
 
     override func prepareForReuse() {
         super.prepareForReuse()
+        hideSkeleton()
         representedChannelId = nil
         thumbnail.cancel()
         channelAvatarView.cancel()

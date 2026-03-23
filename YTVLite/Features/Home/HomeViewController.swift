@@ -28,9 +28,10 @@ class HomeViewController: VideosViewController {
             errorLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 32),
             errorLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -32),
         ])
-        setupSearchButton()
+        setupToolbar()
 
         if let cachedPage = cache.cachedHomeFeed() {
+            isLoadingInitial = false
             spinner.stopAnimating()
             setPage(cachedPage)
         } else {
@@ -38,9 +39,14 @@ class HomeViewController: VideosViewController {
         }
     }
 
-    private func setupSearchButton() {
-        let btn = UIBarButtonItem(barButtonSystemItem: .search, target: self, action: #selector(openSearch))
-        navigationItem.rightBarButtonItem = btn
+    private func setupToolbar() {
+        // Search button on the left side of right buttons
+        let searchBtn = UIBarButtonItem(barButtonSystemItem: .search, target: self, action: #selector(openSearch))
+        // Install profile + settings, then insert search before them
+        ToolbarManager.shared.install(in: self)
+        var items = navigationItem.rightBarButtonItems ?? []
+        items.append(searchBtn)
+        navigationItem.rightBarButtonItems = items
     }
 
     @objc private func openSearch() {

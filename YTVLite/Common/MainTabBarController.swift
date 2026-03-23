@@ -29,13 +29,14 @@ class MainTabBarController: UITabBarController {
         let subs = RotatingNavigationController(rootViewController: SubscriptionsViewController())
         subs.tabBarItem = UITabBarItem(title: "Subscriptions", image: TabBarIcons.subscriptions(), tag: 1)
 
-        let profile = RotatingNavigationController(rootViewController: ProfileViewController())
-        profile.tabBarItem = UITabBarItem(title: "Profile", image: TabBarIcons.profile(), tag: 2)
+        let library = RotatingNavigationController(rootViewController: LibraryViewController())
+        library.tabBarItem = UITabBarItem(title: "Library", image: TabBarIcons.library(), tag: 2)
 
-        viewControllers = [home, subs, profile]
+        viewControllers = [home, subs, library]
 
         NotificationCenter.default.addObserver(self, selector: #selector(applyTheme),
                                                name: ThemeManager.didChangeNotification, object: nil)
+        applyTheme()
     }
 
     @objc private func applyTheme() {

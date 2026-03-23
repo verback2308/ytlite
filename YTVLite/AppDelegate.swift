@@ -10,34 +10,45 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         ThemeManager.shared.applyGlobal()
         window = UIWindow(frame: UIScreen.main.bounds)
 
-        if OAuthClient.shared.isSignedIn {
-            window?.rootViewController = MainTabBarController()
-        } else {
-            let auth = AuthViewController()
-            auth.onAuthorized = { [weak self] in
-                self?.window?.rootViewController = MainTabBarController()
+        let splash = SplashViewController()
+        splash.onComplete = { [weak self] in
+            if OAuthClient.shared.isSignedIn {
+                UserProfileStore.shared.load()
+                self?.showMain()
+            } else if OAuthClient.shared.isAnonymous {
+                self?.showMain()
+            } else {
+                self?.showAuth()
             }
-            window?.rootViewController = auth
         }
-
+        window?.rootViewController = splash
         window?.makeKeyAndVisible()
 
-        NotificationCenter.default.addObserver(self, selector: #selector(showAuth),
+        NotificationCenter.default.addObserver(self, selector: #selector(handleAuthRequired),
                                                name: .authorizationRequired, object: nil)
         return true
     }
 
-    @objc private func showAuth() {
+    func showMain() {
+        window?.rootViewController = MainTabBarController()
+    }
+
+    @objc private func handleAuthRequired() {
         DispatchQueue.main.async { [weak self] in
             guard let root = self?.window?.rootViewController,
                   !(root is AuthViewController),
+                  !(root is SplashViewController),
                   root.presentedViewController == nil
             else { return }
             let auth = AuthViewController()
             auth.onAuthorized = { [weak self] in
                 root.dismiss(animated: true)
-                // Reload data in all tabs by replacing root
+                UserProfileStore.shared.load()
                 self?.window?.rootViewController = MainTabBarController()
+            }
+            auth.onContinueAnonymously = { [weak self] in
+                root.dismiss(animated: true)
+                self?.showMain()
             }
             root.present(auth, animated: true)
         }

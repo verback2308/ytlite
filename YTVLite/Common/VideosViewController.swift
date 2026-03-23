@@ -7,6 +7,9 @@ class VideosViewController: UIViewController {
     private(set) var videos: [Video] = []
     private(set) var collectionView: UICollectionView!
     let spinner = UIActivityIndicatorView(style: .white)
+    var isLoadingInitial = true   // true until first page arrives
+
+    private static let skeletonCount = 9
 
     private var continuationToken: String?
     private var isLoadingMore = false
@@ -99,6 +102,7 @@ class VideosViewController: UIViewController {
 
     // Reset and show first page
     func setPage(_ page: FeedPage) {
+        isLoadingInitial = false
         seenVideoIds = []
         videos = []
         appendPage(page)
@@ -122,11 +126,15 @@ class VideosViewController: UIViewController {
 
 extension VideosViewController: UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        videos.count
+        isLoadingInitial ? VideosViewController.skeletonCount : videos.count
     }
 
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: VideoCell.reuseId, for: indexPath) as! VideoCell
+        if isLoadingInitial {
+            cell.configureSkeleton()
+            return cell
+        }
         let video = videos[indexPath.item]
         cell.configure(with: video)
         cell.onChannelTap = { [weak self] in
@@ -138,6 +146,7 @@ extension VideosViewController: UICollectionViewDataSource {
 
 extension VideosViewController: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        guard !isLoadingInitial else { return }
         openVideo(videos[indexPath.item])
     }
 

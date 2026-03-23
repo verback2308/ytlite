@@ -110,6 +110,14 @@ class SubscriptionVideoCell: UITableViewCell {
         dateLabel.textColor = t.secondaryText
     }
 
+    func configureSkeleton() {
+        hideSkeleton()
+        titleLabel.text = nil; channelLabel.text = nil; dateLabel.text = nil
+        thumbnail.image = nil; channelAvatarView.image = nil
+        durationLabel.isHidden = true
+        contentView.showSkeleton()
+    }
+
     func configure(with video: Video) {
         applyTheme()
         representedChannelId = video.channelId
@@ -155,6 +163,7 @@ class SubscriptionVideoCell: UITableViewCell {
 
     override func prepareForReuse() {
         super.prepareForReuse()
+        hideSkeleton()
         representedChannelId = nil
         thumbnail.cancel()
         channelAvatarView.cancel()

@@ -4,12 +4,14 @@ import SafariServices
 final class AuthViewController: UIViewController {
 
     var onAuthorized: (() -> Void)?
+    var onContinueAnonymously: (() -> Void)?
 
     private let titleLabel = UILabel()
     private let instructionLabel = UILabel()
     private let codeLabel = UILabel()
     private let statusLabel = UILabel()
     private let openButton = UIButton(type: .system)
+    private let anonymousButton = UIButton(type: .system)
     private let spinner = UIActivityIndicatorView(style: .white)
 
     private var verificationURL: URL?
@@ -27,7 +29,7 @@ final class AuthViewController: UIViewController {
         titleLabel.font = UIFont.boldSystemFont(ofSize: 22)
         titleLabel.textAlignment = .center
 
-        instructionLabel.text = "Your code has been copied to the clipboard.\nTap the button, paste it, and sign in."
+        instructionLabel.text = "Tap the button below, then paste your code on the page that opens."
         instructionLabel.textColor = .lightGray
         instructionLabel.font = UIFont.systemFont(ofSize: 15)
         instructionLabel.textAlignment = .center
@@ -46,6 +48,11 @@ final class AuthViewController: UIViewController {
         openButton.addTarget(self, action: #selector(openVerificationURL), for: .touchUpInside)
         openButton.isHidden = true
 
+        anonymousButton.setTitle("Continue Anonymously", for: .normal)
+        anonymousButton.titleLabel?.font = UIFont.systemFont(ofSize: 15)
+        anonymousButton.setTitleColor(UIColor(white: 0.55, alpha: 1), for: .normal)
+        anonymousButton.addTarget(self, action: #selector(continueAnonymously), for: .touchUpInside)
+
         statusLabel.text = "Fetching code..."
         statusLabel.textColor = .lightGray
         statusLabel.font = UIFont.systemFont(ofSize: 14)
@@ -54,7 +61,8 @@ final class AuthViewController: UIViewController {
         spinner.hidesWhenStopped = true
         spinner.startAnimating()
 
-        let views: [UIView] = [titleLabel, instructionLabel, codeLabel, openButton, statusLabel, spinner]
+        let views: [UIView] = [titleLabel, instructionLabel, codeLabel, openButton,
+                               statusLabel, spinner, anonymousButton]
         views.forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview($0)
@@ -85,13 +93,26 @@ final class AuthViewController: UIViewController {
 
             spinner.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             spinner.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 16),
+
+            anonymousButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            anonymousButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -28),
         ])
     }
 
     @objc private func openVerificationURL() {
         guard let url = verificationURL else { return }
+        UIPasteboard.general.string = codeLabel.text
         let safari = SFSafariViewController(url: url)
         present(safari, animated: true)
+    }
+
+    @objc private func continueAnonymously() {
+        OAuthClient.shared.isAnonymous = true
+        if let cb = onContinueAnonymously {
+            cb()
+        } else {
+            onAuthorized?()
+        }
     }
 
     private func startAuth() {
@@ -107,13 +128,6 @@ final class AuthViewController: UIViewController {
                     self?.openButton.isHidden = false
                     self?.statusLabel.text = "Waiting for authorization..."
 
-                    // Copy code to clipboard and open the page automatically
-                    UIPasteboard.general.string = code.userCode
-                    if let url = URL(string: code.verificationURL) {
-                        let safari = SFSafariViewController(url: url)
-                        self?.present(safari, animated: true)
-                    }
-
                     OAuthClient.shared.pollForToken(deviceCode: code.deviceCode,
                                                     clientId: code.clientId,
                                                     clientSecret: code.clientSecret,
@@ -121,6 +135,8 @@ final class AuthViewController: UIViewController {
                         DispatchQueue.main.async {
                             switch result {
                             case .success:
+                                OAuthClient.shared.isAnonymous = false
+                                UserProfileStore.shared.load()
                                 self?.onAuthorized?()
                             case .failure(let error):
                                 self?.statusLabel.text = "Failed: \(error.localizedDescription)"

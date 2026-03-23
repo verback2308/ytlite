@@ -1,0 +1,73 @@
+import UIKit
+
+/// Adds a shimmering skeleton overlay to any UIView.
+extension UIView {
+
+    private static let skeletonTag = 99_001
+
+    func showSkeleton() {
+        guard viewWithTag(UIView.skeletonTag) == nil else { return }
+        let overlay = SkeletonOverlayView(frame: bounds)
+        overlay.tag = UIView.skeletonTag
+        overlay.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        overlay.isUserInteractionEnabled = false
+        addSubview(overlay)
+        overlay.startAnimating()
+    }
+
+    func hideSkeleton() {
+        viewWithTag(UIView.skeletonTag)?.removeFromSuperview()
+    }
+}
+
+// MARK: - Skeleton Overlay
+
+private final class SkeletonOverlayView: UIView {
+
+    private let gradientLayer = CAGradientLayer()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        backgroundColor = UIColor(white: 0.13, alpha: 1)
+        gradientLayer.colors = [
+            UIColor(white: 0.13, alpha: 1).cgColor,
+            UIColor(white: 0.22, alpha: 1).cgColor,
+            UIColor(white: 0.13, alpha: 1).cgColor,
+        ]
+        gradientLayer.startPoint = CGPoint(x: 0, y: 0.5)
+        gradientLayer.endPoint   = CGPoint(x: 1, y: 0.5)
+        gradientLayer.locations  = [-1, -0.5, 0]
+        layer.addSublayer(gradientLayer)
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        gradientLayer.frame = bounds
+    }
+
+    func startAnimating() {
+        let anim = CABasicAnimation(keyPath: "locations")
+        anim.fromValue = [-1.0, -0.5, 0.0]
+        anim.toValue   = [1.0,  1.5,  2.0]
+        anim.duration  = 1.3
+        anim.repeatCount = .infinity
+        gradientLayer.add(anim, forKey: "shimmer")
+    }
+}
+
+// MARK: - Skeleton placeholder shapes
+
+/// A plain rounded rectangle used as a placeholder inside skeleton cells.
+final class SkeletonBlockView: UIView {
+
+    init(cornerRadius: CGFloat = 4) {
+        super.init(frame: .zero)
+        backgroundColor = UIColor(white: 0.18, alpha: 1)
+        layer.cornerRadius = cornerRadius
+        translatesAutoresizingMaskIntoConstraints = false
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+}

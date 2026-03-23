@@ -74,6 +74,26 @@ enum TabBarIcons {
         }
     }
 
+    static func library(size: CGFloat = 24) -> UIImage {
+        return draw(size: size) { ctx, s in
+            ctx.setStrokeColor(UIColor.white.cgColor)
+            // Clock circle
+            ctx.setLineWidth(s * 0.09)
+            ctx.strokeEllipse(in: CGRect(x: s * 0.08, y: s * 0.08,
+                                         width: s * 0.84, height: s * 0.84))
+            ctx.setLineWidth(s * 0.08)
+            ctx.setLineCap(.round)
+            // Hour hand (pointing up)
+            ctx.move(to: CGPoint(x: s * 0.5, y: s * 0.5))
+            ctx.addLine(to: CGPoint(x: s * 0.5, y: s * 0.24))
+            ctx.strokePath()
+            // Minute hand (pointing right-down)
+            ctx.move(to: CGPoint(x: s * 0.5, y: s * 0.5))
+            ctx.addLine(to: CGPoint(x: s * 0.72, y: s * 0.62))
+            ctx.strokePath()
+        }
+    }
+
     // MARK: - Private
 
     private static func draw(size: CGFloat, block: (CGContext, CGFloat) -> Void) -> UIImage {

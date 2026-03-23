@@ -1,17 +1,39 @@
 import UIKit
 
+enum ThemeMode: String {
+    case dark  = "dark"
+    case light = "light"
+    case auto  = "auto"   // light 07:00–19:00, dark otherwise
+}
+
 class ThemeManager {
 
     static let shared = ThemeManager()
     static let didChangeNotification = Notification.Name("ThemeManagerDidChange")
 
-    var isDark: Bool {
-        get { UserDefaults.standard.object(forKey: "isDarkTheme") as? Bool ?? true }
+    var themeMode: ThemeMode {
+        get {
+            let raw = UserDefaults.standard.string(forKey: "themeMode") ?? "dark"
+            return ThemeMode(rawValue: raw) ?? .dark
+        }
         set {
-            UserDefaults.standard.set(newValue, forKey: "isDarkTheme")
+            UserDefaults.standard.set(newValue.rawValue, forKey: "themeMode")
             applyGlobal()
             NotificationCenter.default.post(name: ThemeManager.didChangeNotification, object: nil)
         }
+    }
+
+    var isDark: Bool {
+        get {
+            switch themeMode {
+            case .dark:  return true
+            case .light: return false
+            case .auto:
+                let hour = Calendar.current.component(.hour, from: Date())
+                return !(hour >= 7 && hour < 19)
+            }
+        }
+        set { themeMode = newValue ? .dark : .light }
     }
 
     var background: UIColor  { isDark ? .black : UIColor(white: 0.96, alpha: 1) }
