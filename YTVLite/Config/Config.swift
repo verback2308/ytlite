@@ -1,5 +1,2 @@
-import Foundation
-
-enum Config {
-    static let proxyBaseURL = "http://192.168.31.224:3939"
-}
+// Config.swift — app-level configuration constants.
+// See also: Config/AppURLs.swift and Config/UserDefaultsKeys.swift.

@@ -13,11 +13,11 @@ class ThemeManager {
 
     var themeMode: ThemeMode {
         get {
-            let raw = UserDefaults.standard.string(forKey: "themeMode") ?? "dark"
+            let raw = UserDefaults.standard.string(forKey: UserDefaultsKeys.Theme.mode) ?? ThemeMode.dark.rawValue
             return ThemeMode(rawValue: raw) ?? .dark
         }
         set {
-            UserDefaults.standard.set(newValue.rawValue, forKey: "themeMode")
+            UserDefaults.standard.set(newValue.rawValue, forKey: UserDefaultsKeys.Theme.mode)
             applyGlobal()
             NotificationCenter.default.post(name: ThemeManager.didChangeNotification, object: nil)
         }

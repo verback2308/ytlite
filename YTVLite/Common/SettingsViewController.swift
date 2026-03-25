@@ -90,118 +90,94 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let row = sections[indexPath.section].rows[indexPath.row]
-        let t   = ThemeManager.shared
-
-        switch row {
+        switch sections[indexPath.section].rows[indexPath.row] {
         case .theme:
-            let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
-            cell.textLabel?.text = "Theme"
-            cell.textLabel?.textColor = t.primaryText
-            cell.backgroundColor = t.surface
-            cell.selectionStyle  = .none
-
-            let seg = UISegmentedControl(items: ["Dark", "Light", "Auto"])
-            switch t.themeMode {
-            case .dark:  seg.selectedSegmentIndex = 0
-            case .light: seg.selectedSegmentIndex = 1
-            case .auto:  seg.selectedSegmentIndex = 2
-            }
-            seg.addTarget(self, action: #selector(themeChanged(_:)), for: .valueChanged)
-            cell.accessoryView = seg
-            return cell
-
+            return makeThemeCell()
         case .quality:
-            let cell = UITableViewCell(style: .value1, reuseIdentifier: nil)
-            cell.textLabel?.text  = "Default Quality"
-            cell.textLabel?.textColor = t.primaryText
-            cell.detailTextLabel?.text = VideoQualityStore.displayName
-            cell.detailTextLabel?.textColor = t.secondaryText
-            cell.backgroundColor  = t.surface
-            cell.accessoryType    = .disclosureIndicator
-            return cell
-
+            return makeDisclosureCell("Default Quality", value: VideoQualityStore.displayName)
         case .persistCache:
-            let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
-            cell.textLabel?.text = "Keep feed cache 24h"
-            cell.textLabel?.textColor = t.primaryText
-            cell.backgroundColor = t.surface
-            cell.selectionStyle  = .none
-
-            let toggle = UISwitch()
-            toggle.isOn = AppCache.persistenceEnabled
-            toggle.addTarget(self, action: #selector(persistCacheToggled(_:)), for: .valueChanged)
-            cell.accessoryView = toggle
-            return cell
-
-        case .rydEnabled:
-            let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
-            cell.textLabel?.text = "Return YouTube Dislike"
-            cell.textLabel?.textColor = t.primaryText
-            cell.backgroundColor = t.surface
-            cell.selectionStyle  = .none
-
-            let toggle = UISwitch()
-            toggle.isOn = ReturnYouTubeDislikeService.enabled
-            toggle.addTarget(self, action: #selector(rydToggled(_:)), for: .valueChanged)
-            cell.accessoryView = toggle
-            return cell
-
-        case .sponsorBlockEnabled:
-            let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
-            cell.textLabel?.text = "SponsorBlock"
-            cell.textLabel?.textColor = t.primaryText
-            cell.backgroundColor = t.surface
-            cell.selectionStyle  = .none
-
-            let toggle = UISwitch()
-            toggle.isOn = SponsorBlockService.enabled
-            toggle.addTarget(self, action: #selector(sponsorBlockToggled(_:)), for: .valueChanged)
-            cell.accessoryView = toggle
-            return cell
-
-        case .sponsorBlockSettings:
-            let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
-            cell.textLabel?.text = "SponsorBlock Settings"
-            cell.textLabel?.textColor = t.primaryText
-            cell.backgroundColor = t.surface
-            cell.accessoryType   = .disclosureIndicator
-            return cell
-
+            return makeToggleCell("Keep feed cache 24h", isOn: AppCache.persistenceEnabled) {
+                AppCache.persistenceEnabled = $0
+            }
         case .clearCache:
-            let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
-            cell.textLabel?.text  = "Clear All Cache"
-            cell.textLabel?.textColor = UIColor(red: 1, green: 0, blue: 0, alpha: 1)
-            cell.textLabel?.textAlignment = .center
-            cell.backgroundColor  = t.surface
-            return cell
+            return makeDestructiveCell("Clear All Cache")
+        case .rydEnabled:
+            return makeToggleCell("Return YouTube Dislike", isOn: ReturnYouTubeDislikeService.enabled) {
+                ReturnYouTubeDislikeService.enabled = $0
+            }
+        case .sponsorBlockEnabled:
+            return makeToggleCell("SponsorBlock", isOn: SponsorBlockService.enabled) { [weak self] isOn in
+                SponsorBlockService.enabled = isOn
+                self?.reloadSponsorBlockSection()
+            }
+        case .sponsorBlockSettings:
+            return makeDisclosureCell("SponsorBlock Settings")
         }
     }
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        let row = sections[indexPath.section].rows[indexPath.row]
-        switch row {
-        case .quality: showQualityPicker()
-        case .clearCache: clearCache()
+        switch sections[indexPath.section].rows[indexPath.row] {
+        case .quality:              showQualityPicker()
+        case .clearCache:           clearCache()
         case .sponsorBlockSettings: showSponsorBlockSettings()
         default: break
         }
     }
 
+    // MARK: - Cell factories
+
+    private func makeToggleCell(_ title: String, isOn: Bool, onChange: @escaping (Bool) -> Void) -> UITableViewCell {
+        let cell = ToggleCell()
+        cell.configure(title: title, isOn: isOn)
+        cell.onToggle = onChange
+        return cell
+    }
+
+    private func makeDisclosureCell(_ title: String, value: String? = nil) -> UITableViewCell {
+        let t    = ThemeManager.shared
+        let cell = UITableViewCell(style: value != nil ? .value1 : .default, reuseIdentifier: nil)
+        cell.textLabel?.text            = title
+        cell.textLabel?.textColor       = t.primaryText
+        cell.detailTextLabel?.text      = value
+        cell.detailTextLabel?.textColor = t.secondaryText
+        cell.backgroundColor            = t.surface
+        cell.accessoryType              = .disclosureIndicator
+        return cell
+    }
+
+    private func makeDestructiveCell(_ title: String) -> UITableViewCell {
+        let t    = ThemeManager.shared
+        let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
+        cell.textLabel?.text      = title
+        cell.textLabel?.textColor = .systemRed
+        cell.textLabel?.textAlignment = .center
+        cell.backgroundColor      = t.surface
+        return cell
+    }
+
+    private func makeThemeCell() -> UITableViewCell {
+        let t    = ThemeManager.shared
+        let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
+        cell.textLabel?.text      = "Theme"
+        cell.textLabel?.textColor = t.primaryText
+        cell.backgroundColor      = t.surface
+        cell.selectionStyle       = .none
+
+        let seg = UISegmentedControl(items: ["Dark", "Light", "Auto"])
+        switch t.themeMode {
+        case .dark:  seg.selectedSegmentIndex = 0
+        case .light: seg.selectedSegmentIndex = 1
+        case .auto:  seg.selectedSegmentIndex = 2
+        }
+        seg.addTarget(self, action: #selector(themeChanged(_:)), for: .valueChanged)
+        cell.accessoryView = seg
+        return cell
+    }
+
     // MARK: - Actions
 
-    @objc private func persistCacheToggled(_ toggle: UISwitch) {
-        AppCache.persistenceEnabled = toggle.isOn
-    }
-
-    @objc private func rydToggled(_ toggle: UISwitch) {
-        ReturnYouTubeDislikeService.enabled = toggle.isOn
-    }
-
-    @objc private func sponsorBlockToggled(_ toggle: UISwitch) {
-        SponsorBlockService.enabled = toggle.isOn
-        // Reload SponsorBlock section to show/hide the Settings row and update footer
+    private func reloadSponsorBlockSection() {
         if let idx = sections.firstIndex(where: { $0.header == "SponsorBlock" }) {
             tableView.reloadSections(IndexSet(integer: idx), with: .automatic)
         }
@@ -255,15 +231,43 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
     }
 }
 
+// MARK: - ToggleCell
+// Reusable cell with a UISwitch that fires a closure — avoids target/selector boilerplate.
+
+private final class ToggleCell: UITableViewCell {
+
+    var onToggle: ((Bool) -> Void)?
+
+    private let toggle = UISwitch()
+
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: style, reuseIdentifier: reuseIdentifier)
+        selectionStyle = .none
+        toggle.addTarget(self, action: #selector(handleToggle), for: .valueChanged)
+        accessoryView = toggle
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    func configure(title: String, isOn: Bool) {
+        let t = ThemeManager.shared
+        textLabel?.text      = title
+        textLabel?.textColor = t.primaryText
+        backgroundColor      = t.surface
+        toggle.isOn          = isOn
+    }
+
+    @objc private func handleToggle() { onToggle?(toggle.isOn) }
+}
+
 // MARK: - VideoQualityStore
 
 enum VideoQualityStore {
     static let options = ["Auto", "1080p", "720p", "480p", "360p"]
-    private static let key = "defaultVideoQuality"
 
     static var selected: String {
-        get { UserDefaults.standard.string(forKey: key) ?? "Auto" }
-        set { UserDefaults.standard.set(newValue, forKey: key) }
+        get { UserDefaults.standard.string(forKey: UserDefaultsKeys.VideoQuality.selected) ?? "Auto" }
+        set { UserDefaults.standard.set(newValue, forKey: UserDefaultsKeys.VideoQuality.selected) }
     }
 
     static var displayName: String { selected }
@@ -275,7 +279,7 @@ enum VideoQualityStore {
         case "720p":  return 720
         case "480p":  return 480
         case "360p":  return 360
-        default:      return nil   // Auto
+        default:      return nil
         }
     }
 }

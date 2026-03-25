@@ -5,10 +5,9 @@ final class AppCache {
     private init() {}
 
     // MARK: - Settings
-    static let persistenceKey = "feedCachePersistenceEnabled"
     static var persistenceEnabled: Bool {
-        get { UserDefaults.standard.object(forKey: persistenceKey) as? Bool ?? true }
-        set { UserDefaults.standard.set(newValue, forKey: persistenceKey) }
+        get { UserDefaults.standard.object(forKey: UserDefaultsKeys.Cache.feedPersistenceEnabled) as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: UserDefaultsKeys.Cache.feedPersistenceEnabled) }
     }
     private let feedTTL: TimeInterval = 24 * 60 * 60  // 24 hours
 

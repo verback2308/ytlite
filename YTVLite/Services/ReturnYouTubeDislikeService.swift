@@ -11,18 +11,18 @@ final class ReturnYouTubeDislikeService {
     static let shared = ReturnYouTubeDislikeService()
     private init() {}
 
-    private let baseURL = "https://returnyoutubedislikeapi.com"
-    static let attributionURL = "https://returnyoutubedislike.com"
+    private let baseURL = AppURLs.RYD.api
+    static let attributionURL = AppURLs.RYD.web
 
     /// Whether dislike count fetching and vote reporting is enabled.
     static var enabled: Bool {
         get {
-            let key = "ryd_enabled"
+            let key = UserDefaultsKeys.RYD.enabled
             if UserDefaults.standard.object(forKey: key) == nil { return true }
             return UserDefaults.standard.bool(forKey: key)
         }
         set {
-            UserDefaults.standard.set(newValue, forKey: "ryd_enabled")
+            UserDefaults.standard.set(newValue, forKey: UserDefaultsKeys.RYD.enabled)
             if newValue { ReturnYouTubeDislikeService.shared.prepareIfNeeded() }
         }
     }
@@ -38,7 +38,7 @@ final class ReturnYouTubeDislikeService {
 
     // Persistent anonymous user ID — alphanumeric string (not UUID) matching RYD spec
     private var userId: String {
-        let key = "ryd_userId_v2"
+        let key = UserDefaultsKeys.RYD.userId
         if let id = UserDefaults.standard.string(forKey: key) { return id }
         let charset = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")
         let id = String((0..<36).map { _ in charset[Int.random(in: 0..<charset.count)] })
@@ -48,8 +48,8 @@ final class ReturnYouTubeDislikeService {
 
     // Track whether registration completed
     private var registrationConfirmed: Bool {
-        get { UserDefaults.standard.bool(forKey: "ryd_registered_v2") }
-        set { UserDefaults.standard.set(newValue, forKey: "ryd_registered_v2") }
+        get { UserDefaults.standard.bool(forKey: UserDefaultsKeys.RYD.registered) }
+        set { UserDefaults.standard.set(newValue, forKey: UserDefaultsKeys.RYD.registered) }
     }
 
     // MARK: - Fetch vote counts

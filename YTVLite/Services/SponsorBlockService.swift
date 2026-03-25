@@ -11,6 +11,33 @@ struct SponsorBlockSegment {
     let actionType: String
 }
 
+// MARK: - Category definition (data-driven — each category declared exactly once)
+
+/// All attributes of a single SponsorBlock category in one place.
+/// Adding a new category = adding one entry to `SBCategory.catalog`.
+private struct SBCategoryDefinition {
+    let displayName: String
+    let description: String
+    let seekBarColor: UIColor
+    let defaultSkipBehavior: SBSkipBehavior
+    /// Whether auto-skip is a valid option (false for whole-video / chapter categories).
+    let canAutoSkip: Bool
+    /// Whether a manual skip button makes sense for this category.
+    let canShowButton: Bool
+
+    init(_ name: String, _ desc: String, _ hex: String,
+         behavior: SBSkipBehavior = .disabled,
+         canAutoSkip: Bool = true,
+         canShowButton: Bool = true) {
+        displayName         = name
+        description         = desc
+        seekBarColor        = UIColor(sbHex: hex)
+        defaultSkipBehavior = behavior
+        self.canAutoSkip    = canAutoSkip
+        self.canShowButton  = canShowButton
+    }
+}
+
 // MARK: - Category
 
 enum SBCategory: String, CaseIterable {
@@ -26,87 +53,84 @@ enum SBCategory: String, CaseIterable {
     case musicOfftopic    = "music_offtopic"
     case chapter
 
-    var displayName: String {
-        switch self {
-        case .sponsor:         return "Sponsor"
-        case .selfpromo:       return "Unpaid/Self Promotion"
-        case .exclusiveAccess: return "Exclusive Access"
-        case .interaction:     return "Interaction Reminder (Subscribe)"
-        case .highlight:       return "Highlight"
-        case .intro:           return "Intermission/Intro Animation"
-        case .outro:           return "Endcards/Credits"
-        case .preview:         return "Preview/Recap"
-        case .filler:          return "Tangents/Jokes"
-        case .musicOfftopic:   return "Non-Music Section"
-        case .chapter:         return "Chapter"
-        }
+    // MARK: Catalog — single source of truth for all category metadata
+
+    // swiftlint:disable closure_body_length
+    private static let catalog: [SBCategory: SBCategoryDefinition] = {
+        typealias D = SBCategoryDefinition
+        return [
+            .sponsor: D(
+                "Sponsor",
+                "Paid promotion, paid referrals and direct advertisements. Not for self-promotion or free shoutouts to causes/creators/websites/products they like.",
+                "#00d400", behavior: .autoSkip
+            ),
+            .selfpromo: D(
+                "Unpaid/Self Promotion",
+                "Similar to \"sponsor\" except for unpaid or self promotion. This includes sections about merchandise, donations, or information about who they collaborated with.",
+                "#ffff00"
+            ),
+            .exclusiveAccess: D(
+                "Exclusive Access",
+                "Only for labeling entire videos. Used when a video showcases a product, service or location that they've received free or subsidized access to.",
+                "#008000", canAutoSkip: false, canShowButton: false
+            ),
+            .interaction: D(
+                "Interaction Reminder (Subscribe)",
+                "When there is a short reminder to like, subscribe or follow in the middle of content. If it is long or about something specific, it should be under self promotion instead.",
+                "#cc00ff"
+            ),
+            .highlight: D(
+                "Highlight",
+                "The part of the video that most people are looking for. Similar to \"Video starts at x\" comments.",
+                "#ff1684"
+            ),
+            .intro: D(
+                "Intermission/Intro Animation",
+                "An interval without actual content. Could be a pause, static frame, or repeating animation. This should not be used for transitions containing information.",
+                "#00ffff"
+            ),
+            .outro: D(
+                "Endcards/Credits",
+                "Credits or when the YouTube endcards appear. Not for conclusions with information.",
+                "#0202ed"
+            ),
+            .preview: D(
+                "Preview/Recap",
+                "Collection of clips that show what is coming up in this video or other videos in a series where all information is repeated later in the video.",
+                "#008fd6"
+            ),
+            .filler: D(
+                "Tangents/Jokes",
+                "Tangential scenes or jokes that are not required to understand the main content of the video. This should not include segments providing context or background details.",
+                "#7300ab"
+            ),
+            .musicOfftopic: D(
+                "Non-Music Section",
+                "Only for music videos. Non-music part of a music video.",
+                "#ff9900"
+            ),
+            .chapter: D(
+                "Chapter",
+                "Custom named sections of the video.",
+                "#feff01", canAutoSkip: false, canShowButton: false
+            ),
+        ]
+    }()
+    // swiftlint:enable closure_body_length
+
+    // MARK: Derived properties — delegated to catalog (no switch needed)
+
+    private var info: SBCategoryDefinition {
+        // catalog covers every case; force-unwrap is safe
+        Self.catalog[self]!
     }
 
-    var categoryDescription: String {
-        switch self {
-        case .sponsor:
-            return "Paid promotion, paid referrals and direct advertisements. Not for self-promotion or free shoutouts to causes/creators/websites/products they like."
-        case .selfpromo:
-            return "Similar to \"sponsor\" except for unpaid or self promotion. This includes sections about merchandise, donations, or information about who they collaborated with."
-        case .exclusiveAccess:
-            return "Only for labeling entire videos. Used when a video showcases a product, service or location that they've received free or subsidized access to."
-        case .interaction:
-            return "When there is a short reminder to like, subscribe or follow in the middle of content. If it is long or about something specific, it should be under self promotion instead."
-        case .highlight:
-            return "The part of the video that most people are looking for. Similar to \"Video starts at x\" comments."
-        case .intro:
-            return "An interval without actual content. Could be a pause, static frame, or repeating animation. This should not be used for transitions containing information."
-        case .outro:
-            return "Credits or when the YouTube endcards appear. Not for conclusions with information."
-        case .preview:
-            return "Collection of clips that show what is coming up in this video or other videos in a series where all information is repeated later in the video."
-        case .filler:
-            return "Tangential scenes or jokes that are not required to understand the main content of the video. This should not include segments providing context or background details."
-        case .musicOfftopic:
-            return "Only for music videos. Non-music part of a music video."
-        case .chapter:
-            return "Custom named sections of the video."
-        }
-    }
-
-    var seekBarColor: UIColor {
-        switch self {
-        case .sponsor:         return UIColor(sbHex: "#00d400")
-        case .selfpromo:       return UIColor(sbHex: "#ffff00")
-        case .exclusiveAccess: return UIColor(sbHex: "#008000")
-        case .interaction:     return UIColor(sbHex: "#cc00ff")
-        case .highlight:       return UIColor(sbHex: "#ff1684")
-        case .intro:           return UIColor(sbHex: "#00ffff")
-        case .outro:           return UIColor(sbHex: "#0202ed")
-        case .preview:         return UIColor(sbHex: "#008fd6")
-        case .filler:          return UIColor(sbHex: "#7300ab")
-        case .musicOfftopic:   return UIColor(sbHex: "#ff9900")
-        case .chapter:         return UIColor(sbHex: "#feff01")
-        }
-    }
-
-    var defaultSkipBehavior: SBSkipBehavior {
-        switch self {
-        case .sponsor:    return .autoSkip
-        default:          return .disabled
-        }
-    }
-
-    /// Whether this category can be auto-skipped (excludes whole-video / chapter categories)
-    var canAutoSkip: Bool {
-        switch self {
-        case .exclusiveAccess, .chapter: return false
-        default: return true
-        }
-    }
-
-    /// Whether a manual skip button makes sense for this category
-    var canShowButton: Bool {
-        switch self {
-        case .exclusiveAccess, .chapter: return false
-        default: return true
-        }
-    }
+    var displayName: String         { info.displayName }
+    var categoryDescription: String { info.description }
+    var seekBarColor: UIColor       { info.seekBarColor }
+    var defaultSkipBehavior: SBSkipBehavior { info.defaultSkipBehavior }
+    var canAutoSkip: Bool           { info.canAutoSkip }
+    var canShowButton: Bool         { info.canShowButton }
 }
 
 // MARK: - Skip behavior
@@ -125,13 +149,9 @@ enum SBSkipBehavior: String {
     }
 
     static func options(for category: SBCategory) -> [SBSkipBehavior] {
-        if category.canAutoSkip {
-            return [.autoSkip, .showButton, .disabled]
-        } else if category.canShowButton {
-            return [.showButton, .disabled]
-        } else {
-            return [.disabled]
-        }
+        if category.canAutoSkip    { return [.autoSkip, .showButton, .disabled] }
+        if category.canShowButton  { return [.showButton, .disabled] }
+        return [.disabled]
     }
 }
 
@@ -141,24 +161,24 @@ final class SponsorBlockService {
     static let shared = SponsorBlockService()
     private init() {}
 
-    static let attributionURL = "https://sponsor.ajay.app"
+    static let attributionURL  = AppURLs.SponsorBlock.api
     static let attributionText = "Powered by SponsorBlock (sponsor.ajay.app) — an open community project."
 
     // MARK: - Feature toggle
 
     static var enabled: Bool {
         get {
-            let key = "sponsorblock_enabled"
+            let key = UserDefaultsKeys.SponsorBlock.enabled
             guard UserDefaults.standard.object(forKey: key) != nil else { return false }
             return UserDefaults.standard.bool(forKey: key)
         }
-        set { UserDefaults.standard.set(newValue, forKey: "sponsorblock_enabled") }
+        set { UserDefaults.standard.set(newValue, forKey: UserDefaultsKeys.SponsorBlock.enabled) }
     }
 
     // MARK: - Per-category settings
 
     static func skipBehavior(for category: SBCategory) -> SBSkipBehavior {
-        let key = "sb_behavior_\(category.rawValue)"
+        let key = UserDefaultsKeys.SponsorBlock.segmentBehavior(for: category.rawValue)
         guard let raw = UserDefaults.standard.string(forKey: key),
               let behavior = SBSkipBehavior(rawValue: raw)
         else { return category.defaultSkipBehavior }
@@ -166,7 +186,8 @@ final class SponsorBlockService {
     }
 
     static func setSkipBehavior(_ behavior: SBSkipBehavior, for category: SBCategory) {
-        UserDefaults.standard.set(behavior.rawValue, forKey: "sb_behavior_\(category.rawValue)")
+        let key = UserDefaultsKeys.SponsorBlock.segmentBehavior(for: category.rawValue)
+        UserDefaults.standard.set(behavior.rawValue, forKey: key)
     }
 
     // MARK: - API
@@ -178,7 +199,7 @@ final class SponsorBlockService {
         let catJSON    = "[" + categories.map { "\"\($0)\"" }.joined(separator: ",") + "]"
         let actionJSON = "[\"skip\",\"poi\",\"chapter\",\"full\"]"
 
-        guard var comps = URLComponents(string: "https://sponsor.ajay.app/api/skipSegments") else {
+        guard var comps = URLComponents(string: "\(AppURLs.SponsorBlock.api)/api/skipSegments") else {
             completion(.failure(NSError(domain: "SponsorBlock", code: 0,
                 userInfo: [NSLocalizedDescriptionKey: "Invalid base URL"])))
             return

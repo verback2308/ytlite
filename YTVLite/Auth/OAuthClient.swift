@@ -16,16 +16,16 @@ extension Notification.Name {
 final class OAuthClient {
     static let shared = OAuthClient()
 
-    private let deviceCodeURL = "https://www.youtube.com/o/oauth2/device/code"
-    private let tokenURL      = "https://www.youtube.com/o/oauth2/token"
+    private let deviceCodeURL = AppURLs.YouTube.OAuth.deviceCode
+    private let tokenURL      = AppURLs.YouTube.OAuth.token
     private let scope         = "http://gdata.youtube.com https://www.googleapis.com/auth/youtube-paid-content"
 
     private(set) var tokens: OAuthTokens?
     var isSignedIn: Bool { tokens != nil }
 
     var isAnonymous: Bool {
-        get { tokens == nil && UserDefaults.standard.bool(forKey: "isAnonymous") }
-        set { UserDefaults.standard.set(newValue, forKey: "isAnonymous") }
+        get { tokens == nil && UserDefaults.standard.bool(forKey: UserDefaultsKeys.Auth.isAnonymous) }
+        set { UserDefaults.standard.set(newValue, forKey: UserDefaultsKeys.Auth.isAnonymous) }
     }
 
     private init() { tokens = loadFromKeychain() }
