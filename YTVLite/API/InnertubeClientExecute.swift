@@ -428,6 +428,7 @@ extension InnertubeClient {
     }
 
     func executeWatchNext(video: Video, token: String,
+                                  cancellationToken: CancellationToken? = nil,
                                   completion: @escaping (Result<WatchPage, Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/next") else {
             completion(.failure(APIError.invalidURL))
@@ -443,7 +444,7 @@ extension InnertubeClient {
         }
 
         let headers = ["Content-Type": "application/json", "Authorization": "Bearer \(token)"]
-        api.post(url: url, headers: headers, body: bodyData) { result in
+        api.post(url: url, headers: headers, body: bodyData, cancellationToken: cancellationToken) { result in
             switch result {
             case .failure(let error):
                 print("[Innertube] watch next request failed \(video.id): \(error)")
@@ -462,6 +463,7 @@ extension InnertubeClient {
     }
 
     func executeComments(videoId: String, continuation: String?,
+                                 cancellationToken: CancellationToken? = nil,
                                  completion: @escaping (Result<CommentsPage, Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/next") else {
             completion(.failure(APIError.invalidURL))
@@ -486,7 +488,7 @@ extension InnertubeClient {
             "X-Youtube-Client-Version": DirectPlaybackClient.web.clientVersion
         ]
 
-        api.post(url: url, headers: headers, body: bodyData) { result in
+        api.post(url: url, headers: headers, body: bodyData, cancellationToken: cancellationToken) { result in
             switch result {
             case .failure(let error):
                 print("[Innertube] comments request failed \(videoId): \(error)")
@@ -536,6 +538,7 @@ extension InnertubeClient {
 
     func executeDirectPlayback(videoId: String, client: DirectPlaybackClient, token: String, poToken: String?,
                                        visitorData: String? = nil,
+                                       cancellationToken: CancellationToken? = nil,
                                        completion: @escaping (Result<DirectPlaybackInfo, Error>) -> Void) {
         let urlStr: String
         switch client {
@@ -623,7 +626,7 @@ extension InnertubeClient {
 
         print("[Innertube] sending \(client) request to \(url.absoluteString), bodySize=\(bodyData.count), headers=\(requestHeaders.keys.sorted().joined(separator: ","))")
 
-        api.post(url: url, headers: requestHeaders, body: bodyData) { result in
+        api.post(url: url, headers: requestHeaders, body: bodyData, cancellationToken: cancellationToken) { result in
             switch result {
             case .failure(let error):
                 print("[Innertube] direct playback request failed \(videoId), client: \(client): \(error)")

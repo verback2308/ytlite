@@ -35,6 +35,11 @@ final class WatchViewController: UIViewController {
     private var activePlaybackHeaders: [String: String] = [:]
     private var activeVideoFormat: DashFormatInfo?
 
+    /// Token cancelled when the VC disappears — silences all in-flight network callbacks.
+    private var pageLoadToken = CancellationToken()
+    /// True while the outer scrollView is being dragged — prevents accidental cell taps.
+    private var isOuterScrollViewDragging = false
+
     private let scrollView = UIScrollView()
     private let contentView = UIView()
     private let relatedCollectionView: UICollectionView
@@ -177,6 +182,9 @@ final class WatchViewController: UIViewController {
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
+        if isMovingFromParent || isBeingDismissed {
+            pageLoadToken.cancel()
+        }
         playerViewController?.player?.pause()
         videoPlayerView?.player?.pause()
         directPlayerView?.pause()
@@ -239,6 +247,7 @@ final class WatchViewController: UIViewController {
         scrollView.delaysContentTouches = false
         scrollView.canCancelContentTouches = true
         scrollView.panGestureRecognizer.cancelsTouchesInView = false
+        scrollView.delegate = self
         view.addSubview(scrollView)
 
         playerContainer.translatesAutoresizingMaskIntoConstraints = false
@@ -628,7 +637,7 @@ final class WatchViewController: UIViewController {
     }
 
     private func loadWatchPage() {
-        client.fetchWatchPage(video: initialVideo) { [weak self] result in
+        client.fetchWatchPage(video: initialVideo, cancellationToken: pageLoadToken) { [weak self] result in
             DispatchQueue.main.async {
                 switch result {
                 case .success(let page):
@@ -653,6 +662,9 @@ final class WatchViewController: UIViewController {
     func loadVideo(_ video: Video) {
         relatedExpansionWorkItem?.cancel()
         relatedExpansionWorkItem = nil
+
+        pageLoadToken.cancel()
+        pageLoadToken = CancellationToken()
 
         resetPlaybackSurfaces()
         fastStartLoaders = []
@@ -788,7 +800,7 @@ final class WatchViewController: UIViewController {
             renderComments()
         }
 
-        client.fetchComments(videoId: initialVideo.id, continuation: continuation) { [weak self] result in
+        client.fetchComments(videoId: initialVideo.id, continuation: continuation, cancellationToken: pageLoadToken) { [weak self] result in
             DispatchQueue.main.async {
                 guard let self = self else { return }
                 self.isLoadingComments = false
@@ -933,7 +945,7 @@ final class WatchViewController: UIViewController {
     private func startPlayback(using client: DirectPlaybackClient) {
         activeDirectPlaybackClient = client
         playerStatusLabel.text = "Resolving direct stream..."
-        self.client.fetchDirectPlayback(videoId: initialVideo.id, client: client) { [weak self] result in
+        self.client.fetchDirectPlayback(videoId: initialVideo.id, client: client, cancellationToken: pageLoadToken) { [weak self] result in
             switch result {
             case .failure(let error):
                 self?.showPlaybackError(error.localizedDescription)
@@ -1646,6 +1658,7 @@ final class WatchViewController: UIViewController {
     }
 
     private func attachManifestPlayer(url: URL) {
+        guard !pageLoadToken.isCancelled else { return }
         resetPlaybackSurfaces()
 
         let playerView = manifestPlayerView ?? {
@@ -1765,6 +1778,7 @@ final class WatchViewController: UIViewController {
     }
 
     private func attachPlayer(item: AVPlayerItem, minimizeStalling: Bool = true) {
+        guard !pageLoadToken.isCancelled else { return }
         resetPlaybackSurfaces()
 
         playerSpinner.stopAnimating()
@@ -2219,10 +2233,33 @@ extension WatchViewController: UICollectionViewDataSource {
 }
 
 extension WatchViewController: UICollectionViewDelegate {
+    func collectionView(_ collectionView: UICollectionView, shouldSelectItemAt indexPath: IndexPath) -> Bool {
+        // Block selection while the outer scroll view is being dragged/scrolled
+        // to prevent accidental video opens when the user intends to scroll.
+        return !isOuterScrollViewDragging && !scrollView.isDecelerating
+    }
+
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         guard visibleRelatedVideos.indices.contains(indexPath.item) else { return }
         let video = visibleRelatedVideos[indexPath.item]
         VideoRouter.shared.open(video: video, from: self)
+    }
+}
+
+extension WatchViewController: UIScrollViewDelegate {
+    func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+        guard scrollView === self.scrollView else { return }
+        isOuterScrollViewDragging = true
+    }
+
+    func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+        guard scrollView === self.scrollView else { return }
+        if !decelerate { isOuterScrollViewDragging = false }
+    }
+
+    func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+        guard scrollView === self.scrollView else { return }
+        isOuterScrollViewDragging = false
     }
 }
 

@@ -128,23 +128,26 @@ final class InnertubeClient: VideoService {
     func removeLike(videoId: String, completion: @escaping (Result<Void, Error>) -> Void) {
         sendVote(endpoint: "like/removelike", videoId: videoId, completion: completion)
     }
-    func fetchWatchPage(video: Video, completion: @escaping (Result<WatchPage, Error>) -> Void) {
+    func fetchWatchPage(video: Video, cancellationToken: CancellationToken? = nil,
+                        completion: @escaping (Result<WatchPage, Error>) -> Void) {
         print("[Innertube] fetchWatchPage start: \(video.id)")
         OAuthClient.shared.validToken { [weak self] result in
+            guard cancellationToken?.isCancelled != true else { return }
             switch result {
             case .failure(let error):
                 print("[Innertube] fetchWatchPage token failure for \(video.id): \(error)")
                 completion(.failure(error))
             case .success(let token):
-                self?.executeWatchNext(video: video, token: token, completion: completion)
+                self?.executeWatchNext(video: video, token: token, cancellationToken: cancellationToken, completion: completion)
             }
         }
     }
 
     func fetchComments(videoId: String, continuation: String? = nil,
+                       cancellationToken: CancellationToken? = nil,
                        completion: @escaping (Result<CommentsPage, Error>) -> Void) {
         print("[Innertube] fetchComments start: \(videoId), continuation: \(continuation != nil)")
-        executeComments(videoId: videoId, continuation: continuation, completion: completion)
+        executeComments(videoId: videoId, continuation: continuation, cancellationToken: cancellationToken, completion: completion)
     }
 
     func debugFetchPlayer(videoId: String, completion: @escaping (Result<Void, Error>) -> Void) {
@@ -160,30 +163,37 @@ final class InnertubeClient: VideoService {
     }
 
     func fetchDirectPlayback(videoId: String, client: DirectPlaybackClient = .tvHTML5, poToken: String? = nil,
+                             cancellationToken: CancellationToken? = nil,
                              completion: @escaping (Result<DirectPlaybackInfo, Error>) -> Void) {
         print("[Innertube] fetchDirectPlayback start: \(videoId), client: \(client)")
 
         if client.usesCookieAuth {
-            // Cookie-based auth clients (ANDROID_VR, IOS) use preflight webpage fetch, not OAuth
-            fetchVisitorData(videoId: videoId) { [weak self] visitorData in
-                self?.executeDirectPlayback(videoId: videoId, client: client, token: "", poToken: poToken, visitorData: visitorData, completion: completion)
+            fetchVisitorData(videoId: videoId, cancellationToken: cancellationToken) { [weak self] visitorData in
+                guard cancellationToken?.isCancelled != true else { return }
+                self?.executeDirectPlayback(videoId: videoId, client: client, token: "", poToken: poToken,
+                                            visitorData: visitorData, cancellationToken: cancellationToken,
+                                            completion: completion)
             }
             return
         }
 
         OAuthClient.shared.validToken { [weak self] result in
+            guard cancellationToken?.isCancelled != true else { return }
             switch result {
             case .failure(let error):
                 completion(.failure(error))
             case .success(let token):
-                self?.executeDirectPlayback(videoId: videoId, client: client, token: token, poToken: poToken, visitorData: nil, completion: completion)
+                self?.executeDirectPlayback(videoId: videoId, client: client, token: token, poToken: poToken,
+                                            visitorData: nil, cancellationToken: cancellationToken,
+                                            completion: completion)
             }
         }
     }
 
     /// Fetches the YouTube watch page to collect session cookies and extract visitorData.
     /// URLSession.shared automatically stores cookies for subsequent requests.
-    private func fetchVisitorData(videoId: String, completion: @escaping (String?) -> Void) {
+    private func fetchVisitorData(videoId: String, cancellationToken: CancellationToken? = nil,
+                                  completion: @escaping (String?) -> Void) {
         guard let url = URL(string: "https://www.youtube.com/watch?v=\(videoId)&bpctr=9999999999&has_verified=1") else {
             completion(nil)
             return
@@ -210,9 +220,11 @@ final class InnertubeClient: VideoService {
             HTTPCookieStorage.shared.setCookie(c2)
         }
 
-        URLSession.shared.dataTask(with: request) { data, response, error in
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
-                print("[Innertube] visitor data fetch failed: \(error.localizedDescription)")
+                if (error as NSError).code != NSURLErrorCancelled {
+                    print("[Innertube] visitor data fetch failed: \(error.localizedDescription)")
+                }
                 completion(nil)
                 return
             }
@@ -223,10 +235,8 @@ final class InnertubeClient: VideoService {
                 print("[Innertube] cookies after preflight: \(names)")
             }
 
-            // Extract visitorData from ytcfg or construct from VISITOR_INFO1_LIVE cookie
             var visitorData: String?
             if let data = data, let html = String(data: data, encoding: .utf8) {
-                // Try to extract from ytcfg.set: "VISITOR_DATA":"..."
                 if let range = html.range(of: "\"VISITOR_DATA\":\""),
                    let endRange = html[range.upperBound...].range(of: "\"") {
                     visitorData = String(html[range.upperBound..<endRange.lowerBound])
@@ -234,19 +244,18 @@ final class InnertubeClient: VideoService {
                 }
             }
 
-            // Fallback: use VISITOR_INFO1_LIVE cookie + VISITOR_PRIVACY_METADATA to build visitor ID
             if visitorData == nil {
                 if let cookies = HTTPCookieStorage.shared.cookies(for: URL(string: "https://www.youtube.com")!),
                    let visitorCookie = cookies.first(where: { $0.name == "VISITOR_INFO1_LIVE" }),
                    let privacyCookie = cookies.first(where: { $0.name == "VISITOR_PRIVACY_METADATA" }) {
-                    // The X-Goog-Visitor-Id is a protobuf-encoded combination of these
-                    // For now, just pass the raw cookie value
                     print("[Innertube] VISITOR_INFO1_LIVE=\(visitorCookie.value.prefix(20))..., VISITOR_PRIVACY_METADATA=\(privacyCookie.value.prefix(20))...")
                 }
             }
 
             completion(visitorData)
-        }.resume()
+        }
+        cancellationToken?.register(task)
+        task.resume()
     }
 
 }
