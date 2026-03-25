@@ -1,6 +1,6 @@
 import UIKit
 
-/// Builds and manages the shared navigation bar buttons (Settings + Profile/Avatar).
+/// Builds and manages the shared navigation bar buttons (Search + Settings + Profile/Avatar).
 /// Call `install(in:)` from any UIViewController that needs them.
 final class ToolbarManager {
 
@@ -10,10 +10,14 @@ final class ToolbarManager {
     // MARK: - Install buttons in a view controller
 
     func install(in vc: UIViewController) {
+        let searchBtn = UIBarButtonItem(barButtonSystemItem: .search,
+                                        target: vc,
+                                        action: #selector(UIViewController.toolbarOpenSearch))
+
         let settingsBtn: UIBarButtonItem
         if #available(iOS 13, *) {
             settingsBtn = UIBarButtonItem(
-                image: UIImage(systemName: "gearshape.fill"),
+                image: UIImage(systemName: "gearshape"),
                 style: .plain,
                 target: vc,
                 action: #selector(UIViewController.toolbarOpenSettings))
@@ -27,7 +31,7 @@ final class ToolbarManager {
         let profileBtn = makeProfileButton(target: vc,
                                            action: #selector(UIViewController.toolbarOpenProfile))
 
-        vc.navigationItem.rightBarButtonItems = [profileBtn, settingsBtn]
+        vc.navigationItem.rightBarButtonItems = [profileBtn, settingsBtn, searchBtn]
         NotificationCenter.default.addObserver(
             vc,
             selector: #selector(UIViewController.toolbarRefreshProfileButton),
@@ -37,6 +41,7 @@ final class ToolbarManager {
 
     private func makeProfileButton(target: AnyObject, action: Selector) -> UIBarButtonItem {
         let button = ProfileAvatarButton()
+        button.refresh()
         button.addTarget(target, action: action, for: .touchUpInside)
         return UIBarButtonItem(customView: button)
     }
@@ -45,6 +50,10 @@ final class ToolbarManager {
 // MARK: - UIViewController extension for toolbar actions
 
 extension UIViewController {
+
+    @objc func toolbarOpenSearch() {
+        navigationController?.pushViewController(SearchViewController(), animated: true)
+    }
 
     @objc func toolbarOpenSettings() {
         let nav = UINavigationController(rootViewController: SettingsViewController())

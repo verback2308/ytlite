@@ -40,19 +40,8 @@ class HomeViewController: VideosViewController {
     }
 
     private func setupToolbar() {
-        // Search button on the left side of right buttons
-        let searchBtn = UIBarButtonItem(barButtonSystemItem: .search, target: self, action: #selector(openSearch))
-        // Install profile + settings, then insert search before them
         ToolbarManager.shared.install(in: self)
-        var items = navigationItem.rightBarButtonItems ?? []
-        items.append(searchBtn)
-        navigationItem.rightBarButtonItems = items
     }
-
-    @objc private func openSearch() {
-        navigationController?.pushViewController(SearchViewController(), animated: true)
-    }
-
     override func handleRefresh() {
         cache.clearHomeFeed()
         loadFeed()

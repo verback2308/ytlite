@@ -5,7 +5,6 @@ enum TabBarIcons {
     static func home(size: CGFloat = 24) -> UIImage {
         return draw(size: size) { ctx, s in
             let mid = s / 2
-            // Roof
             let roof = UIBezierPath()
             roof.move(to: CGPoint(x: mid, y: s * 0.08))
             roof.addLine(to: CGPoint(x: s * 0.95, y: s * 0.52))
@@ -17,7 +16,6 @@ enum TabBarIcons {
             roof.close()
             ctx.addPath(roof.cgPath)
             ctx.fillPath()
-            // Door
             ctx.setFillColor(UIColor.clear.cgColor)
             ctx.setBlendMode(.clear)
             let door = CGRect(x: s * 0.37, y: s * 0.62, width: s * 0.26, height: s * 0.32)
@@ -33,10 +31,8 @@ enum TabBarIcons {
             let startY: CGFloat = s * 0.1
             for i in 0..<3 {
                 let y = startY + CGFloat(i) * (lineH + gap)
-                // Thumbnail rect
                 let thumb = CGRect(x: s * 0.04, y: y, width: thumbW, height: lineH + gap * 0.6)
                 ctx.fill(thumb)
-                // Play triangle inside thumb
                 ctx.setFillColor(UIColor(white: 0.3, alpha: 1).cgColor)
                 let tx = thumb.midX - s * 0.04
                 let ty = thumb.midY
@@ -47,9 +43,7 @@ enum TabBarIcons {
                 tri.close()
                 ctx.addPath(tri.cgPath)
                 ctx.fillPath()
-                // Reset color
                 ctx.setFillColor(UIColor.white.cgColor)
-                // Text line
                 let textRect = CGRect(x: thumbW + s * 0.1, y: y + s * 0.02,
                                       width: s * 0.5, height: lineH * 0.7)
                 ctx.fill(textRect)
@@ -57,37 +51,17 @@ enum TabBarIcons {
         }
     }
 
-    static func profile(size: CGFloat = 24) -> UIImage {
-        return draw(size: size) { ctx, s in
-            // Head circle
-            ctx.fillEllipse(in: CGRect(x: s * 0.33, y: s * 0.06, width: s * 0.34, height: s * 0.34))
-            // Shoulders — trapezoid with curved top
-            let path = UIBezierPath()
-            path.move(to: CGPoint(x: 0, y: s))
-            path.addLine(to: CGPoint(x: s, y: s))
-            path.addLine(to: CGPoint(x: s * 0.85, y: s * 0.62))
-            path.addQuadCurve(to: CGPoint(x: s * 0.15, y: s * 0.62),
-                              controlPoint: CGPoint(x: s * 0.5, y: s * 0.38))
-            path.close()
-            ctx.addPath(path.cgPath)
-            ctx.fillPath()
-        }
-    }
-
     static func library(size: CGFloat = 24) -> UIImage {
         return draw(size: size) { ctx, s in
             ctx.setStrokeColor(UIColor.white.cgColor)
-            // Clock circle
             ctx.setLineWidth(s * 0.09)
             ctx.strokeEllipse(in: CGRect(x: s * 0.08, y: s * 0.08,
                                          width: s * 0.84, height: s * 0.84))
             ctx.setLineWidth(s * 0.08)
             ctx.setLineCap(.round)
-            // Hour hand (pointing up)
             ctx.move(to: CGPoint(x: s * 0.5, y: s * 0.5))
             ctx.addLine(to: CGPoint(x: s * 0.5, y: s * 0.24))
             ctx.strokePath()
-            // Minute hand (pointing right-down)
             ctx.move(to: CGPoint(x: s * 0.5, y: s * 0.5))
             ctx.addLine(to: CGPoint(x: s * 0.72, y: s * 0.62))
             ctx.strokePath()
