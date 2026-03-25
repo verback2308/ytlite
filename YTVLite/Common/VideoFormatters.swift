@@ -2,12 +2,17 @@ import Foundation
 
 enum VideoFormatters {
 
+    private static let iso8601Formatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        return f
+    }()
+
     /// Formats a relative date from an ISO 8601 string.
     /// If the string is not ISO 8601 (e.g. already "6 hours ago"), returns it as-is.
     static func formatRelativeDate(_ iso: String) -> String {
-        let fmt = DateFormatter()
-        fmt.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
-        guard let date = fmt.date(from: iso) else { return iso }
+        guard let date = iso8601Formatter.date(from: iso) else { return iso }
         let s = -date.timeIntervalSinceNow
         if s < 3600      { return "\(max(1, Int(s / 60)))m ago" }
         if s < 86400     { return "\(Int(s / 3600))h ago" }

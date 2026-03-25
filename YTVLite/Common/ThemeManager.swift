@@ -11,6 +11,19 @@ class ThemeManager {
     static let shared = ThemeManager()
     static let didChangeNotification = Notification.Name("ThemeManagerDidChange")
 
+    // Cached resolved colors — recomputed only when theme changes
+    private(set) var background: UIColor   = .black
+    private(set) var surface: UIColor      = UIColor(white: 0.1, alpha: 1)
+    private(set) var primaryText: UIColor  = .white
+    private(set) var secondaryText: UIColor = UIColor(white: 0.55, alpha: 1)
+    private(set) var separator: UIColor    = UIColor(white: 0.15, alpha: 1)
+    private(set) var barStyle: UIBarStyle  = .black
+    private(set) var statusBarStyle: UIStatusBarStyle = .lightContent
+
+    private init() {
+        rebuildCache()
+    }
+
     var themeMode: ThemeMode {
         get {
             let raw = UserDefaults.standard.string(forKey: UserDefaultsKeys.Theme.mode) ?? ThemeMode.dark.rawValue
@@ -18,6 +31,7 @@ class ThemeManager {
         }
         set {
             UserDefaults.standard.set(newValue.rawValue, forKey: UserDefaultsKeys.Theme.mode)
+            rebuildCache()
             applyGlobal()
             NotificationCenter.default.post(name: ThemeManager.didChangeNotification, object: nil)
         }
@@ -36,13 +50,16 @@ class ThemeManager {
         set { themeMode = newValue ? .dark : .light }
     }
 
-    var background: UIColor  { isDark ? .black : UIColor(white: 0.96, alpha: 1) }
-    var surface: UIColor     { isDark ? UIColor(white: 0.1, alpha: 1) : .white }
-    var primaryText: UIColor { isDark ? .white : UIColor(white: 0.1, alpha: 1) }
-    var secondaryText: UIColor { isDark ? UIColor(white: 0.55, alpha: 1) : UIColor(white: 0.45, alpha: 1) }
-    var separator: UIColor   { isDark ? UIColor(white: 0.15, alpha: 1) : UIColor(white: 0.88, alpha: 1) }
-    var barStyle: UIBarStyle { isDark ? .black : .default }
-    var statusBarStyle: UIStatusBarStyle { isDark ? .lightContent : .default }
+    private func rebuildCache() {
+        let dark = isDark
+        background    = dark ? .black : UIColor(white: 0.96, alpha: 1)
+        surface       = dark ? UIColor(white: 0.1, alpha: 1) : .white
+        primaryText   = dark ? .white : UIColor(white: 0.1, alpha: 1)
+        secondaryText = dark ? UIColor(white: 0.55, alpha: 1) : UIColor(white: 0.45, alpha: 1)
+        separator     = dark ? UIColor(white: 0.15, alpha: 1) : UIColor(white: 0.88, alpha: 1)
+        barStyle      = dark ? .black : .default
+        statusBarStyle = dark ? .lightContent : .default
+    }
 
     func applyGlobal() {
         let nav = UINavigationBar.appearance()

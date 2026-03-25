@@ -121,37 +121,34 @@ final class ChannelInfoStore {
     private init() {}
 
     func fetch(channelId: String, completion: @escaping (Result<ChannelInfo, Error>) -> Void) {
+        // Fast-path: cache read without queue hop when called from main thread
+        if Thread.isMainThread, let cached = cache[channelId] {
+            completion(.success(cached))
+            return
+        }
+
         queue.async {
             if let cached = self.cache[channelId] {
-                //print("[ChannelInfoStore] cache hit for \(channelId)")
-                DispatchQueue.main.async {
-                    completion(.success(cached))
-                }
+                DispatchQueue.main.async { completion(.success(cached)) }
                 return
             }
 
             if self.pending[channelId] != nil {
-                //print("[ChannelInfoStore] joined pending request for \(channelId)")
                 self.pending[channelId]?.append(completion)
                 return
             }
 
-            //print("[ChannelInfoStore] fetching channel info for \(channelId)")
             self.pending[channelId] = [completion]
 
             self.client.fetchChannelInfo(channelId: channelId) { result in
                 self.queue.async {
                     if case .success(let info) = result {
-                        //print("[ChannelInfoStore] fetched \(channelId), avatar: \(info.avatarURL ?? "nil"), title: \(info.title)")
                         self.cache[channelId] = info
                     } else if case .failure(let error) = result {
                         print("[ChannelInfoStore] failed \(channelId): \(error)")
                     }
-
                     let callbacks = self.pending.removeValue(forKey: channelId) ?? []
-                    DispatchQueue.main.async {
-                        callbacks.forEach { $0(result) }
-                    }
+                    DispatchQueue.main.async { callbacks.forEach { $0(result) } }
                 }
             }
         }

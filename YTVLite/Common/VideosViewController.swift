@@ -105,16 +105,30 @@ class VideosViewController: UIViewController {
         isLoadingInitial = false
         seenVideoIds = []
         videos = []
-        appendPage(page)
-    }
-
-    // Append a page of results (deduplicates by video id)
-    func appendPage(_ page: FeedPage) {
         let newVideos = page.videos.filter { seenVideoIds.insert($0.id).inserted }
         videos.append(contentsOf: newVideos)
         continuationToken = page.continuation
         isLoadingMore = false
         collectionView.reloadData()
+    }
+
+    // Append a page of results (deduplicates by video id)
+    func appendPage(_ page: FeedPage) {
+        let newVideos = page.videos.filter { seenVideoIds.insert($0.id).inserted }
+        let insertStart = videos.count
+        videos.append(contentsOf: newVideos)
+        continuationToken = page.continuation
+        isLoadingMore = false
+
+        if isLoadingInitial {
+            // First page: skeleton → real cells (full reload to switch cell types)
+            isLoadingInitial = false
+            collectionView.reloadData()
+        } else {
+            // Subsequent pages: surgically insert new rows, no flicker
+            let indexPaths = (insertStart..<videos.count).map { IndexPath(item: $0, section: 0) }
+            collectionView.insertItems(at: indexPaths)
+        }
     }
 
     func finishLoadingMore() {

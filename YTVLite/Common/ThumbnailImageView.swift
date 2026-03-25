@@ -22,40 +22,43 @@ class ThumbnailImageView: UIImageView {
     required init?(coder: NSCoder) { fatalError() }
 
     func setImage(url: URL) {
-        if currentURL == url, image != nil {
-            return
-        }
-
+        if currentURL == url, image != nil { return }
         currentURL = url
 
+        // Memory cache — sync, zero cost
         if let cached = ThumbnailImageView.cache.object(forKey: url.absoluteString as NSString) {
-            //print("[ImageCache] memory hit \(url.absoluteString)")
             image = cached
             return
         }
 
-        if let cached = ThumbnailImageView.diskCache.image(for: url) {
-            //print("[ImageCache] disk hit \(url.absoluteString)")
-            ThumbnailImageView.cache.setObject(cached, forKey: url.absoluteString as NSString)
-            image = cached
-            return
-        }
-
-        //print("[ImageCache] network fetch \(url.absoluteString)")
         image = nil
 
-        URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
-            guard
-                let self = self,
-                let data = data,
-                let img = UIImage(data: data),
-                self.currentURL == url
-            else { return }
+        // Disk read and network fetch are both off the main thread
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self, self.currentURL == url else { return }
 
-            ThumbnailImageView.cache.setObject(img, forKey: url.absoluteString as NSString)
-            ThumbnailImageView.diskCache.store(data: data, for: url)
-            DispatchQueue.main.async { self.image = img }
-        }.resume()
+            if let cached = ThumbnailImageView.diskCache.image(for: url) {
+                ThumbnailImageView.cache.setObject(cached, forKey: url.absoluteString as NSString)
+                DispatchQueue.main.async { [weak self] in
+                    guard self?.currentURL == url else { return }
+                    self?.image = cached
+                }
+                return
+            }
+
+            URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
+                guard let self,
+                      let data,
+                      let img = UIImage(data: data),
+                      self.currentURL == url else { return }
+                ThumbnailImageView.cache.setObject(img, forKey: url.absoluteString as NSString)
+                ThumbnailImageView.diskCache.store(data: data, for: url)
+                DispatchQueue.main.async { [weak self] in
+                    guard self?.currentURL == url else { return }
+                    self?.image = img
+                }
+            }.resume()
+        }
     }
 
     func cancel() {
