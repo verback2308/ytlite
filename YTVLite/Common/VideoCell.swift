@@ -4,6 +4,12 @@ class VideoCell: UICollectionViewCell {
 
     static let reuseId = "VideoCell"
 
+    // Manual layout constants
+    private static let avatarSize: CGFloat = 32
+    private static let hPad: CGFloat = 6
+    private static let avatarGap: CGFloat = 10
+    private static let vPadAfterThumb: CGFloat = 8
+
     private let thumbnail = ThumbnailImageView(frame: .zero)
     private let durationLabel = UILabel()
     private let channelAvatarView = ThumbnailImageView(frame: .zero)
@@ -11,10 +17,6 @@ class VideoCell: UICollectionViewCell {
     private let channelLabel = UILabel()
     private let metaLabel = UILabel()
     private var representedChannelId: String?
-    private var avatarWidthConstraint: NSLayoutConstraint!
-    private var avatarMaxWidthConstraint: NSLayoutConstraint!
-    private var avatarHeightConstraint: NSLayoutConstraint!
-    private var titleLeadingConstraint: NSLayoutConstraint!
     var onChannelTap: (() -> Void)?
 
     override init(frame: CGRect) {
@@ -27,100 +29,85 @@ class VideoCell: UICollectionViewCell {
     required init?(coder: NSCoder) { fatalError() }
 
     private func setupUI() {
-        // Thumbnail
         thumbnail.layer.cornerRadius = 4
         thumbnail.layer.masksToBounds = true
-        thumbnail.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(thumbnail)
 
-        // Duration overlay
         durationLabel.font = UIFont.systemFont(ofSize: 11, weight: .semibold)
         durationLabel.textColor = .white
         durationLabel.backgroundColor = UIColor.black.withAlphaComponent(0.8)
         durationLabel.layer.cornerRadius = 3
         durationLabel.layer.masksToBounds = true
         durationLabel.textAlignment = .center
-        durationLabel.translatesAutoresizingMaskIntoConstraints = false
         thumbnail.addSubview(durationLabel)
 
-        channelAvatarView.layer.cornerRadius = 16
+        channelAvatarView.layer.cornerRadius = VideoCell.avatarSize / 2
         channelAvatarView.layer.masksToBounds = true
-        channelAvatarView.translatesAutoresizingMaskIntoConstraints = false
         channelAvatarView.isUserInteractionEnabled = true
         contentView.addSubview(channelAvatarView)
 
-        // Title
-        titleLabel.textColor = ThemeManager.shared.primaryText
         titleLabel.font = UIFont.systemFont(ofSize: 13, weight: .medium)
         titleLabel.numberOfLines = 2
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(titleLabel)
 
-        // Channel
-        channelLabel.textColor = ThemeManager.shared.secondaryText
         channelLabel.font = UIFont.systemFont(ofSize: 11)
-        channelLabel.translatesAutoresizingMaskIntoConstraints = false
         channelLabel.isUserInteractionEnabled = true
         contentView.addSubview(channelLabel)
 
-        // Meta (views • date)
-        metaLabel.textColor = ThemeManager.shared.secondaryText
         metaLabel.font = UIFont.systemFont(ofSize: 11)
-        metaLabel.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(metaLabel)
-
-        avatarWidthConstraint = channelAvatarView.widthAnchor.constraint(equalToConstant: 32)
-        avatarWidthConstraint.priority = .defaultHigh
-        avatarMaxWidthConstraint = channelAvatarView.widthAnchor.constraint(lessThanOrEqualToConstant: 32)
-        avatarHeightConstraint = channelAvatarView.heightAnchor.constraint(equalTo: channelAvatarView.widthAnchor)
-        titleLeadingConstraint = titleLabel.leadingAnchor.constraint(equalTo: channelAvatarView.trailingAnchor, constant: 10)
-        titleLeadingConstraint.priority = .defaultHigh
-        channelAvatarView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        channelAvatarView.setContentHuggingPriority(.required, for: .horizontal)
-        titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        channelLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        metaLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-
-        NSLayoutConstraint.activate([
-            thumbnail.topAnchor.constraint(equalTo: contentView.topAnchor),
-            thumbnail.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            thumbnail.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            thumbnail.heightAnchor.constraint(equalTo: thumbnail.widthAnchor, multiplier: 9.0/16.0),
-
-            durationLabel.trailingAnchor.constraint(equalTo: thumbnail.trailingAnchor, constant: -6),
-            durationLabel.bottomAnchor.constraint(equalTo: thumbnail.bottomAnchor, constant: -6),
-            durationLabel.heightAnchor.constraint(equalToConstant: 18),
-            durationLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 36),
-
-            channelAvatarView.topAnchor.constraint(equalTo: thumbnail.bottomAnchor, constant: 8),
-            channelAvatarView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 6),
-            avatarWidthConstraint,
-            avatarMaxWidthConstraint,
-            avatarHeightConstraint,
-
-            titleLabel.topAnchor.constraint(equalTo: thumbnail.bottomAnchor, constant: 6),
-            titleLeadingConstraint,
-            titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -6),
-
-            channelLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 2),
-            channelLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
-            channelLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
-
-            metaLabel.topAnchor.constraint(equalTo: channelLabel.bottomAnchor, constant: 2),
-            metaLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
-            metaLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
-        ])
 
         let avatarTap = UITapGestureRecognizer(target: self, action: #selector(handleChannelTap))
         channelAvatarView.addGestureRecognizer(avatarTap)
-
         let labelTap = UITapGestureRecognizer(target: self, action: #selector(handleChannelTap))
         channelLabel.addGestureRecognizer(labelTap)
+
+        applyTheme()
     }
 
-    @objc private func handleChannelTap() {
-        onChannelTap?()
+    // MARK: - Manual layout (no Auto Layout — zero constraint solver overhead)
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        let w = contentView.bounds.width
+        let thumbH = (w * 9.0 / 16.0).rounded()
+
+        // Thumbnail fills full width
+        thumbnail.frame = CGRect(x: 0, y: 0, width: w, height: thumbH)
+
+        // Duration badge — bottom-right of thumbnail
+        if !durationLabel.isHidden {
+            let dW = max(36, durationLabel.intrinsicContentSize.width + 8)
+            durationLabel.frame = CGRect(x: w - dW - 6, y: thumbH - 24, width: dW, height: 18)
+        }
+
+        let hp = VideoCell.hPad
+        let avatarSz = channelAvatarView.isHidden ? 0 : VideoCell.avatarSize
+        let avatarX: CGFloat = hp
+        let textX = avatarSz > 0 ? avatarX + avatarSz + VideoCell.avatarGap : hp
+        let textW = w - textX - hp
+
+        // Avatar — top-left of info area
+        if !channelAvatarView.isHidden {
+            channelAvatarView.frame = CGRect(x: avatarX,
+                                             y: thumbH + VideoCell.vPadAfterThumb,
+                                             width: avatarSz, height: avatarSz)
+        }
+
+        // Title — up to 2 lines, starts at same top as avatar
+        let titleTop = thumbH + VideoCell.hPad
+        let titleH = titleLabel.sizeThatFits(CGSize(width: textW, height: 52)).height
+        titleLabel.frame = CGRect(x: textX, y: titleTop, width: textW, height: min(titleH, 52))
+
+        let channelTop = titleLabel.frame.maxY + 2
+        let channelH: CGFloat = 14
+        channelLabel.frame = CGRect(x: textX, y: channelTop, width: textW, height: channelH)
+
+        let metaTop = channelLabel.frame.maxY + 2
+        metaLabel.frame = CGRect(x: textX, y: metaTop, width: textW, height: 14)
     }
+
+    @objc private func handleChannelTap() { onChannelTap?() }
 
     @objc private func applyTheme() {
         let t = ThemeManager.shared
@@ -140,7 +127,6 @@ class VideoCell: UICollectionViewCell {
 
     func configure(with video: Video) {
         hideSkeleton()
-        applyTheme()
         representedChannelId = video.channelId
         titleLabel.text = video.title
         channelLabel.text = video.channelName
@@ -152,7 +138,6 @@ class VideoCell: UICollectionViewCell {
             channelAvatarView.isHidden = false
             channelAvatarView.setImage(url: url)
         } else if let channelId = video.channelId {
-           // print("[VideoCell] resolving avatar for video \(video.id), channel \(channelId)")
             channelAvatarView.isHidden = false
             channelAvatarView.cancel()
             ChannelInfoStore.shared.fetch(channelId: channelId) { [weak self] result in
@@ -160,14 +145,10 @@ class VideoCell: UICollectionViewCell {
                 guard case .success(let info) = result,
                       let avatarURL = info.avatarURL,
                       let url = URL(string: avatarURL)
-                else {
-                    print("[VideoCell] avatar unavailable for channel \(channelId)")
-                    return
-                }
+                else { return }
                 self.channelAvatarView.setImage(url: url)
             }
         } else {
-            print("[VideoCell] no channelId for video \(video.id) (\(video.channelName))")
             channelAvatarView.isHidden = true
             channelAvatarView.cancel()
         }
@@ -182,6 +163,8 @@ class VideoCell: UICollectionViewCell {
         if let url = URL(string: video.thumbnailURL) {
             thumbnail.setImage(url: url)
         }
+
+        setNeedsLayout()
     }
 
     override func prepareForReuse() {
