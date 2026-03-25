@@ -1,5 +1,13 @@
 import UIKit
 
+private func resized(_ name: String, size: CGFloat) -> UIImage? {
+    guard let img = UIImage(named: name) else { return nil }
+    let renderer = UIGraphicsImageRenderer(size: CGSize(width: size, height: size))
+    return renderer.image { _ in
+        img.draw(in: CGRect(origin: .zero, size: CGSize(width: size, height: size)))
+    }.withRenderingMode(.alwaysTemplate)
+}
+
 /// Builds and manages the shared navigation bar buttons (Search + Settings + Profile/Avatar).
 /// Call `install(in:)` from any UIViewController that needs them.
 final class ToolbarManager {
@@ -10,23 +18,15 @@ final class ToolbarManager {
     // MARK: - Install buttons in a view controller
 
     func install(in vc: UIViewController) {
-        let searchBtn = UIBarButtonItem(barButtonSystemItem: .search,
-                                        target: vc,
-                                        action: #selector(UIViewController.toolbarOpenSearch))
+        let searchBtn = UIBarButtonItem(
+            image: resized("icon_Magnifyingglass", size: 22),
+            style: .plain, target: vc,
+            action: #selector(UIViewController.toolbarOpenSearch))
 
-        let settingsBtn: UIBarButtonItem
-        if #available(iOS 13, *) {
-            settingsBtn = UIBarButtonItem(
-                image: UIImage(systemName: "gearshape"),
-                style: .plain,
-                target: vc,
-                action: #selector(UIViewController.toolbarOpenSettings))
-        } else {
-            settingsBtn = UIBarButtonItem(
-                title: "⚙", style: .plain,
-                target: vc,
-                action: #selector(UIViewController.toolbarOpenSettings))
-        }
+        let settingsBtn = UIBarButtonItem(
+            image: resized("icon_Gear", size: 22),
+            style: .plain, target: vc,
+            action: #selector(UIViewController.toolbarOpenSettings))
 
         let profileBtn = makeProfileButton(target: vc,
                                            action: #selector(UIViewController.toolbarOpenProfile))

@@ -180,7 +180,6 @@ final class VideoPlayerView: UIView {
     private func setupTopBar() {
         // Settings button — top right
         settingsButton.setImage(PlayerIcons.settings(), for: .normal)
-        settingsButton.tintColor = .white
         settingsButton.translatesAutoresizingMaskIntoConstraints = false
         settingsButton.addTarget(self, action: #selector(settingsTapped), for: .touchUpInside)
         controlsView.addSubview(settingsButton)
@@ -632,35 +631,26 @@ enum PlayerIcons {
         }
     }
 
-    static func rewind10() -> UIImage { skipIcon(forward: false) }
-    static func forward10() -> UIImage { skipIcon(forward: true) }
+    static func rewind10() -> UIImage {
+        playerIcon("icon_Gobackward_10", size: 36)
+    }
+
+    static func forward10() -> UIImage {
+        playerIcon("icon_Goforward_10", size: 36)
+    }
 
     static func settings() -> UIImage {
-        return draw(size: CGSize(width: 28, height: 28)) { _ in
-            let center = CGPoint(x: 14, y: 14)
-            let outerR: CGFloat = 10
-            let innerR: CGFloat = 5
-            let teeth = 8
-            let path = UIBezierPath()
-            for i in 0..<teeth {
-                let angle = CGFloat(i) * .pi * 2 / CGFloat(teeth)
-                let outer = CGPoint(x: center.x + outerR * cos(angle), y: center.y + outerR * sin(angle))
-                let inner1 = CGPoint(x: center.x + (innerR + 2.5) * cos(angle - 0.3), y: center.y + (innerR + 2.5) * sin(angle - 0.3))
-                let inner2 = CGPoint(x: center.x + (innerR + 2.5) * cos(angle + 0.3), y: center.y + (innerR + 2.5) * sin(angle + 0.3))
-                if i == 0 { path.move(to: outer) } else { path.addLine(to: inner1) }
-                path.addLine(to: outer)
-                path.addLine(to: inner2)
-            }
-            path.close()
+        playerIcon("icon_Gear", size: 26)
+    }
+
+    private static func playerIcon(_ name: String, size: CGFloat) -> UIImage {
+        let s = CGSize(width: size, height: size)
+        let renderer = UIGraphicsImageRenderer(size: s)
+        let img = renderer.image { _ in
             UIColor.white.setFill()
-            path.fill()
-            // Hole
-            let hole = UIBezierPath(arcCenter: center, radius: innerR - 1.5, startAngle: 0, endAngle: .pi * 2, clockwise: true)
-            UIColor.black.withAlphaComponent(0).setFill()
-            hole.fill()
-            UIColor.black.setFill()
-            hole.fill()
+            UIImage(named: name)?.draw(in: CGRect(origin: .zero, size: s))
         }
+        return img.withRenderingMode(.alwaysOriginal)
     }
 
     static func fullscreen(isFullscreen: Bool) -> UIImage {
