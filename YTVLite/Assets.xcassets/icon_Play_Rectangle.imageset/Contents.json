@@ -1,9 +1,1 @@
-{
-  "images" : [
-    { "filename" : "Play_Rectangle@1x.png", "idiom" : "universal", "scale" : "1x" },
-    { "filename" : "Play_Rectangle@2x.png", "idiom" : "universal", "scale" : "2x" },
-    { "filename" : "Play_Rectangle@3x.png", "idiom" : "universal", "scale" : "3x" }
-  ],
-  "info" : { "author" : "xcode", "version" : 1 },
-  "properties" : { "template-rendering-intent" : "template" }
-}
+{"images":[{"filename":"icon_Play_Rectangle@1x.png","idiom":"universal","scale":"1x"},{"filename":"icon_Play_Rectangle@2x.png","idiom":"universal","scale":"2x"},{"filename":"icon_Play_Rectangle@3x.png","idiom":"universal","scale":"3x"}],"info":{"author":"xcode","version":1},"properties":{"template-rendering-intent":"template"}}
