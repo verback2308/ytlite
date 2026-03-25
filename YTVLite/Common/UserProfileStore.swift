@@ -17,44 +17,33 @@ final class UserProfileStore {
         guard OAuthClient.shared.isSignedIn, !isLoading else { return }
         isLoading = true
 
-        OAuthClient.shared.validToken { [weak self] result in
-            guard let self = self, case .success(let token) = result else {
-                self?.isLoading = false
-                return
-            }
-            guard let url = URL(string:
-                "https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true") else {
-                self.isLoading = false; return
-            }
-            let headers = ["Authorization": "Bearer \(token)"]
-            APIClient().get(url: url, headers: headers) { [weak self] result in
-                guard let self = self else { return }
+        // Use Innertube /account/accounts_list (TV context + Bearer token)
+        // This is how YouTube.js AccountManager.getInfo() works.
+        InnertubeClient.shared.fetchAccountInfo { [weak self] result in
+            guard let self = self else { return }
+            switch result {
+            case .failure(let err):
+                print("[UserProfileStore] fetchAccountInfo failed: \(err)")
                 self.isLoading = false
-                guard case .success(let data) = result,
-                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                      let item = (json["items"] as? [[String: Any]])?.first,
-                      let snippet = item["snippet"] as? [String: Any] else { return }
-
-                let name = snippet["title"] as? String ?? ""
-                let thumbs = snippet["thumbnails"] as? [String: Any] ?? [:]
-                let thumb = (thumbs["high"] ?? thumbs["medium"] ?? thumbs["default"]) as? [String: Any]
-                let thumbURLString = thumb?["url"] as? String ?? ""
-
-                self.displayName = name
-
-                if let avatarURL = URL(string: thumbURLString) {
-                    URLSession.shared.dataTask(with: avatarURL) { [weak self] data, _, _ in
-                        guard let self = self, let data = data, let img = UIImage(data: data) else { return }
+            case .success(let info):
+                self.displayName = info.name
+                guard let urlStr = info.avatarURL, let avatarURL = URL(string: urlStr) else {
+                    self.isLoading = false
+                    DispatchQueue.main.async {
+                        NotificationCenter.default.post(name: Self.didUpdateNotification, object: nil)
+                    }
+                    return
+                }
+                URLSession.shared.dataTask(with: avatarURL) { [weak self] data, _, _ in
+                    guard let self = self else { return }
+                    self.isLoading = false
+                    if let data = data, let img = UIImage(data: data) {
                         DispatchQueue.main.async {
                             self.avatarImage = img
                             NotificationCenter.default.post(name: Self.didUpdateNotification, object: nil)
                         }
-                    }.resume()
-                } else {
-                    DispatchQueue.main.async {
-                        NotificationCenter.default.post(name: Self.didUpdateNotification, object: nil)
                     }
-                }
+                }.resume()
             }
         }
     }
