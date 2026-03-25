@@ -60,7 +60,7 @@ class VideosViewController: UIViewController {
     }
 
     func openVideo(_ video: Video) {
-        navigationController?.pushViewController(WatchViewController(video: video), animated: true)
+        VideoRouter.shared.open(video: video, from: self)
     }
 
     func endRefreshing() {

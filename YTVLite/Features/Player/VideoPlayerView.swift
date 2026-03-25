@@ -87,7 +87,7 @@ final class VideoPlayerView: UIView {
 
     private var timeObserver: Any?
     private var hideWorkItem: DispatchWorkItem?
-    private var controlsVisible = true
+    private var controlsVisible = false
     private var duration: Double = 0
     private var rateObservation: NSKeyValueObservation?
     private var statusObservation: NSKeyValueObservation?
@@ -110,7 +110,9 @@ final class VideoPlayerView: UIView {
         playerLayer.videoGravity = .resizeAspect
         layer.addSublayer(playerLayer)
 
-        // Gradient layers go on top of playerLayer but below controls
+        // Gradient layers go on top of playerLayer but below controls — hidden by default
+        topGradientLayer.opacity = 0
+        bottomGradientLayer.opacity = 0
         layer.addSublayer(topGradientLayer)
         layer.addSublayer(bottomGradientLayer)
 
@@ -144,8 +146,9 @@ final class VideoPlayerView: UIView {
     // MARK: - Controls Setup
 
     private func setupControls() {
-        // Controls container fills entire view
+        // Controls container fills entire view — hidden by default
         controlsView.translatesAutoresizingMaskIntoConstraints = false
+        controlsView.alpha = 0
         addSubview(controlsView)
         NSLayoutConstraint.activate([
             controlsView.topAnchor.constraint(equalTo: topAnchor),

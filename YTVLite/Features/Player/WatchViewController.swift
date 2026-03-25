@@ -4,7 +4,7 @@ import WebKit
 
 final class WatchViewController: UIViewController {
 
-    private let initialVideo: Video
+    private var initialVideo: Video
     private let client = InnertubeClient()
     private let cache = AppCache.shared
 
@@ -113,9 +113,9 @@ final class WatchViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = initialVideo.title
         setupLayout()
         applyTheme()
+        setupNavigationBar()
         loadInitialState()
         if let cachedPage = cache.cachedWatchPage(videoId: initialVideo.id) {
             applyWatchPage(cachedPage)
@@ -124,6 +124,35 @@ final class WatchViewController: UIViewController {
         }
         NotificationCenter.default.addObserver(self, selector: #selector(applyTheme),
                                                name: ThemeManager.didChangeNotification, object: nil)
+    }
+
+    private func setupNavigationBar() {
+        // Opaque nav bar — same look as the rest of the app
+        let t = ThemeManager.shared
+        if #available(iOS 13.0, *) {
+            let appearance = UINavigationBarAppearance()
+            appearance.configureWithOpaqueBackground()
+            appearance.backgroundColor = t.surface
+            appearance.titleTextAttributes = [.foregroundColor: t.primaryText]
+            navigationItem.standardAppearance = appearance
+            navigationItem.scrollEdgeAppearance = appearance
+        } else {
+            navigationController?.navigationBar.barTintColor = t.surface
+            navigationController?.navigationBar.isTranslucent = false
+            navigationController?.navigationBar.titleTextAttributes = [.foregroundColor: t.primaryText]
+        }
+        navigationController?.navigationBar.tintColor = t.isDark ? .white : UIColor(red: 1, green: 0, blue: 0, alpha: 1)
+        navigationController?.setNavigationBarHidden(false, animated: false)
+
+        let backBtn: UIBarButtonItem
+        if #available(iOS 13.0, *) {
+            let img = UIImage(systemName: "chevron.left",
+                              withConfiguration: UIImage.SymbolConfiguration(weight: .semibold))
+            backBtn = UIBarButtonItem(image: img, style: .plain, target: self, action: #selector(closeTapped))
+        } else {
+            backBtn = UIBarButtonItem(title: "Back", style: .plain, target: self, action: #selector(closeTapped))
+        }
+        navigationItem.leftBarButtonItem = backBtn
     }
 
     override func viewDidLayoutSubviews() {
@@ -190,6 +219,11 @@ final class WatchViewController: UIViewController {
         } else {
             subscribeButton.backgroundColor = UIColor(red: 1, green: 0, blue: 0, alpha: 1)
             subscribeButton.setTitleColor(.white, for: .normal)
+        }
+
+        // Update nav bar for theme changes
+        if isViewLoaded && navigationController != nil {
+            setupNavigationBar()
         }
     }
 
@@ -596,6 +630,49 @@ final class WatchViewController: UIViewController {
                 }
             }
         }
+    }
+
+    @objc private func closeTapped() {
+        exitFullscreenIfNeeded()
+        dismiss(animated: true)
+    }
+
+    private func exitFullscreenIfNeeded() {
+        guard fullscreenSnapshot != nil, let playerView = videoPlayerView else { return }
+        exitFullscreen(playerView: playerView)
+    }
+
+    func loadVideo(_ video: Video) {
+        relatedExpansionWorkItem?.cancel()
+        relatedExpansionWorkItem = nil
+
+        resetPlaybackSurfaces()
+        fastStartLoaders = []
+        hlsPlaylistLoader = nil
+        activePlaybackInfo = nil
+        activeVideoFormat = nil
+        retriedDirectPlaybackWithWeb = false
+
+        watchPage = nil
+        visibleRelatedVideos = []
+        comments = []
+        commentsContinuation = nil
+        isLoadingComments = false
+        descriptionExpanded = false
+        likeCountLabel.text = "—"
+        dislikeCountLabel.text = "—"
+
+        commentsStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        loadMoreCommentsButton.isHidden = true
+
+        scrollView.setContentOffset(.zero, animated: false)
+
+        exitFullscreenIfNeeded()
+
+        initialVideo = video
+        loadInitialState()
+        loadWatchPage()
+        applyTheme()
     }
 
     private func applyWatchPage(_ page: WatchPage) {
@@ -1971,7 +2048,7 @@ extension WatchViewController: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         guard visibleRelatedVideos.indices.contains(indexPath.item) else { return }
         let video = visibleRelatedVideos[indexPath.item]
-        navigationController?.pushViewController(WatchViewController(video: video), animated: true)
+        VideoRouter.shared.open(video: video, from: self)
     }
 }
 

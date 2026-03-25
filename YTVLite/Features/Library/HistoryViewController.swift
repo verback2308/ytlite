@@ -208,7 +208,7 @@ extension HistoryViewController: UITableViewDataSource, UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         guard !isLoadingInitial else { return }
         let video = videos[indexPath.row]
-        navigationController?.pushViewController(WatchViewController(video: video), animated: true)
+        VideoRouter.shared.open(video: video, from: self)
     }
 
     func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {

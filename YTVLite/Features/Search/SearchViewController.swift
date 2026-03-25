@@ -100,6 +100,6 @@ extension SearchViewController: UICollectionViewDataSource {
 extension SearchViewController: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let video = results[indexPath.item]
-        navigationController?.pushViewController(WatchViewController(video: video), animated: true)
+        VideoRouter.shared.open(video: video, from: self)
     }
 }

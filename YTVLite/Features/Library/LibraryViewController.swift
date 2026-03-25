@@ -22,11 +22,15 @@ final class LibraryViewController: UIViewController {
 
     // MARK: - Child nav controllers
 
-    private lazy var childNavVCs: [UINavigationController] = [
-        UINavigationController(rootViewController: HistoryViewController()),
-        UINavigationController(rootViewController: DownloadsViewController()),
-        UINavigationController(rootViewController: PlaylistsViewController()),
-    ]
+    private lazy var childNavVCs: [UINavigationController] = {
+        let navs = [
+            UINavigationController(rootViewController: HistoryViewController()),
+            UINavigationController(rootViewController: DownloadsViewController()),
+            UINavigationController(rootViewController: PlaylistsViewController()),
+        ]
+        navs.forEach { $0.setNavigationBarHidden(true, animated: false) }
+        return navs
+    }()
 
     // MARK: - UI
 
@@ -65,7 +69,7 @@ final class LibraryViewController: UIViewController {
         contentView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(contentView)
         NSLayoutConstraint.activate([
-            contentView.topAnchor.constraint(equalTo: view.topAnchor),
+            contentView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             contentView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             contentView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             contentView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
