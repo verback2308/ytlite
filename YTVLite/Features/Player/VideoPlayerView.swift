@@ -184,8 +184,8 @@ final class VideoPlayerView: UIView {
         settingsButton.addTarget(self, action: #selector(settingsTapped), for: .touchUpInside)
         controlsView.addSubview(settingsButton)
         NSLayoutConstraint.activate([
-            settingsButton.topAnchor.constraint(equalTo: controlsView.topAnchor, constant: 10),
-            settingsButton.trailingAnchor.constraint(equalTo: controlsView.trailingAnchor, constant: -12),
+            settingsButton.topAnchor.constraint(equalTo: controlsView.safeAreaLayoutGuide.topAnchor, constant: 10),
+            settingsButton.trailingAnchor.constraint(equalTo: controlsView.safeAreaLayoutGuide.trailingAnchor, constant: -12),
             settingsButton.widthAnchor.constraint(equalToConstant: 36),
             settingsButton.heightAnchor.constraint(equalToConstant: 36),
         ])

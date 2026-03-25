@@ -70,6 +70,7 @@ final class WatchViewController: UIViewController {
     private var relatedPortraitConstraints: [NSLayoutConstraint] = []
     private var relatedLandscapeConstraints: [NSLayoutConstraint] = []
     private var isShowingLandscapeRelated = false
+    private var fullscreenSnapshot: (superview: UIView, frame: CGRect)?
 
     init(video: Video) {
         let portraitLayout = UICollectionViewFlowLayout()
@@ -1744,16 +1745,52 @@ extension WatchViewController: VideoPlayerViewDelegate {
     }
 
     func videoPlayerViewDidTapFullscreen(_ playerView: VideoPlayerView) {
-        guard let player = videoPlayerView?.player else { return }
-        // Detach the player from the inline view so fullscreen view owns it exclusively
-        videoPlayerView?.detach()
-        let fsVC = FullscreenPlayerViewController(player: player)
-        fsVC.onDismiss = { [weak self, weak player] in
-            // Reattach the inline view when fullscreen closes
-            if let p = player { self?.videoPlayerView?.attach(player: p) }
-            self?.videoPlayerView?.isFullscreen = false
+        if playerView.isFullscreen {
+            exitFullscreen(playerView: playerView)
+        } else {
+            enterFullscreen(playerView: playerView)
         }
-        present(fsVC, animated: true)
+    }
+
+    private func enterFullscreen(playerView: VideoPlayerView) {
+        guard let window = view.window else { return }
+        let frameInWindow = playerView.convert(playerView.bounds, to: window)
+        fullscreenSnapshot = (superview: playerView.superview ?? view, frame: playerView.frame)
+
+        playerView.removeFromSuperview()
+        // Switch to frame-based layout for animation
+        playerView.translatesAutoresizingMaskIntoConstraints = true
+        playerView.frame = frameInWindow
+        window.addSubview(playerView)
+        playerView.isFullscreen = true
+
+        UIView.animate(withDuration: 0.25, delay: 0, options: .curveEaseInOut) {
+            playerView.frame = window.bounds
+        }
+    }
+
+    private func exitFullscreen(playerView: VideoPlayerView) {
+        guard let window = view.window,
+              let snap = fullscreenSnapshot else { return }
+
+        let targetFrameInWindow = snap.superview.convert(snap.frame, to: window)
+
+        UIView.animate(withDuration: 0.25, delay: 0, options: .curveEaseInOut, animations: {
+            playerView.frame = targetFrameInWindow
+        }, completion: { [weak self] _ in
+            guard let self = self else { return }
+            playerView.removeFromSuperview()
+            playerView.translatesAutoresizingMaskIntoConstraints = false
+            snap.superview.addSubview(playerView)
+            NSLayoutConstraint.activate([
+                playerView.leadingAnchor.constraint(equalTo: snap.superview.leadingAnchor),
+                playerView.trailingAnchor.constraint(equalTo: snap.superview.trailingAnchor),
+                playerView.topAnchor.constraint(equalTo: snap.superview.topAnchor),
+                playerView.bottomAnchor.constraint(equalTo: snap.superview.bottomAnchor),
+            ])
+            playerView.isFullscreen = false
+            self.fullscreenSnapshot = nil
+        })
     }
 
     private func showQualityPicker() {
@@ -1872,60 +1909,5 @@ extension WatchViewController: SZAVPlayerDelegate {
 
     func avplayer(_ avplayer: SZAVPlayer, didReceived remoteCommand: SZAVPlayerRemoteCommand) -> Bool {
         return false
-    }
-}
-
-// MARK: - Fullscreen player
-
-private final class FullscreenPlayerViewController: UIViewController {
-
-    var onDismiss: (() -> Void)?
-
-    private let player: AVPlayer
-    private var fsPlayerView: VideoPlayerView?
-
-    override var supportedInterfaceOrientations: UIInterfaceOrientationMask { .landscape }
-    override var shouldAutorotate: Bool { true }
-    override var prefersStatusBarHidden: Bool { true }
-
-    init(player: AVPlayer) {
-        self.player = player
-        super.init(nibName: nil, bundle: nil)
-        modalPresentationStyle = .fullScreen
-        modalTransitionStyle = .crossDissolve
-    }
-
-    required init?(coder: NSCoder) { fatalError() }
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        view.backgroundColor = .black
-
-        let pv = VideoPlayerView()
-        pv.delegate = self
-        pv.isFullscreen = true
-        pv.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(pv)
-        NSLayoutConstraint.activate([
-            pv.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            pv.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            pv.topAnchor.constraint(equalTo: view.topAnchor),
-            pv.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-        ])
-        pv.attach(player: player)
-        fsPlayerView = pv
-    }
-
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        fsPlayerView?.detach()
-        onDismiss?()
-    }
-}
-
-extension FullscreenPlayerViewController: VideoPlayerViewDelegate {
-    func videoPlayerViewDidTapSettings(_ playerView: VideoPlayerView) {}
-    func videoPlayerViewDidTapFullscreen(_ playerView: VideoPlayerView) {
-        dismiss(animated: true)
     }
 }
