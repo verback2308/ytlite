@@ -2,103 +2,170 @@ import Foundation
 
 final class AppCache {
     static let shared = AppCache()
+    private init() {}
 
-    private struct TimedWatchPage {
-        let page: WatchPage
+    // MARK: - Settings
+    static let persistenceKey = "feedCachePersistenceEnabled"
+    static var persistenceEnabled: Bool {
+        get { UserDefaults.standard.object(forKey: persistenceKey) as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: persistenceKey) }
+    }
+    private let feedTTL: TimeInterval = 24 * 60 * 60  // 24 hours
+
+    // MARK: - Disk helpers
+
+    private struct CacheEntry<T: Codable>: Codable {
+        let data: T
         let storedAt: Date
     }
+
+    private var cacheDir: URL {
+        FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("FeedCache", isDirectory: true)
+    }
+
+    private func ensureCacheDir() {
+        try? FileManager.default.createDirectory(at: cacheDir, withIntermediateDirectories: true)
+    }
+
+    private func cacheURL(for key: String) -> URL {
+        cacheDir.appendingPathComponent("\(key).json")
+    }
+
+    private func readDisk<T: Codable>(_ type: T.Type, key: String, ttl: TimeInterval) -> T? {
+        guard AppCache.persistenceEnabled else { return nil }
+        let url = cacheURL(for: key)
+        guard let data = try? Data(contentsOf: url),
+              let entry = try? JSONDecoder().decode(CacheEntry<T>.self, from: data) else { return nil }
+        if Date().timeIntervalSince(entry.storedAt) > ttl {
+            try? FileManager.default.removeItem(at: url)
+            return nil
+        }
+        return entry.data
+    }
+
+    private func writeDisk<T: Codable>(_ value: T, key: String) {
+        guard AppCache.persistenceEnabled else { return }
+        ensureCacheDir()
+        let entry = CacheEntry(data: value, storedAt: Date())
+        if let data = try? JSONEncoder().encode(entry) {
+            try? data.write(to: cacheURL(for: key), options: .atomic)
+        }
+    }
+
+    private func deleteDisk(key: String) {
+        try? FileManager.default.removeItem(at: cacheURL(for: key))
+    }
+
+    // MARK: - In-memory store
 
     private var homeFeed: FeedPage?
     private var subscriptionsFeed: FeedPage?
     private var historyFeed: FeedPage?
-    private var channelPages: [String: ChannelPage] = [:]
+
+    // MARK: - Watch page cache (in-memory only, 1-hour TTL)
+    private struct TimedWatchPage {
+        let page: WatchPage
+        let storedAt: Date
+    }
     private var watchPages: [String: TimedWatchPage] = [:]
     private let watchPageTTL: TimeInterval = 60 * 60
 
-    private init() {}
+    // MARK: - Home
 
     func cachedHomeFeed() -> FeedPage? {
-        print("[AppCache] home \(homeFeed == nil ? "miss" : "hit")")
-        return homeFeed
+        if let f = homeFeed { return f }
+        if let f = readDisk(FeedPage.self, key: "home", ttl: feedTTL) {
+            homeFeed = f
+            return f
+        }
+        return nil
     }
 
     func setHomeFeed(_ page: FeedPage) {
-        print("[AppCache] store home (\(page.videos.count) videos)")
         homeFeed = page
+        writeDisk(page, key: "home")
     }
 
     func clearHomeFeed() {
-        print("[AppCache] clear home")
         homeFeed = nil
+        deleteDisk(key: "home")
     }
 
+    // MARK: - Subscriptions
+
     func cachedSubscriptionsFeed() -> FeedPage? {
-        print("[AppCache] subscriptions \(subscriptionsFeed == nil ? "miss" : "hit")")
-        return subscriptionsFeed
+        if let f = subscriptionsFeed { return f }
+        if let f = readDisk(FeedPage.self, key: "subscriptions", ttl: feedTTL) {
+            subscriptionsFeed = f
+            return f
+        }
+        return nil
     }
 
     func setSubscriptionsFeed(_ page: FeedPage) {
-        print("[AppCache] store subscriptions (\(page.videos.count) videos)")
         subscriptionsFeed = page
+        writeDisk(page, key: "subscriptions")
     }
 
     func clearSubscriptionsFeed() {
-        print("[AppCache] clear subscriptions")
         subscriptionsFeed = nil
+        deleteDisk(key: "subscriptions")
     }
 
+    // MARK: - History
+
     func cachedHistoryFeed() -> FeedPage? {
-        print("[AppCache] history \(historyFeed == nil ? "miss" : "hit")")
-        return historyFeed
+        if let f = historyFeed { return f }
+        if let f = readDisk(FeedPage.self, key: "history", ttl: feedTTL) {
+            historyFeed = f
+            return f
+        }
+        return nil
     }
 
     func setHistoryFeed(_ page: FeedPage) {
-        print("[AppCache] store history (\(page.videos.count) videos)")
         historyFeed = page
+        writeDisk(page, key: "history")
     }
 
     func clearHistoryFeed() {
         historyFeed = nil
+        deleteDisk(key: "history")
     }
 
-    func cachedChannelPage(channelId: String) -> ChannelPage? {
-        print("[AppCache] channel page \(channelPages[channelId] == nil ? "miss" : "hit") for \(channelId)")
-        return channelPages[channelId]
-    }
+    // MARK: - Channel pages (in-memory only)
+    private var channelPages: [String: ChannelPage] = [:]
 
-    func setChannelPage(_ page: ChannelPage, channelId: String) {
-        print("[AppCache] store channel page for \(channelId) (\(page.videosPage.videos.count) videos)")
-        channelPages[channelId] = page
-    }
+    func cachedChannelPage(channelId: String) -> ChannelPage? { channelPages[channelId] }
+    func setChannelPage(_ page: ChannelPage, channelId: String) { channelPages[channelId] = page }
+    func clearChannelPage(channelId: String) { channelPages[channelId] = nil }
 
-    func clearChannelPage(channelId: String) {
-        print("[AppCache] clear channel page for \(channelId)")
-        channelPages[channelId] = nil
-    }
+    // MARK: - Watch pages (in-memory only)
 
     func cachedWatchPage(videoId: String) -> WatchPage? {
-        guard let entry = watchPages[videoId] else {
-            print("[AppCache] watch page miss for \(videoId)")
-            return nil
-        }
-
+        guard let entry = watchPages[videoId] else { return nil }
         if Date().timeIntervalSince(entry.storedAt) > watchPageTTL {
-            print("[AppCache] watch page expired for \(videoId)")
             watchPages[videoId] = nil
             return nil
         }
-
-        print("[AppCache] watch page hit for \(videoId)")
         return entry.page
     }
 
     func setWatchPage(_ page: WatchPage, videoId: String) {
-        print("[AppCache] store watch page for \(videoId) (\(page.relatedVideos.count) related)")
         watchPages[videoId] = TimedWatchPage(page: page, storedAt: Date())
     }
 
-    func clearWatchPage(videoId: String) {
-        print("[AppCache] clear watch page for \(videoId)")
-        watchPages[videoId] = nil
+    func clearWatchPage(videoId: String) { watchPages[videoId] = nil }
+
+    // MARK: - Clear all feed disk cache
+
+    func clearAllDiskCache() {
+        deleteDisk(key: "home")
+        deleteDisk(key: "subscriptions")
+        deleteDisk(key: "history")
+        homeFeed = nil
+        subscriptionsFeed = nil
+        historyFeed = nil
     }
 }

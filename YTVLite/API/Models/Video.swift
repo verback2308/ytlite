@@ -1,6 +1,6 @@
 import Foundation
 
-struct Video {
+struct Video: Codable {
     let id: String
     let title: String
     let channelId: String?
@@ -12,7 +12,7 @@ struct Video {
     let duration: String?
 }
 
-struct ChannelInfo {
+struct ChannelInfo: Codable {
     let id: String
     let title: String
     let avatarURL: String?
