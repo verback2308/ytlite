@@ -33,6 +33,7 @@ struct WatchPage {
     let subscribeButtonText: String?
     let isSubscribed: Bool
     let relatedVideos: [Video]
+    let likeCount: String?
 }
 
 struct DashFormatInfo {

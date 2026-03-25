@@ -1089,7 +1089,8 @@ final class InnertubeClient: VideoService {
                          channelInfo: channelInfo,
                          subscribeButtonText: subscribeState.text,
                          isSubscribed: subscribeState.isSubscribed,
-                         relatedVideos: relatedVideos)
+                         relatedVideos: relatedVideos,
+                         likeCount: nil)
     }
 
     private static func parseCommentsPage(_ json: [String: Any]) -> CommentsPage? {

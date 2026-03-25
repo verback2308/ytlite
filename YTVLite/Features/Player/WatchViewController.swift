@@ -48,10 +48,21 @@ final class WatchViewController: UIViewController {
     private let channelMetaLabel = UILabel()
     private let subscribeButton = UIButton(type: .system)
     private let descriptionLabel = UILabel()
-    private let descriptionButton = UIButton(type: .system)
+    private let descriptionButton = UIButton(type: .system)  // "More"/"Less" toggle, positioned right of metaLabel
     private let commentsLabel = UILabel()
     private let commentsStackView = UIStackView()
     private let loadMoreCommentsButton = UIButton(type: .system)
+
+    private let actionBar = UIStackView()
+    private let likeButton = UIButton(type: .system)
+    private let dislikeButton = UIButton(type: .system)
+    private let shareButton = UIButton(type: .system)
+    private let saveButton = UIButton(type: .system)
+    private let downloadButton = UIButton(type: .system)
+    private let likeCountLabel = UILabel()
+    private let dislikeCountLabel = UILabel()
+    private var likeCount: String?
+    private var dislikeCount: String?
 
     private var playerAspectConstraint: NSLayoutConstraint!
     private var relatedHeightConstraint: NSLayoutConstraint!
@@ -71,6 +82,8 @@ final class WatchViewController: UIViewController {
     private var relatedLandscapeConstraints: [NSLayoutConstraint] = []
     private var isShowingLandscapeRelated = false
     private var fullscreenSnapshot: (superview: UIView, frame: CGRect)?
+    private var channelTopToMeta: NSLayoutConstraint!
+    private var channelTopToDesc: NSLayoutConstraint!
 
     init(video: Video) {
         let portraitLayout = UICollectionViewFlowLayout()
@@ -160,9 +173,14 @@ final class WatchViewController: UIViewController {
         channelNameLabel.textColor = theme.primaryText
         channelMetaLabel.textColor = theme.secondaryText
         descriptionLabel.textColor = theme.secondaryText
-        descriptionButton.setTitleColor(theme.isDark ? .white : UIColor(red: 1, green: 0, blue: 0, alpha: 1), for: .normal)
+        descriptionButton.setTitleColor(theme.secondaryText, for: .normal)
         commentsLabel.textColor = theme.primaryText
         loadMoreCommentsButton.setTitleColor(theme.isDark ? .white : UIColor(red: 1, green: 0, blue: 0, alpha: 1), for: .normal)
+        for btn in [likeButton, dislikeButton, shareButton, saveButton, downloadButton] {
+            btn.tintColor = theme.primaryText
+        }
+        likeCountLabel.textColor = theme.secondaryText
+        dislikeCountLabel.textColor = theme.secondaryText
         playerContainer.backgroundColor = .black
         playerStatusLabel.textColor = .lightGray
 
@@ -267,15 +285,59 @@ final class WatchViewController: UIViewController {
         contentView.addSubview(subscribeButton)
 
         descriptionLabel.font = UIFont.systemFont(ofSize: 13)
-        descriptionLabel.numberOfLines = 3
+        descriptionLabel.numberOfLines = 0
+        descriptionLabel.isHidden = true
         descriptionLabel.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(descriptionLabel)
 
-        descriptionButton.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .semibold)
-        descriptionButton.contentHorizontalAlignment = .left
+        descriptionButton.titleLabel?.font = UIFont.systemFont(ofSize: 12)
         descriptionButton.translatesAutoresizingMaskIntoConstraints = false
         descriptionButton.addTarget(self, action: #selector(toggleDescription), for: .touchUpInside)
+        descriptionButton.setTitle("More", for: .normal)
         contentView.addSubview(descriptionButton)
+
+        // Action bar — each item is a vertical UIStackView: [imageButton, label]
+        actionBar.axis = .horizontal
+        actionBar.distribution = .fillEqually
+        actionBar.spacing = 8
+        actionBar.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(actionBar)
+
+        func actionIcon(_ name: String) -> UIImage? {
+            guard let img = UIImage(named: name) else { return nil }
+            let size = CGSize(width: 22, height: 22)
+            return UIGraphicsImageRenderer(size: size).image { _ in
+                img.draw(in: CGRect(origin: .zero, size: size))
+            }.withRenderingMode(.alwaysTemplate)
+        }
+
+        func makeActionItem(btn: UIButton, countLabel: UILabel? = nil, iconName: String, staticLabel: String?) -> UIStackView {
+            btn.setImage(actionIcon(iconName), for: .normal)
+            btn.tintColor = ThemeManager.shared.primaryText
+            btn.translatesAutoresizingMaskIntoConstraints = false
+            btn.heightAnchor.constraint(equalToConstant: 28).isActive = true
+
+            let label = countLabel ?? UILabel()
+            label.font = UIFont.systemFont(ofSize: 11)
+            label.textAlignment = .center
+            label.textColor = ThemeManager.shared.secondaryText
+            label.text = staticLabel ?? "—"
+            label.translatesAutoresizingMaskIntoConstraints = false
+
+            let stack = UIStackView(arrangedSubviews: [btn, label])
+            stack.axis = .vertical
+            stack.alignment = .center
+            stack.spacing = 4
+            stack.translatesAutoresizingMaskIntoConstraints = false
+            return stack
+        }
+
+        actionBar.addArrangedSubview(makeActionItem(btn: likeButton,    countLabel: likeCountLabel,    iconName: "icon_thumb_up",   staticLabel: nil))
+        actionBar.addArrangedSubview(makeActionItem(btn: dislikeButton, countLabel: dislikeCountLabel, iconName: "icon_thumb_down", staticLabel: nil))
+        actionBar.addArrangedSubview(makeActionItem(btn: shareButton,   countLabel: nil,               iconName: "icon_share",      staticLabel: "Share"))
+        actionBar.addArrangedSubview(makeActionItem(btn: saveButton,    countLabel: nil,               iconName: "icon_bookmark",   staticLabel: "Save"))
+        actionBar.addArrangedSubview(makeActionItem(btn: downloadButton,countLabel: nil,               iconName: "icon_download",   staticLabel: "Download"))
+        shareButton.addTarget(self, action: #selector(shareTapped), for: .touchUpInside)
 
         commentsLabel.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
         commentsLabel.numberOfLines = 0
@@ -316,9 +378,15 @@ final class WatchViewController: UIViewController {
 
             metaLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
             metaLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
-            metaLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
+            metaLabel.trailingAnchor.constraint(lessThanOrEqualTo: descriptionButton.leadingAnchor, constant: -8),
 
-            channelAvatarView.topAnchor.constraint(equalTo: metaLabel.bottomAnchor, constant: 16),
+            descriptionButton.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
+            descriptionButton.centerYAnchor.constraint(equalTo: metaLabel.centerYAnchor),
+
+            descriptionLabel.topAnchor.constraint(equalTo: metaLabel.bottomAnchor, constant: 12),
+            descriptionLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
+            descriptionLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
+
             channelAvatarView.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
             channelAvatarView.widthAnchor.constraint(equalToConstant: 44),
             channelAvatarView.heightAnchor.constraint(equalToConstant: 44),
@@ -334,15 +402,12 @@ final class WatchViewController: UIViewController {
             subscribeButton.centerYAnchor.constraint(equalTo: channelAvatarView.centerYAnchor),
             subscribeButton.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
 
-            descriptionLabel.topAnchor.constraint(equalTo: channelAvatarView.bottomAnchor, constant: 16),
-            descriptionLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
-            descriptionLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
+            actionBar.topAnchor.constraint(equalTo: channelAvatarView.bottomAnchor, constant: 16),
+            actionBar.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
+            actionBar.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
+            actionBar.heightAnchor.constraint(equalToConstant: 52),
 
-            descriptionButton.topAnchor.constraint(equalTo: descriptionLabel.bottomAnchor, constant: 8),
-            descriptionButton.leadingAnchor.constraint(equalTo: descriptionLabel.leadingAnchor),
-            descriptionButton.trailingAnchor.constraint(equalTo: descriptionLabel.trailingAnchor),
-
-            commentsLabel.topAnchor.constraint(equalTo: descriptionButton.bottomAnchor, constant: 20),
+            commentsLabel.topAnchor.constraint(equalTo: actionBar.bottomAnchor, constant: 20),
             commentsLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
             commentsLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
 
@@ -354,6 +419,10 @@ final class WatchViewController: UIViewController {
         loadMoreCommentsButton.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
         loadMoreCommentsButton.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
         ])
+
+        channelTopToMeta = channelAvatarView.topAnchor.constraint(equalTo: metaLabel.bottomAnchor, constant: 16)
+        channelTopToDesc = channelAvatarView.topAnchor.constraint(equalTo: descriptionLabel.bottomAnchor, constant: 12)
+        channelTopToMeta.isActive = true
 
         contentBottomToCommentsConstraint = loadMoreCommentsButton.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -16)
 
@@ -562,6 +631,31 @@ final class WatchViewController: UIViewController {
         descriptionLabel.text = page.description
         descriptionExpanded = false
         updateDescriptionUI()
+
+        if let likeCount = page.likeCount {
+            likeCountLabel.text = likeCount
+        } else {
+            likeCountLabel.text = "—"
+        }
+        dislikeCountLabel.text = "—"
+
+        let videoId = page.video.id
+        ReturnYouTubeDislikeService.shared.fetchVotes(videoId: videoId) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self = self, self.watchPage?.video.id == videoId else { return }
+                if case .success(let votes) = result {
+                    func fmt(_ n: Int) -> String {
+                        switch n {
+                        case 0..<1_000: return "\(n)"
+                        case 1_000..<1_000_000: return String(format: "%.1fK", Double(n) / 1_000)
+                        default: return String(format: "%.1fM", Double(n) / 1_000_000)
+                        }
+                    }
+                    self.likeCountLabel.text = fmt(votes.likes)
+                    self.dislikeCountLabel.text = fmt(votes.dislikes)
+                }
+            }
+        }
         applyTheme()
         visibleRelatedVideos = Array(page.relatedVideos.prefix(3))
         relatedCollectionView.reloadData()
@@ -1696,16 +1790,29 @@ final class WatchViewController: UIViewController {
 
     private func updateDescriptionUI() {
         let text = descriptionLabel.text ?? ""
-        let shouldCollapse = text.count > 140 || text.contains("\n")
-        descriptionLabel.numberOfLines = descriptionExpanded ? 0 : 3
-        descriptionButton.isHidden = !shouldCollapse
-        descriptionButton.setTitle(descriptionExpanded ? "Show less" : "Show more", for: .normal)
+        let hasDesc = !text.isEmpty
+        descriptionLabel.isHidden = !descriptionExpanded
+        channelTopToMeta.isActive = !descriptionExpanded
+        channelTopToDesc.isActive = descriptionExpanded
+        descriptionButton.isHidden = !hasDesc
+        descriptionButton.setTitle(descriptionExpanded ? "Less" : "More", for: .normal)
         view.setNeedsLayout()
     }
 
     @objc private func toggleDescription() {
         descriptionExpanded.toggle()
         updateDescriptionUI()
+    }
+
+    @objc private func shareTapped() {
+        let videoId = watchPage?.video.id ?? initialVideo.id
+        guard let url = URL(string: "https://youtu.be/\(videoId)") else { return }
+        let ac = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        if let popover = ac.popoverPresentationController {
+            popover.sourceView = shareButton
+            popover.sourceRect = shareButton.bounds
+        }
+        present(ac, animated: true)
     }
 
     @objc private func openChannel() {
