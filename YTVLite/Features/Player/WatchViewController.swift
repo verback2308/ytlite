@@ -25,6 +25,10 @@ final class WatchViewController: UIViewController {
     private var fastStartLoaders: [FastStartResourceLoader] = []
     private var hlsPlaylistLoader: HLSPlaylistLoader?
 
+    // SponsorBlock
+    private var sponsorBlockSegments: [SponsorBlockSegment] = []
+    private var activeSegmentUUID: String?
+
     // Quality switching context — set when HLS playback starts
     private var activePlaybackInfo: DirectPlaybackInfo?
     private var activePlaybackClient: DirectPlaybackClient = .androidVR
@@ -666,6 +670,8 @@ final class WatchViewController: UIViewController {
         likeCountLabel.text = "—"
         dislikeCountLabel.text = "—"
         currentLikeStatus = .indifferent
+        sponsorBlockSegments = []
+        activeSegmentUUID = nil
 
         commentsStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
         loadMoreCommentsButton.isHidden = true
@@ -738,6 +744,17 @@ final class WatchViewController: UIViewController {
                         }
                         self.likeCountLabel.text = fmt(votes.likes)
                         self.dislikeCountLabel.text = fmt(votes.dislikes)
+                    }
+                }
+            }
+        }
+        if SponsorBlockService.enabled {
+            SponsorBlockService.shared.fetchSegments(videoId: videoId) { [weak self] result in
+                DispatchQueue.main.async {
+                    guard let self = self, self.watchPage?.video.id == videoId else { return }
+                    if case .success(let segments) = result {
+                        self.sponsorBlockSegments = segments
+                        self.videoPlayerView?.setSponsorSegments(segments)
                     }
                 }
             }
@@ -1775,6 +1792,13 @@ final class WatchViewController: UIViewController {
             return v
         }()
 
+        // Wire SponsorBlock callbacks
+        pv.onTimeUpdate = { [weak self] time in self?.checkSponsorBlock(at: time) }
+        pv.onSkipTapped  = { [weak self] in self?.skipCurrentSegment() }
+        if !sponsorBlockSegments.isEmpty {
+            pv.setSponsorSegments(sponsorBlockSegments)
+        }
+
         playerContainer.bringSubviewToFront(pv)
         pv.attach(player: player)
         player.play()
@@ -2009,6 +2033,58 @@ final class WatchViewController: UIViewController {
         DispatchQueue.main.async {
             playerVC.showsPlaybackControls = true
         }
+    }
+}
+
+// MARK: - SponsorBlock
+
+extension WatchViewController {
+
+    private func checkSponsorBlock(at time: Double) {
+        guard SponsorBlockService.enabled, !sponsorBlockSegments.isEmpty else { return }
+
+        // Find the first active segment (not disabled, actionType is skippable)
+        let active = sponsorBlockSegments.first { seg in
+            guard seg.actionType == "skip" || seg.actionType == "poi" else { return false }
+            let behavior = SponsorBlockService.skipBehavior(for: seg.category)
+            guard behavior != .disabled else { return false }
+            return time >= seg.startTime && time < seg.endTime
+        }
+
+        if let seg = active {
+            if seg.uuid == activeSegmentUUID { return }  // already handled this entry
+            activeSegmentUUID = seg.uuid
+            let behavior = SponsorBlockService.skipBehavior(for: seg.category)
+            switch behavior {
+            case .autoSkip:
+                guard let player = videoPlayerView?.player else { return }
+                let target = CMTime(seconds: seg.endTime, preferredTimescale: 600)
+                player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero)
+                print("[SponsorBlock] auto-skipped \(seg.category.displayName) [\(seg.startTime)–\(seg.endTime)]")
+            case .showButton:
+                videoPlayerView?.showSkipButton(categoryName: seg.category.displayName)
+            case .disabled:
+                break
+            }
+        } else {
+            // Left all segments — reset state and hide button
+            if activeSegmentUUID != nil {
+                activeSegmentUUID = nil
+                videoPlayerView?.hideSkipButton()
+            }
+        }
+    }
+
+    private func skipCurrentSegment() {
+        guard let uuid = activeSegmentUUID,
+              let seg  = sponsorBlockSegments.first(where: { $0.uuid == uuid }),
+              let player = videoPlayerView?.player
+        else { return }
+        let target = CMTime(seconds: seg.endTime, preferredTimescale: 600)
+        player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero)
+        activeSegmentUUID = nil
+        videoPlayerView?.hideSkipButton()
+        print("[SponsorBlock] user skipped \(seg.category.displayName) [\(seg.startTime)–\(seg.endTime)]")
     }
 }
 
