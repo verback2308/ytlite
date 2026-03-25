@@ -129,7 +129,6 @@ class SubscriptionVideoCell: UITableViewCell {
             channelAvatarView.isHidden = false
             channelAvatarView.setImage(url: url)
         } else if let channelId = video.channelId {
-            print("[SubscriptionVideoCell] resolving avatar for video \(video.id), channel \(channelId)")
             channelAvatarView.isHidden = false
             channelAvatarView.cancel()
             ChannelInfoStore.shared.fetch(channelId: channelId) { [weak self] result in
@@ -137,10 +136,7 @@ class SubscriptionVideoCell: UITableViewCell {
                 guard case .success(let info) = result,
                       let avatarURL = info.avatarURL,
                       let url = URL(string: avatarURL)
-                else {
-                    print("[SubscriptionVideoCell] avatar unavailable for channel \(channelId)")
-                    return
-                }
+                else { return }
                 self.channelAvatarView.setImage(url: url)
             }
         } else {

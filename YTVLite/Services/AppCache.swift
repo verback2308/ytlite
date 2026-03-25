@@ -10,6 +10,7 @@ final class AppCache {
 
     private var homeFeed: FeedPage?
     private var subscriptionsFeed: FeedPage?
+    private var historyFeed: FeedPage?
     private var channelPages: [String: ChannelPage] = [:]
     private var watchPages: [String: TimedWatchPage] = [:]
     private let watchPageTTL: TimeInterval = 60 * 60
@@ -44,6 +45,20 @@ final class AppCache {
     func clearSubscriptionsFeed() {
         print("[AppCache] clear subscriptions")
         subscriptionsFeed = nil
+    }
+
+    func cachedHistoryFeed() -> FeedPage? {
+        print("[AppCache] history \(historyFeed == nil ? "miss" : "hit")")
+        return historyFeed
+    }
+
+    func setHistoryFeed(_ page: FeedPage) {
+        print("[AppCache] store history (\(page.videos.count) videos)")
+        historyFeed = page
+    }
+
+    func clearHistoryFeed() {
+        historyFeed = nil
     }
 
     func cachedChannelPage(channelId: String) -> ChannelPage? {

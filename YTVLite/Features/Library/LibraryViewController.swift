@@ -27,14 +27,22 @@ final class LibraryViewController: UIViewController {
         }
     }
 
-    // MARK: - Child VCs
+    // MARK: - Child VCs (split layout only)
 
-    private lazy var historyVC    = UINavigationController(rootViewController: HistoryViewController())
-    private lazy var downloadsVC  = UINavigationController(rootViewController: DownloadsViewController())
-    private lazy var playlistsVC  = UINavigationController(rootViewController: PlaylistsViewController())
+    private lazy var historyNavVC    = UINavigationController(rootViewController: HistoryViewController())
+    private lazy var downloadsNavVC  = UINavigationController(rootViewController: DownloadsViewController())
+    private lazy var playlistsNavVC  = UINavigationController(rootViewController: PlaylistsViewController())
 
-    private var detailVCs: [UINavigationController] {
-        [historyVC, downloadsVC, playlistsVC]
+    private var splitDetailVCs: [UINavigationController] {
+        [historyNavVC, downloadsNavVC, playlistsNavVC]
+    }
+
+    private func makeCompactDetailVC(for section: Section) -> UIViewController {
+        switch section {
+        case .history:   return HistoryViewController()
+        case .downloads: return DownloadsViewController()
+        case .playlists: return PlaylistsViewController()
+        }
     }
 
     // MARK: - Layout views
@@ -51,6 +59,7 @@ final class LibraryViewController: UIViewController {
     private var sidebarWidthConstraint: NSLayoutConstraint?
     private var selectedSection: Section = .history
     private var isSplitLayout = false
+    private var hasInitialLayout = false
 
     // MARK: - Lifecycle
 
@@ -66,7 +75,8 @@ final class LibraryViewController: UIViewController {
     override func viewWillLayoutSubviews() {
         super.viewWillLayoutSubviews()
         let wide = view.bounds.width > 600
-        if wide != isSplitLayout {
+        if wide != isSplitLayout || !hasInitialLayout {
+            hasInitialLayout = true
             isSplitLayout = wide
             updateSidebarLayout()
         }
@@ -82,14 +92,12 @@ final class LibraryViewController: UIViewController {
         sidebarTable.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(sidebarTable)
 
-        // Detail container
+        // Detail container — hidden by default until layout pass determines mode
+        detailContainer.isHidden = true
         detailContainer.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(detailContainer)
 
-        let sidebarWidth: CGFloat = 260
-        let w = view.bounds.width > 600 ? sidebarWidth : view.bounds.width
-
-        sidebarWidthConstraint = sidebarTable.widthAnchor.constraint(equalToConstant: w)
+        sidebarWidthConstraint = sidebarTable.widthAnchor.constraint(equalToConstant: view.bounds.width)
         sidebarWidthConstraint?.isActive = true
 
         NSLayoutConstraint.activate([
@@ -102,10 +110,6 @@ final class LibraryViewController: UIViewController {
             detailContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             detailContainer.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
-
-        // Default selection
-        showDetail(for: .history, animated: false)
-        isSplitLayout = view.bounds.width > 600
     }
 
     private func updateSidebarLayout() {
@@ -129,9 +133,8 @@ final class LibraryViewController: UIViewController {
     private var currentDetailChild: UIViewController?
 
     private func showDetail(for section: Section, animated: Bool) {
-        let vc = detailVCs[section.rawValue]
-
         if isSplitLayout {
+            let vc = splitDetailVCs[section.rawValue]
             removeCurrentDetailChild()
             addChild(vc)
             vc.view.frame = detailContainer.bounds
@@ -140,14 +143,9 @@ final class LibraryViewController: UIViewController {
             vc.didMove(toParent: self)
             currentDetailChild = vc
         } else {
-            // Push the inner root VC onto our navigation controller
-            let innerVC: UIViewController
-            switch section {
-            case .history:   innerVC = historyVC.viewControllers.first ?? HistoryViewController()
-            case .downloads: innerVC = downloadsVC.viewControllers.first ?? DownloadsViewController()
-            case .playlists: innerVC = playlistsVC.viewControllers.first ?? PlaylistsViewController()
-            }
-            navigationController?.pushViewController(innerVC, animated: animated)
+            // Each push creates a fresh VC; AppCache ensures instant data restore.
+            let vc = makeCompactDetailVC(for: section)
+            navigationController?.pushViewController(vc, animated: animated)
         }
     }
 

@@ -2,7 +2,6 @@ import UIKit
 
 final class HistoryViewController: UIViewController {
 
-    private let service = ServiceContainer.video
     private var videos: [Video] = []
     private var continuationToken: String?
     private var isLoadingMore = false
@@ -22,7 +21,7 @@ final class HistoryViewController: UIViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(applyTheme),
                                                name: ThemeManager.didChangeNotification, object: nil)
         if OAuthClient.shared.isSignedIn {
-            loadHistory()
+            loadFromCacheThenFetch()
         } else {
             spinner.stopAnimating()
             isLoadingInitial = false
@@ -38,6 +37,7 @@ final class HistoryViewController: UIViewController {
         tableView.dataSource = self
         tableView.delegate = self
         tableView.rowHeight = 220
+        tableView.estimatedRowHeight = 220
         tableView.separatorInset = UIEdgeInsets(top: 0, left: 12, bottom: 0, right: 12)
         tableView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(tableView)
@@ -47,6 +47,9 @@ final class HistoryViewController: UIViewController {
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
+        let refresh = UIRefreshControl()
+        refresh.addTarget(self, action: #selector(handleRefresh), for: .valueChanged)
+        tableView.refreshControl = refresh
     }
 
     private func setupSpinner() {
@@ -87,45 +90,90 @@ final class HistoryViewController: UIViewController {
         view.backgroundColor = t.background
         tableView.backgroundColor = t.background
         tableView.separatorColor = t.separator
+        if let rc = tableView.refreshControl {
+            rc.tintColor = t.secondaryText
+        }
         tableView.reloadData()
     }
 
     // MARK: - Data
 
-    private func loadHistory() {
-        service.fetchHistory { [weak self] result in
+    /// Show cached data immediately, then silently refresh in background.
+    private func loadFromCacheThenFetch() {
+        if let cached = AppCache.shared.cachedHistoryFeed(), !cached.videos.isEmpty {
+            isLoadingInitial = false
+            spinner.stopAnimating()
+            videos = cached.videos
+            continuationToken = cached.continuation
+            tableView.reloadData()
+            // Silently refresh in background
+            fetchHistory(showSpinner: false)
+        } else {
+            fetchHistory(showSpinner: true)
+        }
+    }
+
+    private func fetchHistory(showSpinner: Bool) {
+        if showSpinner {
+            isLoadingInitial = true
+            spinner.startAnimating()
+        }
+        InnertubeClient.shared.fetchHistory { [weak self] result in
             DispatchQueue.main.async {
-                self?.spinner.stopAnimating()
-                self?.isLoadingInitial = false
+                guard let self = self else { return }
+                self.spinner.stopAnimating()
+                self.tableView.refreshControl?.endRefreshing()
+                self.isLoadingInitial = false
                 switch result {
                 case .success(let page):
-                    self?.videos = page.videos
-                    self?.continuationToken = page.continuation
+                    AppCache.shared.setHistoryFeed(page)
+                    self.videos = page.videos
+                    self.continuationToken = page.continuation
+                    self.emptyLabel.isHidden = !page.videos.isEmpty
                     if page.videos.isEmpty {
-                        self?.emptyLabel.text = "No watch history found"
-                        self?.emptyLabel.isHidden = false
+                        self.emptyLabel.text = "No watch history found"
                     }
-                    self?.tableView.reloadData()
+                    self.tableView.reloadData()
                 case .failure(let error):
                     print("History error: \(error)")
-                    self?.emptyLabel.text = "Could not load history"
-                    self?.emptyLabel.isHidden = false
-                    self?.tableView.reloadData()
+                    if self.videos.isEmpty {
+                        self.emptyLabel.text = "Could not load history"
+                        self.emptyLabel.isHidden = false
+                    }
+                    self.tableView.reloadData()
                 }
             }
         }
     }
 
+    @objc private func handleRefresh() {
+        AppCache.shared.clearHistoryFeed()
+        fetchHistory(showSpinner: false)
+    }
+
     private func loadMore() {
-        guard let continuation = continuationToken else { return }
+        guard let continuation = continuationToken, !isLoadingMore else { return }
         isLoadingMore = true
-        service.fetchNextPage(continuation: continuation) { [weak self] result in
-            DispatchQueue.main.async {
+        OAuthClient.shared.validToken { [weak self] result in
+            guard let self = self, case .success(let token) = result else {
                 self?.isLoadingMore = false
-                if case .success(let page) = result {
-                    self?.videos.append(contentsOf: page.videos)
-                    self?.continuationToken = page.continuation
-                    self?.tableView.reloadData()
+                return
+            }
+            InnertubeClient.shared.fetchHistoryNextPage(continuation: continuation, token: token) { [weak self] result in
+                DispatchQueue.main.async {
+                    guard let self = self else { return }
+                    self.isLoadingMore = false
+                    if case .success(let page) = result {
+                        let startIndex = self.videos.count
+                        self.videos.append(contentsOf: page.videos)
+                        self.continuationToken = page.continuation
+                        let indexPaths = (startIndex..<self.videos.count).map { IndexPath(row: $0, section: 0) }
+                        UIView.performWithoutAnimation {
+                            self.tableView.insertRows(at: indexPaths, with: .none)
+                        }
+                        let updated = FeedPage(videos: self.videos, continuation: self.continuationToken)
+                        AppCache.shared.setHistoryFeed(updated)
+                    }
                 }
             }
         }
@@ -166,9 +214,8 @@ extension HistoryViewController: UITableViewDataSource, UITableViewDelegate {
     func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
         guard !isLoadingInitial, !isLoadingMore,
               continuationToken != nil,
-              indexPath.row >= videos.count - 4
+              indexPath.row >= videos.count - 5
         else { return }
-        isLoadingMore = true
         loadMore()
     }
 }

@@ -69,18 +69,65 @@ enum DirectPlaybackClient: Equatable, CustomStringConvertible {
 
 final class InnertubeClient: VideoService {
 
+    static let shared = InnertubeClient()
+
     private let api = APIClient()
     private let baseURL = "https://www.youtube.com/youtubei/v1"
     private let androidClientVersion = "19.09.37"
 
+    /// Full web client context matching YouTube.js Session.#buildContext for WEB client.
     private let webContext: [String: Any] = [
-        "context": ["client": ["clientName": DirectPlaybackClient.web.clientName, "clientVersion": DirectPlaybackClient.web.clientVersion, "hl": "en", "gl": "US"]]
+        "context": [
+            "client": [
+                "clientName": "WEB",
+                "clientVersion": "2.20260206.01.00",
+                "hl": "en",
+                "gl": "US",
+                "osName": "Windows",
+                "osVersion": "10.0",
+                "platform": "DESKTOP",
+                "clientFormFactor": "UNKNOWN_FORM_FACTOR",
+                "userInterfaceTheme": "USER_INTERFACE_THEME_LIGHT",
+                "timeZone": "UTC",
+                "utcOffsetMinutes": 0,
+                "screenDensityFloat": 1,
+                "screenHeightPoints": 1440,
+                "screenPixelDensity": 1,
+                "screenWidthPoints": 2560,
+                "deviceMake": "",
+                "deviceModel": "",
+                "browserName": "Chrome",
+                "browserVersion": "140.0.0.0",
+                "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36,gzip(gfe)",
+                "originalUrl": "https://www.youtube.com",
+                "memoryTotalKbytes": "8000000",
+                "mainAppWebInfo": [
+                    "graftUrl": "https://www.youtube.com",
+                    "pwaInstallabilityStatus": "PWA_INSTALLABILITY_STATUS_UNKNOWN",
+                    "webDisplayMode": "WEB_DISPLAY_MODE_BROWSER",
+                    "isWebNativeShareAvailable": true
+                ]
+            ],
+            "user": ["enableSafetyMode": false, "lockedSafetyMode": false],
+            "request": ["useSsl": true, "internalExperimentFlags": []]
+        ]
     ]
     private let androidContext: [String: Any] = [
         "context": ["client": ["clientName": DirectPlaybackClient.android.clientName, "clientVersion": DirectPlaybackClient.android.clientVersion, "hl": "en", "gl": "US", "androidSdkVersion": 28]]
     ]
     private let tvContext: [String: Any] = [
-        "context": ["client": ["clientName": DirectPlaybackClient.tvHTML5.clientName, "clientVersion": DirectPlaybackClient.tvHTML5.clientVersion, "hl": "en", "gl": "US"]]
+        "context": [
+            "client": [
+                "clientName": "TVHTML5",
+                "clientVersion": "7.20260311.12.00",
+                "hl": "en",
+                "gl": "US",
+                "platform": "TV",
+                "clientFormFactor": "UNKNOWN_FORM_FACTOR"
+            ],
+            "user": ["enableSafetyMode": false, "lockedSafetyMode": false],
+            "request": ["useSsl": true, "internalExperimentFlags": []]
+        ]
     ]
     private let androidVRContext: [String: Any] = [
         "context": ["client": [
@@ -127,7 +174,18 @@ final class InnertubeClient: VideoService {
     }
 
     func fetchHistory(completion: @escaping (Result<FeedPage, Error>) -> Void) {
-        authenticatedBrowse(browseId: "FEhistory", completion: completion)
+        OAuthClient.shared.validToken { [weak self] result in
+            switch result {
+            case .failure(let e): completion(.failure(e))
+            case .success(let token): self?.executeTVHistoryBrowse(token: token, continuation: nil,
+                                                                   completion: completion)
+            }
+        }
+    }
+
+    func fetchHistoryNextPage(continuation: String, token: String,
+                              completion: @escaping (Result<FeedPage, Error>) -> Void) {
+        executeTVHistoryBrowse(token: token, continuation: continuation, completion: completion)
     }
 
     func fetchPlaylists(completion: @escaping (Result<[Playlist], Error>) -> Void) {
@@ -137,6 +195,128 @@ final class InnertubeClient: VideoService {
             case .success(let token): self?.executePlaylistsFetch(token: token, completion: completion)
             }
         }
+    }
+
+    /// Fetches the signed-in account info (display name + avatar URL) via Innertube
+    /// /account/accounts_list — the same approach used by YouTube.js AccountManager.getInfo().
+    func fetchAccountInfo(completion: @escaping (Result<(name: String, avatarURL: String?), Error>) -> Void) {
+        OAuthClient.shared.validToken { [weak self] result in
+            switch result {
+            case .failure(let e): completion(.failure(e))
+            case .success(let token): self?.executeAccountsList(token: token, completion: completion)
+            }
+        }
+    }
+
+    private func executeAccountsList(token: String,
+                                     completion: @escaping (Result<(name: String, avatarURL: String?), Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/account/accounts_list") else {
+            completion(.failure(APIError.invalidURL)); return
+        }
+        var body = tvContext
+        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
+            completion(.failure(APIError.decodingFailed)); return
+        }
+        let headers = ["Content-Type": "application/json", "Authorization": "Bearer \(token)"]
+        api.post(url: url, headers: headers, body: bodyData) { result in
+            switch result {
+            case .failure(let e): completion(.failure(e))
+            case .success(let data):
+                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                    completion(.failure(APIError.decodingFailed)); return
+                }
+                if let info = InnertubeClient.parseAccountsListJSON(json) {
+                    print("[Innertube] accountsList: name=\(info.name), avatar=\(info.avatarURL ?? "nil")")
+                    completion(.success(info))
+                } else {
+                    if let pretty = try? JSONSerialization.data(withJSONObject: json, options: .prettyPrinted),
+                       let str = String(data: pretty, encoding: .utf8) {
+                        print("[Innertube] accountsList unknown structure:\n\(str.prefix(3000))")
+                    }
+                    completion(.failure(APIError.decodingFailed))
+                }
+            }
+        }
+    }
+
+    /// Recursively searches for account name + photo in accounts_list / similar responses.
+    private static func parseAccountsListJSON(_ json: [String: Any]) -> (name: String, avatarURL: String?)? {
+        // Try known explicit paths first
+        // Path 1: header.activeAccountHeaderRenderer
+        if let r = (json["header"] as? [String: Any])?["activeAccountHeaderRenderer"] as? [String: Any],
+           let info = extractAccountNameAndPhoto(from: r) { return info }
+
+        // Path 2: contents dict → accountSectionListRenderer
+        if let contents = json["contents"] as? [String: Any] {
+            if let asl = contents["accountSectionListRenderer"] as? [String: Any],
+               let info = parseAccountSectionList(asl) { return info }
+            if let info = extractAccountNameAndPhoto(from: contents) { return info }
+        }
+
+        // Path 3: contents array
+        if let arr = json["contents"] as? [[String: Any]] {
+            for item in arr {
+                if let asl = item["accountSectionListRenderer"] as? [String: Any],
+                   let info = parseAccountSectionList(asl) { return info }
+                if let r = item["activeAccountHeaderRenderer"] as? [String: Any],
+                   let info = extractAccountNameAndPhoto(from: r) { return info }
+            }
+        }
+
+        // Path 4: top-level activeAccountHeaderRenderer
+        if let r = json["activeAccountHeaderRenderer"] as? [String: Any],
+           let info = extractAccountNameAndPhoto(from: r) { return info }
+
+        // Fallback: deep recursive search for any node that has accountName
+        return deepSearchAccountInfo(in: json)
+    }
+
+    /// Recursively walk the entire JSON tree looking for a node with accountName + accountPhoto.
+    private static func deepSearchAccountInfo(in value: Any) -> (name: String, avatarURL: String?)? {
+        guard let dict = value as? [String: Any] else {
+            if let arr = value as? [Any] {
+                for item in arr {
+                    if let result = deepSearchAccountInfo(in: item) { return result }
+                }
+            }
+            return nil
+        }
+        // Check if this node has accountName
+        if let info = extractAccountNameAndPhoto(from: dict) { return info }
+        // Recurse into values
+        for (key, val) in dict {
+            // Skip responseContext (noisy, no useful data)
+            if key == "responseContext" { continue }
+            if let result = deepSearchAccountInfo(in: val) { return result }
+        }
+        return nil
+    }
+
+    private static func parseAccountSectionList(_ asl: [String: Any]) -> (name: String, avatarURL: String?)? {
+        let sections = asl["contents"] as? [[String: Any]] ?? []
+        for section in sections {
+            let ais = section["accountItemSectionRenderer"] as? [String: Any]
+            let items = ais?["contents"] as? [[String: Any]] ?? []
+            for item in items {
+                if let account = item["accountItem"] as? [String: Any],
+                   let info = extractAccountNameAndPhoto(from: account) { return info }
+            }
+        }
+        return nil
+    }
+
+    private static func extractAccountNameAndPhoto(from node: [String: Any]) -> (name: String, avatarURL: String?)? {
+        // Try to get name from accountName or similar
+        let nameNode = node["accountName"] as? [String: Any]
+        let name = nameNode?["simpleText"] as? String
+            ?? (nameNode?["runs"] as? [[String: Any]])?.first?["text"] as? String
+            ?? node["title"] as? String
+        guard let name = name, !name.isEmpty else { return nil }
+        // Avatar from accountPhoto or thumbnail
+        let photoNode = (node["accountPhoto"] ?? node["thumbnail"]) as? [String: Any]
+        let thumbs = photoNode?["thumbnails"] as? [[String: Any]] ?? []
+        let avatarURL = thumbs.last?["url"] as? String ?? thumbs.first?["url"] as? String
+        return (name: name, avatarURL: avatarURL)
     }
 
     private func executePlaylistsFetch(token: String,
@@ -355,6 +535,96 @@ final class InnertubeClient: VideoService {
             }
         }
     }
+
+    /// Web-client authenticated browse — used for endpoints like FEhistory that return
+    /// twoColumnBrowseResultsRenderer instead of the TV tvBrowseRenderer structure.
+    private func executeWebBrowse(browseId: String?, continuation: String?, token: String,
+                                   completion: @escaping (Result<FeedPage, Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/browse") else {
+            completion(.failure(APIError.invalidURL)); return
+        }
+        var body = webContext
+        if let c = continuation {
+            body["continuation"] = c
+        } else if let b = browseId {
+            body["browseId"] = b
+        }
+        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
+            completion(.failure(APIError.decodingFailed)); return
+        }
+        let headers: [String: String] = [
+            "Content-Type": "application/json",
+            "Authorization": "Bearer \(token)",
+            "X-Youtube-Client-Name": "1",
+            "X-Youtube-Client-Version": "2.20260206.01.00",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36,gzip(gfe)",
+            "Origin": "https://www.youtube.com",
+            "Referer": "https://www.youtube.com/"
+        ]
+        api.post(url: url, headers: headers, body: bodyData) { result in
+            switch result {
+            case .failure(let e): completion(.failure(e))
+            case .success(let data):
+                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                    completion(.failure(APIError.decodingFailed)); return
+                }
+                let page = InnertubeClient.parseWebBrowsePage(json)
+                if page.videos.isEmpty {
+                    let topKeys = json.keys.joined(separator: ", ")
+                    let contentsKeys = (json["contents"] as? [String: Any])?.keys.joined(separator: ", ") ?? "nil"
+                    print("[Innertube] web browse '\(browseId ?? "continuation")': 0 videos. topKeys=[\(topKeys)] contentsKeys=[\(contentsKeys)]")
+                } else {
+                    print("[Innertube] web browse '\(browseId ?? "continuation")': \(page.videos.count) videos")
+                }
+                completion(.success(page))
+            }
+        }
+    }
+
+    /// TV-client authenticated browse for FEhistory.
+    /// TV context accepts Bearer token. Logs the raw structure on first call so we can
+    /// determine the correct parse path.
+    private func executeTVHistoryBrowse(token: String, continuation: String?,
+                                         completion: @escaping (Result<FeedPage, Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/browse") else {
+            completion(.failure(APIError.invalidURL)); return
+        }
+        var body = tvContext
+        if let c = continuation {
+            body["continuation"] = c
+        } else {
+            body["browseId"] = "FEhistory"
+        }
+        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
+            completion(.failure(APIError.decodingFailed)); return
+        }
+        let headers = ["Content-Type": "application/json", "Authorization": "Bearer \(token)"]
+        api.post(url: url, headers: headers, body: bodyData) { result in
+            switch result {
+            case .failure(let e): completion(.failure(e))
+            case .success(let data):
+                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                    completion(.failure(APIError.decodingFailed)); return
+                }
+                // Dump full JSON to ~/Documents/history_response.json for inspection
+                if let pretty = try? JSONSerialization.data(withJSONObject: json, options: .prettyPrinted) {
+                    let docsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+                    if let file = docsDir?.appendingPathComponent("history_response.json") {
+                        try? pretty.write(to: file)
+                        print("[Innertube] TV history JSON dumped to: \(file.path)")
+                    }
+                    // Also log top-level and contents keys
+                    let topKeys = json.keys.sorted().joined(separator: ", ")
+                    let contentsKeys = (json["contents"] as? [String: Any])?.keys.sorted().joined(separator: ", ") ?? "nil (array or missing)"
+                    print("[Innertube] TVhistory topKeys=[\(topKeys)] contentsKeys=[\(contentsKeys)]")
+                }
+                let page = InnertubeClient.parseTVHistoryPage(json)
+                print("[Innertube] TV history: \(page.videos.count) videos, cont=\(page.continuation != nil)")
+                completion(.success(page))
+            }
+        }
+    }
+
 
     private func executeBrowseAnonymous(browseId: String, completion: @escaping (Result<FeedPage, Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/browse") else {
@@ -1179,6 +1449,282 @@ final class InnertubeClient: VideoService {
             .first.flatMap { ($0["nextContinuationData"] as? [String: Any])?["continuation"] as? String }
 
         return FeedPage(videos: videos, continuation: continuation)
+    }
+
+    // MARK: - Web client browse parsing (FEhistory, etc.)
+
+    /// TV-client history page. TV browses FEhistory and returns sections of videos.
+    private static func parseTVHistoryPage(_ json: [String: Any]) -> FeedPage {
+        var videos: [Video] = []
+        var continuation: String?
+
+        // Continuation response — TV gridContinuation (history pagination)
+        if let cc = json["continuationContents"] as? [String: Any] {
+            if let gc = cc["gridContinuation"] as? [String: Any],
+               let items = gc["items"] as? [[String: Any]] {
+                var vids: [Video] = []
+                for item in items {
+                    if let tile = item["tileRenderer"] as? [String: Any],
+                       let v = parseTileRenderer(tile) { vids.append(v) }
+                    if let vr = item["videoRenderer"] as? [String: Any],
+                       let v = parseWebVideoRenderer(vr) { vids.append(v) }
+                    if let vr = item["compactVideoRenderer"] as? [String: Any],
+                       let v = parseWebVideoRenderer(vr) { vids.append(v) }
+                }
+                let cont = (gc["continuations"] as? [[String: Any]])?
+                    .first.flatMap { ($0["nextContinuationData"] as? [String: Any])?["continuation"] as? String }
+                print("[Innertube] TV history gridContinuation: \(vids.count) more videos")
+                return FeedPage(videos: vids, continuation: cont)
+            }
+            // Fallback: sectionListContinuation
+            if let slr = cc["sectionListContinuation"] as? [String: Any] {
+                return parseSectionList(slr)
+            }
+        }
+
+        // TV FEhistory structure:
+        // contents.tvBrowseRenderer.content.tvSurfaceContentRenderer.content.gridRenderer.items[]
+        if let tvBrowse = (json["contents"] as? [String: Any])?["tvBrowseRenderer"] as? [String: Any],
+           let tvContent = tvBrowse["content"] as? [String: Any],
+           let tvSurface = tvContent["tvSurfaceContentRenderer"] as? [String: Any],
+           let innerContent = tvSurface["content"] as? [String: Any],
+           let grid = innerContent["gridRenderer"] as? [String: Any],
+           let items = grid["items"] as? [[String: Any]] {
+            var videos: [Video] = []
+            for item in items {
+                if let tile = item["tileRenderer"] as? [String: Any],
+                   let video = parseTileRenderer(tile) { videos.append(video) }
+                // gridRenderer may also have videoRenderer items
+                if let vr = item["videoRenderer"] as? [String: Any],
+                   let video = parseWebVideoRenderer(vr) { videos.append(video) }
+                if let vr = item["compactVideoRenderer"] as? [String: Any],
+                   let video = parseWebVideoRenderer(vr) { videos.append(video) }
+            }
+            // Continuation from gridRenderer.continuations
+            let cont = (grid["continuations"] as? [[String: Any]])?
+                .first.flatMap { ($0["nextContinuationData"] as? [String: Any])?["continuation"] as? String }
+            print("[Innertube] TV history gridRenderer: \(videos.count) videos")
+            return FeedPage(videos: videos, continuation: cont)
+        }
+
+
+        // Path 1: tvBrowseRenderer (same as home/subscriptions)
+        if let slr = extractSectionList(from: json) {
+            return parseSectionList(slr)
+        }
+
+        // Path 2: twoColumnBrowseResultsRenderer (web-style even in TV response)
+        let contents = json["contents"] as? [String: Any]
+        if let tcbr = contents?["twoColumnBrowseResultsRenderer"] as? [String: Any] {
+            let tabList = tcbr["tabs"] as? [[String: Any]] ?? []
+            for tab in tabList {
+                guard let tabRenderer = tab["tabRenderer"] as? [String: Any],
+                      let content = tabRenderer["content"] as? [String: Any],
+                      let slr = content["sectionListRenderer"] as? [String: Any]
+                else { continue }
+                let page = parseWebSectionList(slr)
+                videos.append(contentsOf: page.videos)
+                if continuation == nil { continuation = page.continuation }
+            }
+            if !videos.isEmpty { return FeedPage(videos: videos, continuation: continuation) }
+        }
+
+        // Path 3: sectionListRenderer directly under contents
+        if let slr = contents?["sectionListRenderer"] as? [String: Any] {
+            let page = parseWebSectionList(slr)
+            if !page.videos.isEmpty { return page }
+        }
+
+        // Path 4: richGridRenderer
+        if let richGrid = contents?["richGridRenderer"] as? [String: Any],
+           let items = richGrid["contents"] as? [[String: Any]] {
+            for item in items {
+                if let richItem = (item["richItemRenderer"] as? [String: Any])?["content"] as? [String: Any],
+                   let vr = richItem["videoRenderer"] as? [String: Any],
+                   let video = parseWebVideoRenderer(vr) { videos.append(video) }
+                if let ct = (item["continuationItemRenderer"] as? [String: Any])?["continuationEndpoint"] as? [String: Any],
+                   let token = (ct["continuationCommand"] as? [String: Any])?["token"] as? String {
+                    continuation = token
+                }
+            }
+            if !videos.isEmpty { return FeedPage(videos: videos, continuation: continuation) }
+        }
+
+        // Log unknown structure
+        print("[Innertube] parseTVHistoryPage: unknown structure. topKeys=\(json.keys.sorted())")
+        if let c = contents { print("[Innertube] contentsKeys=\(c.keys.sorted())") }
+        return FeedPage(videos: [], continuation: nil)
+    }
+
+
+
+    /// Parses a web-client browse response (twoColumnBrowseResultsRenderer).
+    /// History structure: contents → twoColumnBrowseResultsRenderer → tabs[0] → tabRenderer →
+    ///   content → sectionListRenderer → contents[] → itemSectionRenderer → contents[] → videoRenderer
+    private static func parseWebBrowsePage(_ json: [String: Any]) -> FeedPage {
+        var videos: [Video] = []
+        var continuation: String?
+
+        // Continuation response
+        if let cc = json["continuationContents"] as? [String: Any],
+           let slr = cc["sectionListContinuation"] as? [String: Any] {
+            return parseWebSectionList(slr)
+        }
+
+        // Initial response via twoColumnBrowseResultsRenderer
+        let tabs = (json["contents"] as? [String: Any])?["twoColumnBrowseResultsRenderer"] as? [String: Any]
+        let tabList = tabs?["tabs"] as? [[String: Any]] ?? []
+        for tab in tabList {
+            guard let tabRenderer = tab["tabRenderer"] as? [String: Any],
+                  let content = tabRenderer["content"] as? [String: Any],
+                  let slr = content["sectionListRenderer"] as? [String: Any]
+            else { continue }
+            let page = parseWebSectionList(slr)
+            videos.append(contentsOf: page.videos)
+            if continuation == nil { continuation = page.continuation }
+        }
+
+        // Fallback: richGridRenderer (used by some web browse endpoints)
+        if videos.isEmpty,
+           let richGrid = (json["contents"] as? [String: Any])?["richGridRenderer"] as? [String: Any],
+           let contents = richGrid["contents"] as? [[String: Any]] {
+            for item in contents {
+                if let richItem = (item["richItemRenderer"] as? [String: Any])?["content"] as? [String: Any],
+                   let vr = richItem["videoRenderer"] as? [String: Any],
+                   let video = parseWebVideoRenderer(vr) {
+                    videos.append(video)
+                }
+                if let ct = (item["continuationItemRenderer"] as? [String: Any])?["continuationEndpoint"] as? [String: Any],
+                   let token = (ct["continuationCommand"] as? [String: Any])?["token"] as? String {
+                    continuation = token
+                }
+            }
+        }
+
+        return FeedPage(videos: videos, continuation: continuation)
+    }
+
+    private static func parseWebSectionList(_ slr: [String: Any]) -> FeedPage {
+        let sections = slr["contents"] as? [[String: Any]] ?? []
+        var videos: [Video] = []
+        var continuation: String?
+
+        for section in sections {
+            // itemSectionRenderer — groups of videos (e.g. "Today", "Yesterday")
+            if let isr = section["itemSectionRenderer"] as? [String: Any],
+               let contents = isr["contents"] as? [[String: Any]] {
+                for item in contents {
+                    if let vr = item["videoRenderer"] as? [String: Any],
+                       let video = parseWebVideoRenderer(vr) {
+                        videos.append(video)
+                    }
+                    // compactVideoRenderer (sometimes used)
+                    if let cvr = item["compactVideoRenderer"] as? [String: Any],
+                       let video = parseWebVideoRenderer(cvr) {
+                        videos.append(video)
+                    }
+                }
+            }
+            // shelfRenderer — also used by history (sections titled "Today", "This week", etc.)
+            if let shelf = section["shelfRenderer"] as? [String: Any],
+               let content = shelf["content"] as? [String: Any] {
+                // Vertical list
+                if let vertList = content["verticalListRenderer"] as? [String: Any],
+                   let items = vertList["items"] as? [[String: Any]] {
+                    for item in items {
+                        if let vr = item["videoRenderer"] as? [String: Any],
+                           let video = parseWebVideoRenderer(vr) { videos.append(video) }
+                        if let cvr = item["compactVideoRenderer"] as? [String: Any],
+                           let video = parseWebVideoRenderer(cvr) { videos.append(video) }
+                    }
+                }
+                // Horizontal list
+                if let horizList = content["horizontalListRenderer"] as? [String: Any],
+                   let items = horizList["items"] as? [[String: Any]] {
+                    for item in items {
+                        if let vr = item["videoRenderer"] as? [String: Any],
+                           let video = parseWebVideoRenderer(vr) { videos.append(video) }
+                        if let tile = item["tileRenderer"] as? [String: Any],
+                           let video = parseTileRenderer(tile) { videos.append(video) }
+                    }
+                }
+                // Expanded shelf with contents directly
+                if let items = content["contents"] as? [[String: Any]] {
+                    for item in items {
+                        if let vr = item["videoRenderer"] as? [String: Any],
+                           let video = parseWebVideoRenderer(vr) { videos.append(video) }
+                    }
+                }
+            }
+            // Continuation token
+            if let ct = section["continuationItemRenderer"] as? [String: Any],
+               let ep = ct["continuationEndpoint"] as? [String: Any],
+               let token = (ep["continuationCommand"] as? [String: Any])?["token"] as? String {
+                continuation = token
+            }
+        }
+
+        return FeedPage(videos: videos, continuation: continuation)
+    }
+
+    /// Parse a web-client videoRenderer into a Video model.
+    private static func parseWebVideoRenderer(_ vr: [String: Any]) -> Video? {
+        guard let videoId = vr["videoId"] as? String else { return nil }
+
+        let title = simpleText(from: vr["title"])
+            ?? ((vr["title"] as? [String: Any])?["runs"] as? [[String: Any]])?
+                .compactMap { $0["text"] as? String }.joined()
+
+        guard let title = title, !title.isEmpty else { return nil }
+
+        // Thumbnail — pick highest quality
+        let thumbs = (vr["thumbnail"] as? [String: Any])?["thumbnails"] as? [[String: Any]] ?? []
+        let thumbURL = thumbs.last?["url"] as? String
+            ?? "https://i.ytimg.com/vi/\(videoId)/hqdefault.jpg"
+
+        // Channel info
+        let channelName: String
+        let channelId: String?
+        if let ownerText = vr["ownerText"] as? [String: Any],
+           let runs = ownerText["runs"] as? [[String: Any]],
+           let first = runs.first {
+            channelName = first["text"] as? String ?? ""
+            let nav = first["navigationEndpoint"] as? [String: Any]
+            let browse = nav?["browseEndpoint"] as? [String: Any]
+            channelId = browse?["browseId"] as? String
+        } else {
+            channelName = ""
+            channelId = nil
+        }
+
+        // View count
+        let viewCount: String?
+        if let vc = simpleText(from: vr["viewCountText"]) {
+            viewCount = vc
+        } else if let runs = (vr["viewCountText"] as? [String: Any])?["runs"] as? [[String: Any]] {
+            viewCount = runs.compactMap { $0["text"] as? String }.joined()
+        } else {
+            viewCount = nil
+        }
+
+        // Published date
+        let publishedAt = simpleText(from: vr["publishedTimeText"])
+
+        // Duration
+        let duration: String?
+        if let d = simpleText(from: vr["lengthText"]) {
+            duration = d
+        } else if let acc = (vr["lengthText"] as? [String: Any])?["accessibility"] as? [String: Any],
+                  let data = acc["accessibilityData"] as? [String: Any] {
+            duration = data["label"] as? String
+        } else {
+            duration = nil
+        }
+
+        return Video(id: videoId, title: title, channelId: channelId,
+                     channelName: channelName, channelAvatarURL: nil,
+                     thumbnailURL: thumbURL, viewCount: viewCount,
+                     publishedAt: publishedAt, duration: duration)
     }
 
     private static func parseWatchMetadata(_ json: [String: Any]) -> (title: String?, viewCountText: String?, publishedText: String?) {
