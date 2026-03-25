@@ -13,14 +13,25 @@ final class SettingsViewController: UIViewController {
 
     private enum Row {
         case theme, quality, persistCache, clearCache, rydEnabled
+        case sponsorBlockEnabled, sponsorBlockSettings
     }
 
-    private let sections: [(header: String?, footer: String?, rows: [Row])] = [
-        ("Theme",   nil, [.theme]),
-        ("Playback", nil, [.quality]),
-        ("Cache",   nil, [.persistCache, .clearCache]),
-        ("Tweaks",  "Dislike counts are powered by Return YouTube Dislike (returnyoutubedislike.com) — an open community project.", [.rydEnabled]),
-    ]
+    private var sections: [(header: String?, footer: String?, rows: [Row])] {
+        var sponsorBlockRows: [Row] = [.sponsorBlockEnabled]
+        if SponsorBlockService.enabled { sponsorBlockRows.append(.sponsorBlockSettings) }
+
+        return [
+            ("Theme",    nil, [.theme]),
+            ("Playback", nil, [.quality]),
+            ("Cache",    nil, [.persistCache, .clearCache]),
+            ("Return YouTube Dislike",
+             "Dislike counts are powered by Return YouTube Dislike (returnyoutubedislike.com) — an open community project.",
+             [.rydEnabled]),
+            ("SponsorBlock",
+             SponsorBlockService.enabled ? SponsorBlockService.attributionText : nil,
+             sponsorBlockRows),
+        ]
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -136,6 +147,27 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             cell.accessoryView = toggle
             return cell
 
+        case .sponsorBlockEnabled:
+            let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
+            cell.textLabel?.text = "SponsorBlock"
+            cell.textLabel?.textColor = t.primaryText
+            cell.backgroundColor = t.surface
+            cell.selectionStyle  = .none
+
+            let toggle = UISwitch()
+            toggle.isOn = SponsorBlockService.enabled
+            toggle.addTarget(self, action: #selector(sponsorBlockToggled(_:)), for: .valueChanged)
+            cell.accessoryView = toggle
+            return cell
+
+        case .sponsorBlockSettings:
+            let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
+            cell.textLabel?.text = "SponsorBlock Settings"
+            cell.textLabel?.textColor = t.primaryText
+            cell.backgroundColor = t.surface
+            cell.accessoryType   = .disclosureIndicator
+            return cell
+
         case .clearCache:
             let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
             cell.textLabel?.text  = "Clear All Cache"
@@ -152,6 +184,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
         switch row {
         case .quality: showQualityPicker()
         case .clearCache: clearCache()
+        case .sponsorBlockSettings: showSponsorBlockSettings()
         default: break
         }
     }
@@ -164,6 +197,21 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
 
     @objc private func rydToggled(_ toggle: UISwitch) {
         ReturnYouTubeDislikeService.enabled = toggle.isOn
+    }
+
+    @objc private func sponsorBlockToggled(_ toggle: UISwitch) {
+        SponsorBlockService.enabled = toggle.isOn
+        // Reload SponsorBlock section to show/hide the Settings row and update footer
+        if let idx = sections.firstIndex(where: { $0.header == "SponsorBlock" }) {
+            tableView.reloadSections(IndexSet(integer: idx), with: .automatic)
+        }
+    }
+
+    private func showSponsorBlockSettings() {
+        let vc  = SponsorBlockSettingsViewController()
+        let nav = UINavigationController(rootViewController: vc)
+        nav.modalPresentationStyle = .formSheet
+        present(nav, animated: true)
     }
 
     @objc private func themeChanged(_ seg: UISegmentedControl) {

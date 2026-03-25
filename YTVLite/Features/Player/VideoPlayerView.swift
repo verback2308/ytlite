@@ -31,6 +31,9 @@ final class VideoPlayerView: UIView {
         removePlayerObservers()
         playerLayer.player = nil
         player = nil
+        hideSkipButton()
+        sponsorSegments = []
+        seekBar.setSegments([])
     }
 
     // MARK: - Layers
@@ -82,6 +85,55 @@ final class VideoPlayerView: UIView {
         v.isUserInteractionEnabled = false
         return v
     }()
+
+    // MARK: - SponsorBlock
+
+    /// Called every ~0.5 s with the current playback position in seconds.
+    var onTimeUpdate: ((Double) -> Void)?
+
+    /// Called when the user taps the SponsorBlock skip button.
+    var onSkipTapped: (() -> Void)?
+
+    private var sponsorSegments: [SponsorBlockSegment] = []
+
+    /// Updates the seekbar segment markers and stores segments for future duration changes.
+    func setSponsorSegments(_ segments: [SponsorBlockSegment]) {
+        sponsorSegments = segments
+        refreshSponsorSeekBar()
+    }
+
+    func showSkipButton(categoryName: String) {
+        skipButton.setTitle("Skip \(categoryName)", for: .normal)
+        skipButton.isHidden = false
+    }
+
+    func hideSkipButton() {
+        skipButton.isHidden = true
+    }
+
+    private let skipButton: UIButton = {
+        let b = UIButton(type: .system)
+        b.setTitleColor(.white, for: .normal)
+        b.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .semibold)
+        b.backgroundColor = UIColor.black.withAlphaComponent(0.75)
+        b.layer.borderColor = UIColor.white.withAlphaComponent(0.8).cgColor
+        b.layer.borderWidth = 1
+        b.layer.cornerRadius = 4
+        b.contentEdgeInsets = UIEdgeInsets(top: 7, left: 14, bottom: 7, right: 14)
+        b.isHidden = true
+        b.translatesAutoresizingMaskIntoConstraints = false
+        return b
+    }()
+
+    private func refreshSponsorSeekBar() {
+        guard duration > 0 else { return }
+        let normalized = sponsorSegments
+            .filter { SponsorBlockService.skipBehavior(for: $0.category) != .disabled }
+            .map { (start: $0.startTime / duration,
+                    end:   $0.endTime   / duration,
+                    color: $0.category.seekBarColor) }
+        seekBar.setSegments(normalized)
+    }
 
     // MARK: - State
 
@@ -173,6 +225,14 @@ final class VideoPlayerView: UIView {
         NSLayoutConstraint.activate([
             spinner.centerXAnchor.constraint(equalTo: centerXAnchor),
             spinner.centerYAnchor.constraint(equalTo: centerYAnchor),
+        ])
+
+        // Skip button — outside controlsView so it stays visible when controls hide
+        skipButton.addTarget(self, action: #selector(skipButtonTapped), for: .touchUpInside)
+        addSubview(skipButton)
+        NSLayoutConstraint.activate([
+            skipButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+            skipButton.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -72),
         ])
 
         setupTopBar()
@@ -337,6 +397,7 @@ final class VideoPlayerView: UIView {
                 if secs.isFinite && secs > 0 {
                     self?.duration = secs
                     self?.durationLabel.text = formatTime(secs)
+                    self?.refreshSponsorSeekBar()
                 }
             }
         }
@@ -366,6 +427,7 @@ final class VideoPlayerView: UIView {
                 .max() ?? 0
             seekBar.setBuffer(buffered / duration)
         }
+        onTimeUpdate?(secs)
     }
 
     // MARK: - Show / hide controls
@@ -457,6 +519,10 @@ final class VideoPlayerView: UIView {
         scheduleAutoHide()
     }
 
+    @objc private func skipButtonTapped() {
+        onSkipTapped?()
+    }
+
     @objc private func settingsTapped() {
         delegate?.videoPlayerViewDidTapSettings(self)
         scheduleAutoHide()
@@ -494,13 +560,15 @@ final class VideoSeekBar: UIControl {
 
     private(set) var isScrubbing = false
 
-    private let trackView = UIView()
-    private let bufferView = UIView()
+    private let trackView    = UIView()
+    private let bufferView   = UIView()
+    private let segmentsView = UIView()  // SponsorBlock colored markers, above buffer
     private let progressView = UIView()
-    private let thumbView = UIView()
+    private let thumbView    = UIView()
 
     private var progress: Double = 0
-    private var buffer: Double = 0
+    private var buffer: Double   = 0
+    private var segments: [(start: Double, end: Double, color: UIColor)] = []
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -516,11 +584,16 @@ final class VideoSeekBar: UIControl {
     private func setupViews() {
         trackView.backgroundColor = UIColor.white.withAlphaComponent(0.3)
         trackView.layer.cornerRadius = 2
+        trackView.clipsToBounds = true
         trackView.translatesAutoresizingMaskIntoConstraints = false
 
         bufferView.backgroundColor = UIColor.white.withAlphaComponent(0.5)
         bufferView.layer.cornerRadius = 2
         bufferView.translatesAutoresizingMaskIntoConstraints = false
+
+        segmentsView.backgroundColor = .clear
+        segmentsView.translatesAutoresizingMaskIntoConstraints = false
+        segmentsView.isUserInteractionEnabled = false
 
         progressView.backgroundColor = .white
         progressView.layer.cornerRadius = 2
@@ -533,6 +606,7 @@ final class VideoSeekBar: UIControl {
 
         addSubview(trackView)
         addSubview(bufferView)
+        addSubview(segmentsView)
         addSubview(progressView)
         addSubview(thumbView)
 
@@ -546,6 +620,11 @@ final class VideoSeekBar: UIControl {
             bufferView.centerYAnchor.constraint(equalTo: centerYAnchor),
             bufferView.heightAnchor.constraint(equalToConstant: 4),
 
+            segmentsView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            segmentsView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            segmentsView.centerYAnchor.constraint(equalTo: centerYAnchor),
+            segmentsView.heightAnchor.constraint(equalToConstant: 4),
+
             progressView.leadingAnchor.constraint(equalTo: leadingAnchor),
             progressView.centerYAnchor.constraint(equalTo: centerYAnchor),
             progressView.heightAnchor.constraint(equalToConstant: 4),
@@ -558,9 +637,23 @@ final class VideoSeekBar: UIControl {
     override func layoutSubviews() {
         super.layoutSubviews()
         let w = bounds.width
-        bufferView.frame = CGRect(x: 0, y: (bounds.height - 4) / 2, width: w * CGFloat(buffer), height: 4)
+        bufferView.frame   = CGRect(x: 0, y: (bounds.height - 4) / 2, width: w * CGFloat(buffer),   height: 4)
         progressView.frame = CGRect(x: 0, y: (bounds.height - 4) / 2, width: w * CGFloat(progress), height: 4)
-        thumbView.center = CGPoint(x: w * CGFloat(progress), y: bounds.height / 2)
+        thumbView.center   = CGPoint(x: w * CGFloat(progress), y: bounds.height / 2)
+        layoutSegmentViews()
+    }
+
+    private func layoutSegmentViews() {
+        segmentsView.subviews.forEach { $0.removeFromSuperview() }
+        let w = segmentsView.bounds.width
+        guard w > 0 else { return }
+        for seg in segments {
+            let x      = CGFloat(seg.start) * w
+            let segW   = max(2, CGFloat(seg.end - seg.start) * w)
+            let bar    = UIView(frame: CGRect(x: x, y: 0, width: segW, height: 4))
+            bar.backgroundColor = seg.color
+            segmentsView.addSubview(bar)
+        }
     }
 
     func setProgress(_ value: Double) {
@@ -570,6 +663,12 @@ final class VideoSeekBar: UIControl {
 
     func setBuffer(_ value: Double) {
         buffer = max(0, min(1, value))
+        setNeedsLayout()
+    }
+
+    /// Sets the SponsorBlock segment markers. Each tuple is (startFraction, endFraction, color) in 0-1 range.
+    func setSegments(_ newSegments: [(start: Double, end: Double, color: UIColor)]) {
+        segments = newSegments
         setNeedsLayout()
     }
 
