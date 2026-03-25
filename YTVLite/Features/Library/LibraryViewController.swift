@@ -43,6 +43,7 @@ final class LibraryViewController: UIViewController {
         super.viewDidLoad()
         setupSegmentedControl()
         setupContentView()
+        ToolbarManager.shared.install(in: self)
         applyTheme()
         NotificationCenter.default.addObserver(self, selector: #selector(applyTheme),
                                                name: ThemeManager.didChangeNotification, object: nil)
