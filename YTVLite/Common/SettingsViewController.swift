@@ -12,14 +12,14 @@ final class SettingsViewController: UIViewController {
     }()
 
     private enum Row {
-        case theme, quality, persistCache, clearCache
+        case theme, quality, persistCache, clearCache, rydEnabled
     }
 
-    private let sections: [(header: String?, rows: [Row])] = [
-        ("Theme",   [.theme]),
-        ("Playback",[.quality]),
-        ("Cache",   [.persistCache]),
-        (nil,       [.clearCache]),
+    private let sections: [(header: String?, footer: String?, rows: [Row])] = [
+        ("Theme",   nil, [.theme]),
+        ("Playback", nil, [.quality]),
+        ("Cache",   nil, [.persistCache, .clearCache]),
+        ("Tweaks",  "Dislike counts are powered by Return YouTube Dislike (returnyoutubedislike.com) — an open community project.", [.rydEnabled]),
     ]
 
     override func viewDidLoad() {
@@ -74,6 +74,10 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
         sections[section].header
     }
 
+    func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {
+        sections[section].footer
+    }
+
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let row = sections[indexPath.section].rows[indexPath.row]
         let t   = ThemeManager.shared
@@ -119,6 +123,19 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             cell.accessoryView = toggle
             return cell
 
+        case .rydEnabled:
+            let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
+            cell.textLabel?.text = "Return YouTube Dislike"
+            cell.textLabel?.textColor = t.primaryText
+            cell.backgroundColor = t.surface
+            cell.selectionStyle  = .none
+
+            let toggle = UISwitch()
+            toggle.isOn = ReturnYouTubeDislikeService.enabled
+            toggle.addTarget(self, action: #selector(rydToggled(_:)), for: .valueChanged)
+            cell.accessoryView = toggle
+            return cell
+
         case .clearCache:
             let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
             cell.textLabel?.text  = "Clear All Cache"
@@ -143,6 +160,10 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
 
     @objc private func persistCacheToggled(_ toggle: UISwitch) {
         AppCache.persistenceEnabled = toggle.isOn
+    }
+
+    @objc private func rydToggled(_ toggle: UISwitch) {
+        ReturnYouTubeDislikeService.enabled = toggle.isOn
     }
 
     @objc private func themeChanged(_ seg: UISegmentedControl) {

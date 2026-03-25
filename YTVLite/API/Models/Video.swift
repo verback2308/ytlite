@@ -1,5 +1,11 @@
 import Foundation
 
+enum LikeStatus: String, Codable {
+    case like = "LIKE"
+    case dislike = "DISLIKE"
+    case indifferent = "INDIFFERENT"
+}
+
 struct Video: Codable {
     let id: String
     let title: String
@@ -34,6 +40,7 @@ struct WatchPage {
     let isSubscribed: Bool
     let relatedVideos: [Video]
     let likeCount: String?
+    let likeStatus: LikeStatus?
 }
 
 struct DashFormatInfo {

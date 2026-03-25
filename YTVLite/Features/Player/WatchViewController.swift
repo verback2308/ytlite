@@ -63,6 +63,7 @@ final class WatchViewController: UIViewController {
     private let dislikeCountLabel = UILabel()
     private var likeCount: String?
     private var dislikeCount: String?
+    private var currentLikeStatus: LikeStatus = .indifferent
 
     private var playerAspectConstraint: NSLayoutConstraint!
     private var relatedHeightConstraint: NSLayoutConstraint!
@@ -225,6 +226,7 @@ final class WatchViewController: UIViewController {
         if isViewLoaded && navigationController != nil {
             setupNavigationBar()
         }
+        updateLikeDislikeUI()
     }
 
     private func setupLayout() {
@@ -372,6 +374,8 @@ final class WatchViewController: UIViewController {
         actionBar.addArrangedSubview(makeActionItem(btn: saveButton,    countLabel: nil,               iconName: "icon_bookmark",   staticLabel: "Save"))
         actionBar.addArrangedSubview(makeActionItem(btn: downloadButton,countLabel: nil,               iconName: "icon_download",   staticLabel: "Download"))
         shareButton.addTarget(self, action: #selector(shareTapped), for: .touchUpInside)
+        likeButton.addTarget(self, action: #selector(likeTapped), for: .touchUpInside)
+        dislikeButton.addTarget(self, action: #selector(dislikeTapped), for: .touchUpInside)
 
         commentsLabel.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
         commentsLabel.numberOfLines = 0
@@ -661,6 +665,7 @@ final class WatchViewController: UIViewController {
         descriptionExpanded = false
         likeCountLabel.text = "—"
         dislikeCountLabel.text = "—"
+        currentLikeStatus = .indifferent
 
         commentsStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
         loadMoreCommentsButton.isHidden = true
@@ -715,21 +720,25 @@ final class WatchViewController: UIViewController {
             likeCountLabel.text = "—"
         }
         dislikeCountLabel.text = "—"
+        currentLikeStatus = page.likeStatus ?? .indifferent
+        updateLikeDislikeUI()
 
         let videoId = page.video.id
-        ReturnYouTubeDislikeService.shared.fetchVotes(videoId: videoId) { [weak self] result in
-            DispatchQueue.main.async {
-                guard let self = self, self.watchPage?.video.id == videoId else { return }
-                if case .success(let votes) = result {
-                    func fmt(_ n: Int) -> String {
-                        switch n {
-                        case 0..<1_000: return "\(n)"
-                        case 1_000..<1_000_000: return String(format: "%.1fK", Double(n) / 1_000)
-                        default: return String(format: "%.1fM", Double(n) / 1_000_000)
+        if ReturnYouTubeDislikeService.enabled {
+            ReturnYouTubeDislikeService.shared.fetchVotes(videoId: videoId) { [weak self] result in
+                DispatchQueue.main.async {
+                    guard let self = self, self.watchPage?.video.id == videoId else { return }
+                    if case .success(let votes) = result {
+                        func fmt(_ n: Int) -> String {
+                            switch n {
+                            case 0..<1_000: return "\(n)"
+                            case 1_000..<1_000_000: return String(format: "%.1fK", Double(n) / 1_000)
+                            default: return String(format: "%.1fM", Double(n) / 1_000_000)
+                            }
                         }
+                        self.likeCountLabel.text = fmt(votes.likes)
+                        self.dislikeCountLabel.text = fmt(votes.dislikes)
                     }
-                    self.likeCountLabel.text = fmt(votes.likes)
-                    self.dislikeCountLabel.text = fmt(votes.dislikes)
                 }
             }
         }
@@ -1879,6 +1888,95 @@ final class WatchViewController: UIViewController {
     @objc private func toggleDescription() {
         descriptionExpanded.toggle()
         updateDescriptionUI()
+    }
+
+    private func updateLikeDislikeUI() {
+        let tint = ThemeManager.shared.primaryText
+        let activeTint = UIColor(red: 1, green: 0, blue: 0, alpha: 1)
+        likeButton.tintColor = currentLikeStatus == .like ? activeTint : tint
+        likeCountLabel.textColor = currentLikeStatus == .like ? activeTint : ThemeManager.shared.secondaryText
+        dislikeButton.tintColor = currentLikeStatus == .dislike ? activeTint : tint
+        dislikeCountLabel.textColor = currentLikeStatus == .dislike ? activeTint : ThemeManager.shared.secondaryText
+    }
+
+    @objc private func likeTapped() {
+        guard let videoId = watchPage?.video.id else { return }
+        let wasLiked = currentLikeStatus == .like
+        let newStatus: LikeStatus = wasLiked ? .indifferent : .like
+        print("[Like] tapped: \(wasLiked ? "removing like" : "sending like") for \(videoId)")
+        currentLikeStatus = newStatus
+        updateLikeDislikeUI()
+        if wasLiked {
+            client.removeLike(videoId: videoId) { [weak self] result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success:
+                        print("[Like] removeLike success for \(videoId)")
+                        if ReturnYouTubeDislikeService.enabled {
+                            ReturnYouTubeDislikeService.shared.reportVote(videoId: videoId, value: 0)
+                        }
+                    case .failure(let e):
+                        print("[Like] removeLike failed for \(videoId): \(e)")
+                        self?.currentLikeStatus = .like
+                        self?.updateLikeDislikeUI()
+                    }
+                }
+            }
+        } else {
+            client.sendLike(videoId: videoId) { [weak self] result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success:
+                        print("[Like] sendLike success for \(videoId)")
+                        if ReturnYouTubeDislikeService.enabled {
+                            ReturnYouTubeDislikeService.shared.reportVote(videoId: videoId, value: 1)
+                        }
+                    case .failure(let e):
+                        print("[Like] sendLike failed for \(videoId): \(e)")
+                        self?.currentLikeStatus = .indifferent
+                        self?.updateLikeDislikeUI()
+                    }
+                }
+            }
+        }
+    }
+
+    @objc private func dislikeTapped() {
+        guard let videoId = watchPage?.video.id else { return }
+        let wasDisliked = currentLikeStatus == .dislike
+        let newStatus: LikeStatus = wasDisliked ? .indifferent : .dislike
+        print("[Like] tapped: \(wasDisliked ? "removing dislike" : "sending dislike") for \(videoId)")
+        currentLikeStatus = newStatus
+        updateLikeDislikeUI()
+        if wasDisliked {
+            client.removeLike(videoId: videoId) { result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success:
+                        print("[Like] removeDislike success for \(videoId)")
+                        if ReturnYouTubeDislikeService.enabled {
+                            ReturnYouTubeDislikeService.shared.reportVote(videoId: videoId, value: 0)
+                        }
+                    case .failure(let e):
+                        print("[Like] removeDislike failed for \(videoId): \(e)")
+                    }
+                }
+            }
+        } else {
+            client.sendDislike(videoId: videoId) { result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success:
+                        print("[Like] sendDislike success for \(videoId)")
+                        if ReturnYouTubeDislikeService.enabled {
+                            ReturnYouTubeDislikeService.shared.reportVote(videoId: videoId, value: -1)
+                        }
+                    case .failure(let e):
+                        print("[Like] sendDislike failed for \(videoId): \(e)")
+                    }
+                }
+            }
+        }
     }
 
     @objc private func shareTapped() {

@@ -403,6 +403,57 @@ final class InnertubeClient: VideoService {
         }
     }
 
+    func sendLike(videoId: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        sendVote(endpoint: "like/like", videoId: videoId, completion: completion)
+    }
+
+    func sendDislike(videoId: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        sendVote(endpoint: "like/dislike", videoId: videoId, completion: completion)
+    }
+
+    func removeLike(videoId: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        sendVote(endpoint: "like/removelike", videoId: videoId, completion: completion)
+    }
+
+    private func sendVote(endpoint: String, videoId: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        OAuthClient.shared.validToken { [weak self] result in
+            guard let self = self else { return }
+            switch result {
+            case .failure(let e):
+                print("[Innertube] sendVote '\(endpoint)' token error: \(e)")
+                completion(.failure(e))
+            case .success(let token):
+                guard let url = URL(string: "\(self.baseURL)/\(endpoint)") else {
+                    completion(.failure(APIError.invalidURL)); return
+                }
+                // Must use TV client context — token was issued for TVHTML5
+                var body = self.tvContext
+                body["target"] = ["videoId": videoId]
+                guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
+                    completion(.failure(APIError.decodingFailed)); return
+                }
+                let headers: [String: String] = [
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer \(token)",
+                    "X-Youtube-Client-Name": "7",
+                    "X-Youtube-Client-Version": "7.20260311.12.00",
+                ]
+                print("[Innertube] sendVote '\(endpoint)' videoId=\(videoId)")
+                self.api.post(url: url, headers: headers, body: bodyData) { result in
+                    switch result {
+                    case .failure(let e):
+                        print("[Innertube] sendVote '\(endpoint)' failed: \(e)")
+                        completion(.failure(e))
+                    case .success(let data):
+                        let preview = String(data: data.prefix(200), encoding: .utf8) ?? "?"
+                        print("[Innertube] sendVote '\(endpoint)' success, response: \(preview)")
+                        completion(.success(()))
+                    }
+                }
+            }
+        }
+    }
+
     func fetchWatchPage(video: Video, completion: @escaping (Result<WatchPage, Error>) -> Void) {
         print("[Innertube] fetchWatchPage start: \(video.id)")
         OAuthClient.shared.validToken { [weak self] result in
@@ -1084,13 +1135,45 @@ final class InnertubeClient: VideoService {
                 partialResult.append(video)
             }
 
+        let likeInfo = InnertubeClient.parseWatchLikeInfo(json)
         return WatchPage(video: resolvedVideo,
                          description: description,
                          channelInfo: channelInfo,
                          subscribeButtonText: subscribeState.text,
                          isSubscribed: subscribeState.isSubscribed,
                          relatedVideos: relatedVideos,
-                         likeCount: nil)
+                         likeCount: likeInfo.likeCount,
+                         likeStatus: likeInfo.likeStatus)
+    }
+
+    private static func parseWatchLikeInfo(_ json: [String: Any]) -> (likeCount: String?, likeStatus: LikeStatus?) {
+        if let actionsRenderer = firstRenderer(in: json, named: "slimVideoActionsRenderer"),
+           let buttons = actionsRenderer["buttons"] as? [[String: Any]] {
+            for btn in buttons {
+                if let likeBtn = (btn["slimMetadataToggleButtonRenderer"] as? [String: Any])
+                    ?? (btn["likeButtonRenderer"] as? [String: Any]) {
+                    let statusStr = likeBtn["likeStatus"] as? String
+                    let status = statusStr.flatMap(LikeStatus.init(rawValue:))
+                    let count = simpleText(from: likeBtn["defaultText"])
+                        ?? simpleText(from: likeBtn["likeCountNotliked"])
+                    return (count, status)
+                }
+                if let toggle = btn["toggleButtonRenderer"] as? [String: Any] {
+                    let statusStr = toggle["likeStatus"] as? String
+                    let status = statusStr.flatMap(LikeStatus.init(rawValue:))
+                    let count = simpleText(from: toggle["defaultText"])
+                    return (count, status)
+                }
+            }
+        }
+        if let renderer = firstRenderer(in: json, named: "likeButtonRenderer") {
+            let statusStr = renderer["likeStatus"] as? String
+            let status = statusStr.flatMap(LikeStatus.init(rawValue:))
+            let count = simpleText(from: renderer["likeCount"])
+                ?? (renderer["likeCountNotliked"] as? String)
+            return (count, status)
+        }
+        return (nil, nil)
     }
 
     private static func parseCommentsPage(_ json: [String: Any]) -> CommentsPage? {
