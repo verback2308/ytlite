@@ -12,12 +12,13 @@ final class SettingsViewController: UIViewController {
     }()
 
     private enum Row {
-        case theme, quality, clearCache
+        case theme, quality, persistCache, clearCache
     }
 
     private let sections: [(header: String?, rows: [Row])] = [
         ("Theme",   [.theme]),
         ("Playback",[.quality]),
+        ("Cache",   [.persistCache]),
         (nil,       [.clearCache]),
     ]
 
@@ -105,9 +106,22 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             cell.accessoryType    = .disclosureIndicator
             return cell
 
+        case .persistCache:
+            let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
+            cell.textLabel?.text = "Keep feed cache 24h"
+            cell.textLabel?.textColor = t.primaryText
+            cell.backgroundColor = t.surface
+            cell.selectionStyle  = .none
+
+            let toggle = UISwitch()
+            toggle.isOn = AppCache.persistenceEnabled
+            toggle.addTarget(self, action: #selector(persistCacheToggled(_:)), for: .valueChanged)
+            cell.accessoryView = toggle
+            return cell
+
         case .clearCache:
             let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
-            cell.textLabel?.text  = "Clear Image Cache"
+            cell.textLabel?.text  = "Clear All Cache"
             cell.textLabel?.textColor = UIColor(red: 1, green: 0, blue: 0, alpha: 1)
             cell.textLabel?.textAlignment = .center
             cell.backgroundColor  = t.surface
@@ -126,6 +140,10 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
     }
 
     // MARK: - Actions
+
+    @objc private func persistCacheToggled(_ toggle: UISwitch) {
+        AppCache.persistenceEnabled = toggle.isOn
+    }
 
     @objc private func themeChanged(_ seg: UISegmentedControl) {
         switch seg.selectedSegmentIndex {
@@ -159,8 +177,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
 
     private func clearCache() {
         ThumbnailImageView.clearCache()
-        AppCache.shared.clearHomeFeed()
-        AppCache.shared.clearSubscriptionsFeed()
+        AppCache.shared.clearAllDiskCache()
         let alert = UIAlertController(title: "Cache Cleared",
                                       message: "Image and feed cache has been cleared.",
                                       preferredStyle: .alert)

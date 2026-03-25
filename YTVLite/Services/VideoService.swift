@@ -1,6 +1,6 @@
 import Foundation
 
-struct FeedPage {
+struct FeedPage: Codable {
     let videos: [Video]
     let continuation: String?
 }
