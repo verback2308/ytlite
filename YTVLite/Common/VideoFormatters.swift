@@ -21,7 +21,26 @@ enum VideoFormatters {
         return "\(Int(s / 86400 / 365))y ago"
     }
 
-    /// Converts ISO 8601 duration (PT1H2M3S) to display string (1:02:03 or 4:32).
+    /// Approximates a Date from a relative time string like "2 hours ago" / "3 дня назад".
+    /// Returns nil if not parseable.
+    static func approximateDate(fromRelative text: String) -> Date? {
+        let t = text.lowercased()
+        // Extract leading number (default 1 if not found)
+        let n = t.components(separatedBy: .whitespaces)
+            .compactMap(Int.init).first ?? 1
+        let now = Date()
+        if t.contains("sec") || t.contains("сек")   { return now - Double(n) }
+        if t.contains("min") || t.contains("мин")   { return now - Double(n) * 60 }
+        if t.contains("hour") || t.contains("час")  { return now - Double(n) * 3600 }
+        if t.contains("day") || t.contains("дн")
+            || t.contains("день") || t.contains("дня") { return now - Double(n) * 86400 }
+        if t.contains("week") || t.contains("нед")  { return now - Double(n) * 604_800 }
+        if t.contains("month") || t.contains("мес") { return now - Double(n) * 2_592_000 }
+        if t.contains("year") || t.contains("лет")
+            || t.contains("год")                     { return now - Double(n) * 31_536_000 }
+        return nil
+    }
+
     static func parseDuration(_ iso: String) -> String {
         var h = 0, m = 0, s = 0
         var current = ""
