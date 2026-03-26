@@ -53,6 +53,18 @@ final class InnertubeClient: VideoService {
         }
     }
 
+    func fetchPlaylistVideos(playlistId: String,
+                             completion: @escaping (Result<[Video], Error>) -> Void) {
+        OAuthClient.shared.validToken { [weak self] result in
+            switch result {
+            case .failure(let e): completion(.failure(e))
+            case .success(let token):
+                self?.executePlaylistVideosFetch(playlistId: playlistId, token: token,
+                                                 completion: completion)
+            }
+        }
+    }
+
     /// Fetches the signed-in account info (display name + avatar URL) via Innertube
     /// /account/accounts_list — the same approach used by YouTube.js AccountManager.getInfo().
     func fetchAccountInfo(completion: @escaping (Result<(name: String, avatarURL: String?), Error>) -> Void) {
@@ -128,18 +140,48 @@ final class InnertubeClient: VideoService {
     func removeLike(videoId: String, completion: @escaping (Result<Void, Error>) -> Void) {
         sendVote(endpoint: "like/removelike", videoId: videoId, completion: completion)
     }
+
+    func subscribeToChannel(channelId: String, cancellationToken: CancellationToken? = nil,
+                            completion: @escaping (Result<Void, Error>) -> Void) {
+        OAuthClient.shared.validToken { [weak self] result in
+            switch result {
+            case .failure(let e): completion(.failure(e))
+            case .success(let token): self?.executeSubscribe(channelId: channelId, token: token,
+                                                             cancellationToken: cancellationToken,
+                                                             completion: completion)
+            }
+        }
+    }
+
+    func unsubscribeFromChannel(channelId: String, cancellationToken: CancellationToken? = nil,
+                                completion: @escaping (Result<Void, Error>) -> Void) {
+        OAuthClient.shared.validToken { [weak self] result in
+            switch result {
+            case .failure(let e): completion(.failure(e))
+            case .success(let token): self?.executeUnsubscribe(channelId: channelId, token: token,
+                                                               cancellationToken: cancellationToken,
+                                                               completion: completion)
+            }
+        }
+    }
     func fetchWatchPage(video: Video, cancellationToken: CancellationToken? = nil,
                         completion: @escaping (Result<WatchPage, Error>) -> Void) {
         print("[Innertube] fetchWatchPage start: \(video.id)")
-        OAuthClient.shared.validToken { [weak self] result in
-            guard cancellationToken?.isCancelled != true else { return }
-            switch result {
-            case .failure(let error):
-                print("[Innertube] fetchWatchPage token failure for \(video.id): \(error)")
-                completion(.failure(error))
-            case .success(let token):
-                self?.executeWatchNext(video: video, token: token, cancellationToken: cancellationToken, completion: completion)
+        if OAuthClient.shared.isSignedIn {
+            OAuthClient.shared.validToken { [weak self] result in
+                guard cancellationToken?.isCancelled != true else { return }
+                switch result {
+                case .failure(let error):
+                    print("[Innertube] fetchWatchPage token failure for \(video.id): \(error)")
+                    completion(.failure(error))
+                case .success(let token):
+                    self?.executeWatchNext(video: video, token: token, cancellationToken: cancellationToken, completion: completion)
+                }
             }
+        } else {
+            // Anonymous: call without auth token
+            executeWatchNext(video: video, token: "", anonymous: true,
+                             cancellationToken: cancellationToken, completion: completion)
         }
     }
 

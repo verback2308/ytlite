@@ -11,6 +11,7 @@ struct OAuthTokens: Codable {
 
 extension Notification.Name {
     static let authorizationRequired = Notification.Name("authorizationRequired")
+    static let userDidSignOut = Notification.Name("userDidSignOut")
 }
 
 final class OAuthClient {

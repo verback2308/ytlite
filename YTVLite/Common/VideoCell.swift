@@ -12,6 +12,7 @@ class VideoCell: UICollectionViewCell {
 
     private let thumbnail = ThumbnailImageView(frame: .zero)
     private let durationLabel = UILabel()
+    private let liveBadgeView = UILabel()
     private let channelAvatarView = ThumbnailImageView(frame: .zero)
     private let titleLabel = UILabel()
     private let channelLabel = UILabel()
@@ -41,6 +42,16 @@ class VideoCell: UICollectionViewCell {
         durationLabel.textAlignment = .center
         thumbnail.addSubview(durationLabel)
 
+        liveBadgeView.text = "● LIVE"
+        liveBadgeView.textColor = .white
+        liveBadgeView.font = UIFont.systemFont(ofSize: 10, weight: .bold)
+        liveBadgeView.backgroundColor = UIColor(red: 1, green: 0, blue: 0, alpha: 0.9)
+        liveBadgeView.layer.cornerRadius = 3
+        liveBadgeView.layer.masksToBounds = true
+        liveBadgeView.textAlignment = .center
+        liveBadgeView.isHidden = true
+        thumbnail.addSubview(liveBadgeView)
+
         channelAvatarView.layer.cornerRadius = VideoCell.avatarSize / 2
         channelAvatarView.layer.masksToBounds = true
         channelAvatarView.isUserInteractionEnabled = true
@@ -65,20 +76,104 @@ class VideoCell: UICollectionViewCell {
         applyTheme()
     }
 
+    /// Set to true to force grid layout (thumbnail on top, text below) regardless of cell width.
+    var forceGridLayout: Bool = false {
+        didSet { if oldValue != forceGridLayout { setNeedsLayout() } }
+    }
+
     // MARK: - Manual layout (no Auto Layout — zero constraint solver overhead)
 
     override func layoutSubviews() {
         super.layoutSubviews()
         let w = contentView.bounds.width
+        if !forceGridLayout && w > 350 {
+            layoutHorizontal(w: w)
+        } else {
+            layoutGrid(w: w)
+        }
+    }
+
+    private func layoutHorizontal(w: CGFloat) {
+        let h = contentView.bounds.height
+        let vPad: CGFloat = 10
+        let hPad: CGFloat = 12
+
+        // Taller cell (≥150px, 1-column list mode) — matches SubscriptionVideoCell style
+        if h >= 150 {
+            let thumbH: CGFloat = h - vPad * 2
+            let thumbW: CGFloat = (thumbH * 16.0 / 9.0).rounded()
+            let clampedThumbW = min(thumbW, w * 0.55)
+            let clampedThumbH = (clampedThumbW * 9.0 / 16.0).rounded()
+            let thumbY = (h - clampedThumbH) / 2
+
+            thumbnail.frame = CGRect(x: hPad, y: thumbY, width: clampedThumbW, height: clampedThumbH)
+
+            if !durationLabel.isHidden {
+                let dW = max(36, durationLabel.intrinsicContentSize.width + 8)
+                durationLabel.frame = CGRect(x: thumbnail.frame.maxX - dW - 4,
+                                             y: thumbnail.frame.maxY - 22, width: dW, height: 18)
+            }
+            if !liveBadgeView.isHidden {
+                let lW = max(40, liveBadgeView.intrinsicContentSize.width + 8)
+                liveBadgeView.frame = CGRect(x: thumbnail.frame.maxX - lW - 4,
+                                             y: thumbnail.frame.maxY - 22, width: lW, height: 14)
+            }
+
+            let avatarSz: CGFloat = 32
+            let textX = thumbnail.frame.maxX + hPad
+            let textW = w - textX - hPad
+
+            let titleH = titleLabel.sizeThatFits(CGSize(width: textW, height: 60)).height
+            titleLabel.frame = CGRect(x: textX, y: vPad, width: textW, height: min(titleH, 52))
+
+            let afterTitle = titleLabel.frame.maxY + 8
+            channelAvatarView.isHidden = false
+            channelAvatarView.frame = CGRect(x: textX, y: afterTitle, width: avatarSz, height: avatarSz)
+            let labelX = textX + avatarSz + 8
+            let labelW = w - labelX - hPad
+            channelLabel.frame = CGRect(x: labelX, y: afterTitle + (avatarSz - 14) / 2, width: labelW, height: 14)
+            metaLabel.frame = CGRect(x: textX, y: channelAvatarView.frame.maxY + 6, width: textW, height: 14)
+            return
+        }
+
+        // Compact horizontal (narrow/multi-column sidebar mode)
+        let thumbW: CGFloat = 160
+        let thumbH: CGFloat = (thumbW * 9.0 / 16.0).rounded()
+        thumbnail.frame = CGRect(x: hPad, y: vPad, width: thumbW, height: thumbH)
+
+        if !durationLabel.isHidden {
+            let dW = max(36, durationLabel.intrinsicContentSize.width + 8)
+            durationLabel.frame = CGRect(x: thumbnail.frame.maxX - dW - 4,
+                                         y: thumbnail.frame.maxY - 22, width: dW, height: 18)
+        }
+        if !liveBadgeView.isHidden {
+            let lW = max(40, liveBadgeView.intrinsicContentSize.width + 8)
+            liveBadgeView.frame = CGRect(x: thumbnail.frame.maxX - lW - 4,
+                                         y: thumbnail.frame.maxY - 22, width: lW, height: 14)
+        }
+
+        channelAvatarView.isHidden = true
+        let textX = thumbnail.frame.maxX + hPad
+        let textW = w - textX - hPad
+        let titleH = titleLabel.sizeThatFits(CGSize(width: textW, height: 52)).height
+        titleLabel.frame = CGRect(x: textX, y: vPad, width: textW, height: min(titleH, 52))
+        channelLabel.frame = CGRect(x: textX, y: titleLabel.frame.maxY + 4, width: textW, height: 14)
+        metaLabel.frame = CGRect(x: textX, y: channelLabel.frame.maxY + 4, width: textW, height: 14)
+    }
+
+    private func layoutGrid(w: CGFloat) {
         let thumbH = (w * 9.0 / 16.0).rounded()
 
-        // Thumbnail fills full width
         thumbnail.frame = CGRect(x: 0, y: 0, width: w, height: thumbH)
 
-        // Duration badge — bottom-right of thumbnail
         if !durationLabel.isHidden {
             let dW = max(36, durationLabel.intrinsicContentSize.width + 8)
             durationLabel.frame = CGRect(x: w - dW - 6, y: thumbH - 24, width: dW, height: 18)
+        }
+
+        if !liveBadgeView.isHidden {
+            let lW = max(40, liveBadgeView.intrinsicContentSize.width + 8)
+            liveBadgeView.frame = CGRect(x: w - lW - 6, y: thumbH - 22, width: lW, height: 14)
         }
 
         let hp = VideoCell.hPad
@@ -87,14 +182,12 @@ class VideoCell: UICollectionViewCell {
         let textX = avatarSz > 0 ? avatarX + avatarSz + VideoCell.avatarGap : hp
         let textW = w - textX - hp
 
-        // Avatar — top-left of info area
         if !channelAvatarView.isHidden {
             channelAvatarView.frame = CGRect(x: avatarX,
                                              y: thumbH + VideoCell.vPadAfterThumb,
                                              width: avatarSz, height: avatarSz)
         }
 
-        // Title — up to 2 lines, starts at same top as avatar
         let titleTop = thumbH + VideoCell.hPad
         let titleH = titleLabel.sizeThatFits(CGSize(width: textW, height: 52)).height
         titleLabel.frame = CGRect(x: textX, y: titleTop, width: textW, height: min(titleH, 52))
@@ -153,11 +246,16 @@ class VideoCell: UICollectionViewCell {
             channelAvatarView.cancel()
         }
 
-        if let duration = video.duration, !duration.isEmpty {
+        if video.isLive {
+            durationLabel.isHidden = true
+            liveBadgeView.isHidden = false
+        } else if let duration = video.duration, !duration.isEmpty {
             durationLabel.text = " \(duration) "
             durationLabel.isHidden = false
+            liveBadgeView.isHidden = true
         } else {
             durationLabel.isHidden = true
+            liveBadgeView.isHidden = true
         }
 
         if let url = URL(string: video.thumbnailURL) {
@@ -178,6 +276,7 @@ class VideoCell: UICollectionViewCell {
         metaLabel.text = nil
         durationLabel.text = nil
         durationLabel.isHidden = true
+        liveBadgeView.isHidden = true
         channelAvatarView.isHidden = false
         onChannelTap = nil
     }

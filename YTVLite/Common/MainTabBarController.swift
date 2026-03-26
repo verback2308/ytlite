@@ -8,6 +8,16 @@ final class RotatingNavigationController: UINavigationController {
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
         topViewController?.supportedInterfaceOrientations ?? super.supportedInterfaceOrientations
     }
+
+    override func pushViewController(_ viewController: UIViewController, animated: Bool) {
+        // Blank title on the current top VC → pushed screen's back button shows only chevron
+        topViewController?.navigationItem.backBarButtonItem = UIBarButtonItem(title: "", style: .plain,
+                                                                              target: nil, action: nil)
+        // Blank title on the pushed VC → any deeper screen's back button also shows only chevron
+        viewController.navigationItem.backBarButtonItem = UIBarButtonItem(title: "", style: .plain,
+                                                                          target: nil, action: nil)
+        super.pushViewController(viewController, animated: animated)
+    }
 }
 
 class MainTabBarController: UITabBarController {

@@ -19,7 +19,8 @@ extension InnertubeClient {
             thumbnailURL: fallbackVideo.thumbnailURL,
             viewCount: metadata.viewCountText ?? fallbackVideo.viewCount,
             publishedAt: metadata.publishedText ?? fallbackVideo.publishedAt,
-            duration: fallbackVideo.duration
+            duration: fallbackVideo.duration,
+            isLive: fallbackVideo.isLive
         )
 
         let relatedVideos = collectTileRenderers(in: json)
@@ -429,6 +430,5 @@ extension InnertubeClient {
 
         return FeedPage(videos: videos, continuation: continuation)
     }
-
 
 }

@@ -27,17 +27,17 @@ class ThumbnailImageView: UIImageView {
 
         // Memory cache — sync, zero cost
         if let cached = ThumbnailImageView.cache.object(forKey: url.absoluteString as NSString) {
+            AppLog.img("mem-hit \(url.lastPathComponent)")
             image = cached
             return
         }
 
-        image = nil
-
-        // Disk read and network fetch are both off the main thread
+        // Don't clear image yet — keep current until disk/network responds
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self, self.currentURL == url else { return }
 
             if let cached = ThumbnailImageView.diskCache.image(for: url) {
+                AppLog.img("disk-hit \(url.lastPathComponent)")
                 ThumbnailImageView.cache.setObject(cached, forKey: url.absoluteString as NSString)
                 DispatchQueue.main.async { [weak self] in
                     guard self?.currentURL == url else { return }
@@ -46,6 +46,13 @@ class ThumbnailImageView: UIImageView {
                 return
             }
 
+            // Only blank out when we know a network fetch is needed
+            DispatchQueue.main.async { [weak self] in
+                guard self?.currentURL == url else { return }
+                self?.image = nil
+            }
+
+            AppLog.img("fetch \(url.lastPathComponent)")
             URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
                 guard let self,
                       let data,
@@ -53,6 +60,7 @@ class ThumbnailImageView: UIImageView {
                       self.currentURL == url else { return }
                 ThumbnailImageView.cache.setObject(img, forKey: url.absoluteString as NSString)
                 ThumbnailImageView.diskCache.store(data: data, for: url)
+                AppLog.img("stored \(url.lastPathComponent)")
                 DispatchQueue.main.async { [weak self] in
                     guard self?.currentURL == url else { return }
                     self?.image = img

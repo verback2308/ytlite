@@ -34,12 +34,17 @@ final class AppCache {
     private func readDisk<T: Codable>(_ type: T.Type, key: String, ttl: TimeInterval) -> T? {
         guard AppCache.persistenceEnabled else { return nil }
         let url = cacheURL(for: key)
+        let t0 = Date()
         guard let data = try? Data(contentsOf: url),
               let entry = try? JSONDecoder().decode(CacheEntry<T>.self, from: data) else { return nil }
-        if Date().timeIntervalSince(entry.storedAt) > ttl {
+        let age = Date().timeIntervalSince(entry.storedAt)
+        if age > ttl {
+            AppLog.cache("disk expired key=\(key) age=\(Int(age))s")
             try? FileManager.default.removeItem(at: url)
             return nil
         }
+        let ms = Int(Date().timeIntervalSince(t0) * 1000)
+        AppLog.cache("disk-read key=\(key) age=\(Int(age))s read=\(ms)ms size=\(data.count)b")
         return entry.data
     }
 
@@ -49,6 +54,7 @@ final class AppCache {
         let entry = CacheEntry(data: value, storedAt: Date())
         if let data = try? JSONEncoder().encode(entry) {
             try? data.write(to: cacheURL(for: key), options: .atomic)
+            AppLog.cache("disk-write key=\(key) size=\(data.count)b")
         }
     }
 
@@ -73,17 +79,23 @@ final class AppCache {
     // MARK: - Home
 
     func cachedHomeFeed() -> FeedPage? {
-        if let f = homeFeed { return f }
-        if let f = readDisk(FeedPage.self, key: "home", ttl: feedTTL) {
-            homeFeed = f
+        if let f = homeFeed {
+            AppLog.cache("home mem-hit videos=\(f.videos.count)")
             return f
         }
+        if let f = readDisk(FeedPage.self, key: "home", ttl: feedTTL) {
+            homeFeed = f
+            AppLog.cache("home disk-hit videos=\(f.videos.count)")
+            return f
+        }
+        AppLog.cache("home miss")
         return nil
     }
 
     func setHomeFeed(_ page: FeedPage) {
         homeFeed = page
         writeDisk(page, key: "home")
+        AppLog.cache("home stored videos=\(page.videos.count)")
     }
 
     func clearHomeFeed() {
@@ -94,17 +106,23 @@ final class AppCache {
     // MARK: - Subscriptions
 
     func cachedSubscriptionsFeed() -> FeedPage? {
-        if let f = subscriptionsFeed { return f }
-        if let f = readDisk(FeedPage.self, key: "subscriptions", ttl: feedTTL) {
-            subscriptionsFeed = f
+        if let f = subscriptionsFeed {
+            AppLog.cache("subs mem-hit videos=\(f.videos.count)")
             return f
         }
+        if let f = readDisk(FeedPage.self, key: "subscriptions", ttl: feedTTL) {
+            subscriptionsFeed = f
+            AppLog.cache("subs disk-hit videos=\(f.videos.count)")
+            return f
+        }
+        AppLog.cache("subs miss")
         return nil
     }
 
     func setSubscriptionsFeed(_ page: FeedPage) {
         subscriptionsFeed = page
         writeDisk(page, key: "subscriptions")
+        AppLog.cache("subs stored videos=\(page.videos.count)")
     }
 
     func clearSubscriptionsFeed() {
@@ -140,6 +158,36 @@ final class AppCache {
     func setChannelPage(_ page: ChannelPage, channelId: String) { channelPages[channelId] = page }
     func clearChannelPage(channelId: String) { channelPages[channelId] = nil }
 
+    // MARK: - Channel info (disk-persistent, static header metadata)
+    private let channelInfoTTL: TimeInterval = 24 * 60 * 60
+    private var channelInfoMemory: [String: ChannelInfo] = [:]
+
+    func cachedChannelInfo(channelId: String) -> ChannelInfo? {
+        if let info = channelInfoMemory[channelId] {
+            AppLog.cache("channel-info mem-hit: \(channelId)")
+            return info
+        }
+        let key = "channel_info_\(channelId)"
+        if let info = readDisk(ChannelInfo.self, key: key, ttl: channelInfoTTL) {
+            channelInfoMemory[channelId] = info
+            AppLog.cache("channel-info disk-hit: \(channelId) title='\(info.title)'")
+            return info
+        }
+        AppLog.cache("channel-info miss: \(channelId)")
+        return nil
+    }
+
+    func setChannelInfo(_ info: ChannelInfo, channelId: String) {
+        channelInfoMemory[channelId] = info
+        writeDisk(info, key: "channel_info_\(channelId)")
+        AppLog.cache("channel-info stored: \(channelId) title='\(info.title)' banner=\(info.bannerURL != nil ? "YES" : "NO")")
+    }
+
+    func clearChannelInfo(channelId: String) {
+        channelInfoMemory[channelId] = nil
+        deleteDisk(key: "channel_info_\(channelId)")
+    }
+
     // MARK: - Watch pages (in-memory only)
 
     func cachedWatchPage(videoId: String) -> WatchPage? {
@@ -166,5 +214,8 @@ final class AppCache {
         homeFeed = nil
         subscriptionsFeed = nil
         historyFeed = nil
+        // Clear all channel info disk entries
+        channelInfoMemory.keys.forEach { deleteDisk(key: "channel_info_\($0)") }
+        channelInfoMemory.removeAll()
     }
 }

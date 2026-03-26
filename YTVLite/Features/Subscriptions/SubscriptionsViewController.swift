@@ -16,6 +16,7 @@ class SubscriptionsViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Subscriptions"
+        AppLog.subs("viewDidLoad")
         setupTableView()
         setupSpinner()
         setupSignInPrompt()
@@ -25,83 +26,37 @@ class SubscriptionsViewController: UIViewController {
         ToolbarManager.shared.install(in: self)
 
         if OAuthClient.shared.isAnonymous {
+            AppLog.subs("anonymous → skip load")
             spinner.stopAnimating()
             showSignInPrompt(true)
             return
         }
 
         if let cachedPage = cache.cachedSubscriptionsFeed() {
+            AppLog.subs("cache-hit → showing \(cachedPage.videos.count) videos instantly")
             isLoadingInitial = false
             spinner.stopAnimating()
             setPage(cachedPage)
         } else {
+            AppLog.subs("no cache → loading from network")
             loadFeed()
         }
     }
 
-    private var signInPrompt: UIView?
+    private var signInPrompt: SignInEmptyStateView?
 
     private func setupSignInPrompt() {
-        let container = UIView()
-        container.translatesAutoresizingMaskIntoConstraints = false
-        container.isHidden = true
-
-        let iconContainer = UIView()
-        iconContainer.translatesAutoresizingMaskIntoConstraints = false
-        if #available(iOS 13, *) {
-            let iv = UIImageView(image: UIImage(systemName: "person.circle"))
-            iv.tintColor = .lightGray
-            iv.contentMode = .scaleAspectFit
-            iv.translatesAutoresizingMaskIntoConstraints = false
-            iconContainer.addSubview(iv)
-            NSLayoutConstraint.activate([
-                iv.topAnchor.constraint(equalTo: iconContainer.topAnchor),
-                iv.bottomAnchor.constraint(equalTo: iconContainer.bottomAnchor),
-                iv.leadingAnchor.constraint(equalTo: iconContainer.leadingAnchor),
-                iv.trailingAnchor.constraint(equalTo: iconContainer.trailingAnchor),
-            ])
-        }
-
-        let label = UILabel()
-        label.text = "Sign in to see your subscriptions"
-        label.textColor = .lightGray
-        label.font = UIFont.systemFont(ofSize: 15)
-        label.textAlignment = .center
-        label.numberOfLines = 0
-        label.translatesAutoresizingMaskIntoConstraints = false
-
-        let signInBtn = UIButton(type: .system)
-        signInBtn.setTitle("Sign In", for: .normal)
-        signInBtn.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
-        signInBtn.backgroundColor = UIColor(red: 1, green: 0, blue: 0, alpha: 1)
-        signInBtn.setTitleColor(.white, for: .normal)
-        signInBtn.layer.cornerRadius = 10
-        signInBtn.contentEdgeInsets = UIEdgeInsets(top: 12, left: 32, bottom: 12, right: 32)
-        signInBtn.translatesAutoresizingMaskIntoConstraints = false
-        signInBtn.addTarget(self, action: #selector(signInTapped), for: .touchUpInside)
-
-        [iconContainer, label, signInBtn].forEach { container.addSubview($0) }
-        view.addSubview(container)
+        let v = SignInEmptyStateView(message: "Sign in to see your subscriptions")
+        v.isHidden = true
+        v.onSignIn = { [weak self] in self?.toolbarOpenProfile() }
+        view.addSubview(v)
         NSLayoutConstraint.activate([
-            container.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            container.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            container.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 32),
-            container.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -32),
-
-            iconContainer.topAnchor.constraint(equalTo: container.topAnchor),
-            iconContainer.centerXAnchor.constraint(equalTo: container.centerXAnchor),
-            iconContainer.widthAnchor.constraint(equalToConstant: 64),
-            iconContainer.heightAnchor.constraint(equalToConstant: 64),
-
-            label.topAnchor.constraint(equalTo: iconContainer.bottomAnchor, constant: 16),
-            label.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            label.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-
-            signInBtn.topAnchor.constraint(equalTo: label.bottomAnchor, constant: 24),
-            signInBtn.centerXAnchor.constraint(equalTo: container.centerXAnchor),
-            signInBtn.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            v.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            v.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -40),
+            v.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 40),
+            v.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -40),
         ])
-        signInPrompt = container
+        signInPrompt = v
     }
 
     private func showSignInPrompt(_ show: Bool) {
@@ -109,17 +64,13 @@ class SubscriptionsViewController: UIViewController {
         tableView.isHidden = show
     }
 
-    @objc private func signInTapped() {
-        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
-        appDelegate.showAuth()
-    }
-
     private func setupTableView() {
         tableView.register(SubscriptionVideoCell.self, forCellReuseIdentifier: SubscriptionVideoCell.reuseId)
         tableView.dataSource = self
         tableView.delegate = self
-        tableView.rowHeight = 220
-        tableView.separatorInset = UIEdgeInsets(top: 0, left: 12, bottom: 0, right: 12)
+        tableView.rowHeight = UITableView.automaticDimension
+        tableView.estimatedRowHeight = 220
+        tableView.separatorStyle = .none
         tableView.translatesAutoresizingMaskIntoConstraints = false
 
         let refresh = UIRefreshControl()
@@ -159,23 +110,27 @@ class SubscriptionsViewController: UIViewController {
     }
 
     private func loadFeed() {
+        let t0 = Date()
+        AppLog.subs("network fetch start")
         service.fetchSubscriptionFeed { [weak self] result in
             DispatchQueue.main.async {
+                let ms = Int(Date().timeIntervalSince(t0) * 1000)
                 self?.spinner.stopAnimating()
                 self?.tableView.refreshControl?.endRefreshing()
                 switch result {
                 case .success(let page):
+                    AppLog.subs("network fetch done \(ms)ms videos=\(page.videos.count)")
                     self?.showSignInPrompt(false)
                     self?.cache.setSubscriptionsFeed(page)
                     self?.setPage(page)
                 case .failure(let error):
+                    AppLog.subs("network fetch failed \(ms)ms: \(error)")
                     self?.finishLoadingMore()
                     if case APIError.unauthorized = error {
                         self?.isLoadingInitial = false
                         self?.showSignInPrompt(true)
                         self?.tableView.reloadData()
                     }
-                    print("Subscriptions error: \(error)")
                 }
             }
         }

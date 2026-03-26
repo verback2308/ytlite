@@ -15,6 +15,8 @@ final class ToolbarManager {
     static let shared = ToolbarManager()
     private init() {}
 
+    var searchViewController: SearchViewController?
+
     // MARK: - Install buttons in a view controller
 
     func install(in vc: UIViewController) {
@@ -52,7 +54,9 @@ final class ToolbarManager {
 extension UIViewController {
 
     @objc func toolbarOpenSearch() {
-        navigationController?.pushViewController(SearchViewController(), animated: true)
+        let vc = ToolbarManager.shared.searchViewController ?? SearchViewController()
+        ToolbarManager.shared.searchViewController = vc
+        navigationController?.pushViewController(vc, animated: true)
     }
 
     @objc func toolbarOpenSettings() {
@@ -75,6 +79,8 @@ extension UIViewController {
             sheet.addAction(UIAlertAction(title: "Sign Out", style: .destructive) { [weak self] _ in
                 OAuthClient.shared.signOut()
                 UserProfileStore.shared.clear()
+                AppCache.shared.clearHomeFeed()
+                NotificationCenter.default.post(name: .userDidSignOut, object: nil)
                 (UIApplication.shared.delegate as? AppDelegate)?.showAuth()
             })
             sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
@@ -160,19 +166,45 @@ final class ProfileAvatarButton: UIButton {
     required init?(coder: NSCoder) { fatalError() }
 
     func refresh() {
+        tintColor = ThemeManager.shared.isDark ? .white : .darkGray
         if let avatar = UserProfileStore.shared.avatarImage {
             setImage(avatar, for: .normal)
         } else {
             setImage(defaultImage(), for: .normal)
-            tintColor = ThemeManager.shared.isDark ? .white : .darkGray
         }
     }
 
     private func defaultImage() -> UIImage? {
-        if #available(iOS 13, *) {
-            return UIImage(systemName: "person.circle.fill")?
-                .withConfiguration(UIImage.SymbolConfiguration(pointSize: size, weight: .light))
+        // Asset is set to template rendering — UIButton.tintColor colors it automatically
+        if let asset = UIImage(named: "icon_person_fill") {
+            return asset
         }
-        return nil
+        if #available(iOS 13, *) {
+            let config = UIImage.SymbolConfiguration(pointSize: size, weight: .light)
+            return UIImage(systemName: "person.circle.fill", withConfiguration: config)
+        }
+        let color = ThemeManager.shared.isDark ? UIColor.white : UIColor.darkGray
+        return drawPersonPlaceholder(color: color)
+    }
+
+    private func drawPersonPlaceholder(color: UIColor) -> UIImage {
+        let s = size
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: s, height: s))
+        return renderer.image { ctx in
+            let cgCtx = ctx.cgContext
+            color.setStroke()
+            color.withAlphaComponent(0.25).setFill()
+            cgCtx.setLineWidth(1.5)
+            cgCtx.addEllipse(in: CGRect(x: 1, y: 1, width: s - 2, height: s - 2))
+            cgCtx.drawPath(using: .fillStroke)
+            color.setFill()
+            let headR = s * 0.22
+            let headRect = CGRect(x: s / 2 - headR, y: s * 0.2, width: headR * 2, height: headR * 2)
+            cgCtx.fillEllipse(in: headRect)
+            let bodyR = s * 0.32
+            cgCtx.addEllipse(in: CGRect(x: s / 2 - bodyR, y: s * 0.52, width: bodyR * 2, height: bodyR * 2))
+            cgCtx.clip()
+            cgCtx.fill(CGRect(x: 0, y: 0, width: s, height: s))
+        }.withRenderingMode(.alwaysOriginal)
     }
 }

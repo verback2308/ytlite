@@ -25,43 +25,188 @@ extension InnertubeClient {
                 ($0["runs"] as? [[String: Any]])?.first?["navigationEndpoint"] as? [String: Any]
             }.flatMap { ($0["browseEndpoint"] as? [String: Any])?["browseId"] as? String }
             let viewCount = (vr["viewCountText"] as? [String: Any])?["simpleText"] as? String
+            let publishedAt = (vr["publishedTimeText"] as? [String: Any])?["simpleText"] as? String
             let thumbs = (vr["thumbnail"] as? [String: Any])?["thumbnails"] as? [[String: Any]] ?? []
             let rawThumbURL = thumbs.last?["url"] as? String ?? ""
             let thumbURL = preferredThumbnailURL(videoId: videoId, fallbackURL: rawThumbURL)
             let channelAvatarURL = (((vr["channelThumbnailSupportedRenderers"] as? [String: Any])?["channelThumbnailWithLinkRenderer"] as? [String: Any])?["thumbnail"] as? [String: Any])
                 .flatMap { ($0["thumbnails"] as? [[String: Any]])?.last?["url"] as? String }
             guard !videoId.isEmpty else { return nil }
+            let overlays = vr["thumbnailOverlays"] as? [[String: Any]] ?? []
+            let isLive = overlays.contains {
+                ($0["thumbnailOverlayTimeStatusRenderer"] as? [String: Any])?["style"] as? String == "LIVE"
+            }
+            let duration = overlays.compactMap {
+                ($0["thumbnailOverlayTimeStatusRenderer"] as? [String: Any])
+            }.first.flatMap {
+                ($0["text"] as? [String: Any])?["simpleText"] as? String
+            }
             logThumbnailChoice(videoId: videoId, chosenURL: thumbURL, fallbackURL: rawThumbURL)
             return Video(id: videoId, title: title, channelId: channelId,
                          channelName: channel, channelAvatarURL: channelAvatarURL,
-                         thumbnailURL: thumbURL, viewCount: viewCount, publishedAt: nil, duration: nil)
+                         thumbnailURL: thumbURL, viewCount: viewCount, publishedAt: publishedAt, duration: duration,
+                         isLive: isLive)
         }
     }
 
     static func parseChannelInfo(_ json: [String: Any], fallbackChannelId: String) -> ChannelInfo? {
-        if let header = firstRenderer(in: json, named: "channelHeaderRenderer") {
-            let avatarURL = extractThumbnailURL(from: header["avatar"]) ??
-                extractThumbnailURL(from: header["thumbnail"]) ??
-                extractThumbnailURL(from: header["image"])
-            let title =
-                simpleText(from: header["title"]) ??
-                header["title"] as? String ??
-                simpleText(from: header["headline"]) ??
-                ""
-            let subscriberCountText =
-                simpleText(from: header["subscriberCountText"]) ??
-                simpleText(from: header["metadata"]) ??
-                simpleText(from: header["subtitle"])
-            let channelId = header["channelId"] as? String ?? fallbackChannelId
+        // NEW format: pageHeaderRenderer → pageHeaderViewModel (used by WEB and newer TV responses)
+        if let pageHeader = firstRenderer(in: json, named: "pageHeaderRenderer"),
+           let vm = (pageHeader["content"] as? [String: Any])?["pageHeaderViewModel"] as? [String: Any] {
+
+            let title = (vm["title"] as? [String: Any])?["dynamicTextViewModel"].flatMap {
+                ($0 as? [String: Any])?["text"].flatMap { ($0 as? [String: Any])?["content"] as? String }
+            } ?? ""
+
+            // Verified: attachmentRuns contains CHECK_CIRCLE_FILLED
+            let attachmentRuns = ((vm["title"] as? [String: Any])?["dynamicTextViewModel"] as? [String: Any])
+                .flatMap { ($0["text"] as? [String: Any])?["attachmentRuns"] as? [[String: Any]] } ?? []
+            let isVerified = attachmentRuns.contains { run in
+                let imageName = run["element"]
+                    .flatMap { ($0 as? [String: Any])?["type"] }
+                    .flatMap { ($0 as? [String: Any])?["imageType"] }
+                    .flatMap { ($0 as? [String: Any])?["image"] }
+                    .flatMap { ($0 as? [String: Any])?["sources"] }
+                    .flatMap { ($0 as? [[String: Any]])?.first }
+                    .flatMap { $0["clientResource"] as? [String: Any] }
+                    .flatMap { $0["imageName"] as? String }
+                return imageName == "CHECK_CIRCLE_FILLED" || imageName == "OFFICIAL_ARTIST_BADGE"
+            }
+
+            // Avatar
+            let avatarURL = (vm["image"] as? [String: Any])
+                .flatMap { $0["decoratedAvatarViewModel"] as? [String: Any] }
+                .flatMap { $0["avatar"] as? [String: Any] }
+                .flatMap { $0["avatarViewModel"] as? [String: Any] }
+                .flatMap { $0["image"] as? [String: Any] }
+                .flatMap { $0["sources"] as? [[String: Any]] }
+                .flatMap { $0.last?["url"] as? String }
+
+            // Banner
+            let bannerURL = (vm["banner"] as? [String: Any])
+                .flatMap { $0["imageBannerViewModel"] as? [String: Any] }
+                .flatMap { $0["image"] as? [String: Any] }
+                .flatMap { $0["sources"] as? [[String: Any]] }
+                .flatMap { $0.last?["url"] as? String }
+
+            // Subscribers + videos: find parts in metadataRows
+            let metaRows = (vm["metadata"] as? [String: Any])
+                .flatMap { $0["contentMetadataViewModel"] as? [String: Any] }
+                .flatMap { $0["metadataRows"] as? [[String: Any]] } ?? []
+            let allMetaParts: [String] = metaRows.flatMap {
+                $0["metadataParts"] as? [[String: Any]] ?? []
+            }.compactMap {
+                $0["text"].flatMap { ($0 as? [String: Any])?["content"] as? String }
+            }
+            let subscriberCountText: String? = allMetaParts.first { $0.lowercased().contains("subscriber") }
+            let videoCountText: String? = allMetaParts.first { $0.lowercased().contains("video") }
+
+            // Description from pageHeaderViewModel, with fallback to channelMetadataRenderer
+            let description: String? = (vm["description"] as? [String: Any])
+                .flatMap { $0["descriptionPreviewViewModel"] as? [String: Any] }
+                .flatMap { $0["description"] as? [String: Any] }
+                .flatMap { $0["content"] as? String }
+                .flatMap { $0.isEmpty ? nil : $0 }
+                ?? (firstRenderer(in: json, named: "channelMetadataRenderer")?["description"] as? String)
+                    .flatMap { $0.isEmpty ? nil : $0 }
+
+            // Contact info from attribution
+            let contactInfo: String? = (vm["attribution"] as? [String: Any])
+                .flatMap { $0["attributionViewModel"] as? [String: Any] }
+                .flatMap { $0["text"] as? [String: Any] }
+                .flatMap { $0["content"] as? String }
+                .flatMap { $0.isEmpty ? nil : $0 }
+
+            // channelId from URL or metadata
+            let channelId: String = {
+                if let meta = firstRenderer(in: json, named: "channelMetadataRenderer") {
+                    return meta["externalId"] as? String ?? fallbackChannelId
+                }
+                return fallbackChannelId
+            }()
 
             if !title.isEmpty || avatarURL != nil {
-                //print("[Innertube] parseChannelInfo: channelHeaderRenderer matched for \(fallbackChannelId)")
                 return ChannelInfo(id: channelId, title: title,
                                    avatarURL: avatarURL,
-                                   subscriberCountText: subscriberCountText)
+                                   subscriberCountText: subscriberCountText,
+                                   bannerURL: bannerURL, isVerified: isVerified,
+                                   description: description,
+                                   contactInfo: contactInfo,
+                                   videoCountText: videoCountText)
             }
         }
 
+        // Collect data from c4TabbedHeaderRenderer + channelHeaderRenderer and merge
+        let c4 = firstRenderer(in: json, named: "c4TabbedHeaderRenderer")
+        let ch = firstRenderer(in: json, named: "channelHeaderRenderer")
+
+        // Banner and verified only come from c4TabbedHeaderRenderer
+        let bannerURL = c4.flatMap { header -> String? in
+            ((header["banner"] as? [String: Any])?["thumbnails"] as? [[String: Any]])?
+                .last?["url"] as? String
+        }
+        let isVerified: Bool = {
+            let badges = c4?["badges"] as? [[String: Any]] ?? []
+            return badges.contains { badge in
+                guard let renderer = badge["metadataBadgeRenderer"] as? [String: Any] else { return false }
+                let style = renderer["style"] as? String ?? ""
+                let iconType = (renderer["icon"] as? [String: Any])?["iconType"] as? String ?? ""
+                return style == "BADGE_STYLE_TYPE_VERIFIED"
+                    || iconType == "CHECK_CIRCLE_THICK"
+                    || iconType == "OFFICIAL_ARTIST_BADGE"
+            }
+        }()
+
+        // Title: prefer c4 if present, then channelHeader
+        let title: String = {
+            if let c4 = c4, let t = c4["title"] as? String, !t.isEmpty { return t }
+            if let c4 = c4, let t = simpleText(from: c4["title"]), !t.isEmpty { return t }
+            if let ch = ch {
+                return simpleText(from: ch["title"]) ?? ch["title"] as? String
+                    ?? simpleText(from: ch["headline"]) ?? ""
+            }
+            return ""
+        }()
+
+        // Avatar: prefer c4 thumbnails, then channelHeader
+        let avatarURL: String? = {
+            if let c4 = c4,
+               let url = ((c4["avatar"] as? [String: Any])?["thumbnails"] as? [[String: Any]])?.last?["url"] as? String {
+                return url
+            }
+            if let ch = ch {
+                return extractThumbnailURL(from: ch["avatar"])
+                    ?? extractThumbnailURL(from: ch["thumbnail"])
+                    ?? extractThumbnailURL(from: ch["image"])
+            }
+            return nil
+        }()
+
+        // Subscribers: prefer c4, then channelHeader
+        let subscriberCountText: String? = {
+            if let c4 = c4, let t = simpleText(from: c4["subscriberCountText"]) { return t }
+            if let ch = ch {
+                return simpleText(from: ch["subscriberCountText"])
+                    ?? simpleText(from: ch["metadata"])
+                    ?? simpleText(from: ch["subtitle"])
+            }
+            return nil
+        }()
+
+        // Channel ID
+        let channelId = c4?["channelId"] as? String
+            ?? ch?["channelId"] as? String
+            ?? fallbackChannelId
+
+        if !title.isEmpty || avatarURL != nil {
+            return ChannelInfo(id: channelId, title: title,
+                               avatarURL: avatarURL,
+                               subscriberCountText: subscriberCountText,
+                               bannerURL: bannerURL, isVerified: isVerified,
+                               description: nil, contactInfo: nil, videoCountText: nil)
+        }
+
+        // Fallback: avatarLockupRenderer
         if let avatarLockup = firstRenderer(in: json, named: "avatarLockupRenderer") {
             let avatarURL = extractThumbnailURL(from: avatarLockup["avatar"]) ??
                 extractThumbnailURL(from: avatarLockup["thumbnail"])
@@ -75,24 +220,11 @@ extension InnertubeClient {
             let channelId = firstMatchingBrowseId(in: avatarLockup) ?? fallbackChannelId
 
             if !title.isEmpty || avatarURL != nil {
-                //print("[Innertube] parseChannelInfo: avatarLockupRenderer matched for \(fallbackChannelId)")
                 return ChannelInfo(id: channelId, title: title,
                                    avatarURL: avatarURL,
-                                   subscriberCountText: subscriberCountText)
-            }
-        }
-
-        if let header = firstRenderer(in: json, named: "c4TabbedHeaderRenderer") {
-            let avatarURL = ((header["avatar"] as? [String: Any])?["thumbnails"] as? [[String: Any]])?
-                .last?["url"] as? String
-            let title = header["title"] as? String ?? ""
-            let subscriberCountText = simpleText(from: header["subscriberCountText"])
-            let channelId = header["channelId"] as? String ?? fallbackChannelId
-
-            if !title.isEmpty || avatarURL != nil {
-                return ChannelInfo(id: channelId, title: title,
-                                   avatarURL: avatarURL,
-                                   subscriberCountText: subscriberCountText)
+                                   subscriberCountText: subscriberCountText,
+                                   bannerURL: nil, isVerified: false,
+                                   description: nil, contactInfo: nil, videoCountText: nil)
             }
         }
 
@@ -105,7 +237,9 @@ extension InnertubeClient {
             if !title.isEmpty || avatarURL != nil {
                 return ChannelInfo(id: channelId, title: title,
                                    avatarURL: avatarURL,
-                                   subscriberCountText: nil)
+                                   subscriberCountText: nil,
+                                   bannerURL: nil, isVerified: false,
+                                   description: nil, contactInfo: nil, videoCountText: nil)
             }
         }
 
@@ -128,7 +262,9 @@ extension InnertubeClient {
                 //print("[Innertube] parseChannelInfo: heuristic header matched for \(fallbackChannelId)")
                 return ChannelInfo(id: channelId, title: title,
                                    avatarURL: avatarURL,
-                                   subscriberCountText: subscriberCountText)
+                                   subscriberCountText: subscriberCountText,
+                                   bannerURL: nil, isVerified: false,
+                                   description: nil, contactInfo: nil, videoCountText: nil)
             }
         }
 
@@ -151,14 +287,28 @@ extension InnertubeClient {
 
     static func parseSubscribeState(_ json: [String: Any]) -> (text: String?, isSubscribed: Bool) {
         guard let renderer = firstRenderer(in: json, named: "subscribeButtonRenderer") else {
+            // Fallback: check toggleButtonRenderer used by some TV responses
+            if let toggle = firstRenderer(in: json, named: "toggleButtonRenderer") {
+                let isSubscribed = toggle["isToggled"] as? Bool ?? false
+                let text = simpleText(from: toggle["defaultText"]) ??
+                    simpleText(from: toggle["toggledText"])
+                print("[Subscribe] toggleButtonRenderer found, isToggled=\(isSubscribed), text=\(text ?? "nil")")
+                return (text, isSubscribed)
+            }
+            print("[Subscribe] no subscribeButtonRenderer or toggleButtonRenderer found")
             return (nil, false)
         }
 
         let isSubscribed = renderer["subscribed"] as? Bool ?? false
-        let text = simpleText(from: renderer["buttonText"]) ??
-            simpleText(from: renderer["subscribedButtonText"]) ??
-            simpleText(from: renderer["unsubscribedButtonText"])
-
+        let text: String?
+        if isSubscribed {
+            text = simpleText(from: renderer["buttonText"]) ??
+                simpleText(from: renderer["subscribedButtonText"])
+        } else {
+            text = simpleText(from: renderer["buttonText"]) ??
+                simpleText(from: renderer["unsubscribedButtonText"])
+        }
+        print("[Subscribe] subscribeButtonRenderer: subscribed=\(isSubscribed), text=\(text ?? "nil"), keys=\(renderer.keys.sorted())")
         return (text, isSubscribed)
     }
 

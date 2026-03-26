@@ -144,6 +144,43 @@ extension InnertubeClient {
         }
     }
 
+    func executePlaylistVideosFetch(playlistId: String, token: String,
+                                    completion: @escaping (Result<[Video], Error>) -> Void) {
+        guard let url = URL(string:
+            "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=\(playlistId)&maxResults=50")
+        else { completion(.failure(APIError.invalidURL)); return }
+        let headers = ["Authorization": "Bearer \(token)"]
+        api.get(url: url, headers: headers) { result in
+            switch result {
+            case .failure(let e): completion(.failure(e))
+            case .success(let data):
+                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let items = json["items"] as? [[String: Any]]
+                else { completion(.failure(APIError.decodingFailed)); return }
+                let videos: [Video] = items.compactMap { item in
+                    guard let snippet = item["snippet"] as? [String: Any],
+                          let resourceId = snippet["resourceId"] as? [String: Any],
+                          let videoId = resourceId["videoId"] as? String,
+                          let title = snippet["title"] as? String,
+                          !title.isEmpty, title != "Deleted video", title != "Private video"
+                    else { return nil }
+                    let channelName = snippet["channelTitle"] as? String ?? ""
+                    let channelId = snippet["videoOwnerChannelId"] as? String
+                        ?? snippet["channelId"] as? String
+                    let thumbs = snippet["thumbnails"] as? [String: Any] ?? [:]
+                    let thumb = (thumbs["maxres"] ?? thumbs["high"] ?? thumbs["medium"] ?? thumbs["default"]) as? [String: Any]
+                    let thumbURL = thumb?["url"] as? String
+                        ?? "https://i.ytimg.com/vi/\(videoId)/hqdefault.jpg"
+                    return Video(id: videoId, title: title, channelId: channelId,
+                                 channelName: channelName, channelAvatarURL: nil,
+                                 thumbnailURL: thumbURL, viewCount: nil,
+                                 publishedAt: nil, duration: nil)
+                }
+                completion(.success(videos))
+            }
+        }
+    }
+
     func sendVote(endpoint: String, videoId: String, completion: @escaping (Result<Void, Error>) -> Void) {
         OAuthClient.shared.validToken { [weak self] result in
             guard let self = self else { return }
@@ -290,7 +327,9 @@ extension InnertubeClient {
         guard let url = URL(string: "\(baseURL)/browse") else {
             completion(.failure(APIError.invalidURL)); return
         }
-        var body = webContext
+        // Use TV context without auth — same format as authenticated browse,
+        // but TVHTML5 client works for public content without an OAuth token.
+        var body = tvContext
         body["browseId"] = browseId
         guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
             completion(.failure(APIError.decodingFailed)); return
@@ -304,6 +343,7 @@ extension InnertubeClient {
                 }
                 let page = InnertubeClient.parsePageJSON(json)
                 if page.videos.isEmpty {
+                    print("[Innertube] executeBrowseAnonymous: empty result for browseId=\(browseId)")
                     completion(.failure(APIError.decodingFailed))
                 } else {
                     completion(.success(page))
@@ -394,40 +434,84 @@ extension InnertubeClient {
             return
         }
 
-        var body = tvContext
-        body["browseId"] = channelId
-
-        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
+        // TV request: subscribe state + video feed (requires Bearer auth)
+        var tvBody = tvContext
+        tvBody["browseId"] = channelId
+        guard let tvBodyData = try? JSONSerialization.data(withJSONObject: tvBody) else {
             completion(.failure(APIError.decodingFailed))
             return
         }
 
-        let headers = ["Content-Type": "application/json", "Authorization": "Bearer \(token)"]
-        api.post(url: url, headers: headers, body: bodyData) { result in
-            switch result {
-            case .failure(let error):
-                print("[Innertube] channel page request failed \(channelId): \(error)")
-                completion(.failure(error))
-            case .success(let data):
-                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                      let info = InnertubeClient.parseChannelInfo(json, fallbackChannelId: channelId)
-                else {
-                    print("[Innertube] channel page parse failed for \(channelId)")
-                    completion(.failure(APIError.decodingFailed))
-                    return
-                }
+        // WEB request: banner, verified, subscribers, description (fires in parallel, non-blocking)
+        var webBody = webContext
+        webBody["browseId"] = channelId
+        let webBodyData = try? JSONSerialization.data(withJSONObject: webBody)
 
-                let page = InnertubeClient.parsePageJSON(json)
-                let subscribeState = InnertubeClient.parseSubscribeState(json)
-                completion(.success(ChannelPage(info: info,
-                                                videosPage: page,
-                                                subscribeButtonText: subscribeState.text,
-                                                isSubscribed: subscribeState.isSubscribed)))
+        // Protected by lock so TV callback can safely read webResult
+        let lock = NSLock()
+        var webResult: Result<Data, Error>?
+        var webDone = false
+
+        if let webData = webBodyData {
+            api.post(url: url, headers: ["Content-Type": "application/json"], body: webData) { result in
+                lock.lock()
+                webResult = result
+                webDone = true
+                lock.unlock()
             }
+        }
+
+        let tvHeaders = ["Content-Type": "application/json", "Authorization": "Bearer \(token)"]
+        api.post(url: url, headers: tvHeaders, body: tvBodyData) { result in
+            // Complete immediately when TV finishes — don't wait for web
+            guard case .success(let tvData) = result,
+                  let tvJson = try? JSONSerialization.jsonObject(with: tvData) as? [String: Any],
+                  let tvInfo = InnertubeClient.parseChannelInfo(tvJson, fallbackChannelId: channelId)
+            else {
+                print("[Innertube] channel page parse failed for \(channelId)")
+                if case .failure(let err) = result {
+                    completion(.failure(err))
+                } else {
+                    completion(.failure(APIError.decodingFailed))
+                }
+                return
+            }
+
+            let page = InnertubeClient.parsePageJSON(tvJson)
+            let subscribeState = InnertubeClient.parseSubscribeState(tvJson)
+
+            // Use web data only if it already finished (non-blocking check)
+            lock.lock()
+            let webSnapshot = webDone ? webResult : nil
+            lock.unlock()
+
+            var finalInfo = tvInfo
+            if case .success(let wData) = webSnapshot,
+               let wJson = try? JSONSerialization.jsonObject(with: wData) as? [String: Any],
+               let webInfo = InnertubeClient.parseChannelInfo(wJson, fallbackChannelId: channelId) {
+                finalInfo = ChannelInfo(
+                    id: tvInfo.id,
+                    title: tvInfo.title.isEmpty ? webInfo.title : tvInfo.title,
+                    avatarURL: tvInfo.avatarURL ?? webInfo.avatarURL,
+                    subscriberCountText: webInfo.subscriberCountText ?? tvInfo.subscriberCountText,
+                    bannerURL: webInfo.bannerURL ?? tvInfo.bannerURL,
+                    isVerified: webInfo.isVerified || tvInfo.isVerified,
+                    description: webInfo.description,
+                    contactInfo: webInfo.contactInfo,
+                    videoCountText: webInfo.videoCountText
+                )
+            }
+
+            print("[Channel] parsed: title='\(finalInfo.title)' subs='\(finalInfo.subscriberCountText ?? "nil")' banner=\(finalInfo.bannerURL != nil ? "YES" : "NO") verified=\(finalInfo.isVerified)")
+            completion(.success(ChannelPage(info: finalInfo,
+                                            videosPage: page,
+                                            subscribeButtonText: subscribeState.text,
+                                            isSubscribed: subscribeState.isSubscribed)))
         }
     }
 
     func executeWatchNext(video: Video, token: String,
+                                  anonymous: Bool = false,
                                   cancellationToken: CancellationToken? = nil,
                                   completion: @escaping (Result<WatchPage, Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/next") else {
@@ -435,7 +519,7 @@ extension InnertubeClient {
             return
         }
 
-        var body = tvContext
+        var body = anonymous ? webContext : tvContext
         body["videoId"] = video.id
 
         guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
@@ -443,7 +527,10 @@ extension InnertubeClient {
             return
         }
 
-        let headers = ["Content-Type": "application/json", "Authorization": "Bearer \(token)"]
+        var headers: [String: String] = ["Content-Type": "application/json"]
+        if !anonymous && !token.isEmpty {
+            headers["Authorization"] = "Bearer \(token)"
+        }
         api.post(url: url, headers: headers, body: bodyData, cancellationToken: cancellationToken) { result in
             switch result {
             case .failure(let error):
@@ -717,6 +804,64 @@ extension InnertubeClient {
                 completion(.success(()))
             }
         }
+    }
+
+    func executeSubscribe(channelId: String, token: String, cancellationToken: CancellationToken? = nil,
+                          completion: @escaping (Result<Void, Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/subscription/subscribe") else {
+            completion(.failure(APIError.invalidURL)); return
+        }
+        var body = tvContext
+        body["channelIds"] = [channelId]
+        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
+            completion(.failure(APIError.decodingFailed)); return
+        }
+        let headers: [String: String] = [
+            "Content-Type": "application/json",
+            "Authorization": "Bearer \(token)",
+        ]
+        print("[Innertube] executeSubscribe channelId=\(channelId)")
+        let task = api.post(url: url, headers: headers, body: bodyData) { result in
+            switch result {
+            case .failure(let e):
+                print("[Innertube] executeSubscribe failed: \(e)")
+                completion(.failure(e))
+            case .success(let data):
+                let preview = String(data: data.prefix(200), encoding: .utf8) ?? "?"
+                print("[Innertube] executeSubscribe success, response: \(preview)")
+                completion(.success(()))
+            }
+        }
+        cancellationToken?.register(task)
+    }
+
+    func executeUnsubscribe(channelId: String, token: String, cancellationToken: CancellationToken? = nil,
+                            completion: @escaping (Result<Void, Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/subscription/unsubscribe") else {
+            completion(.failure(APIError.invalidURL)); return
+        }
+        var body = tvContext
+        body["channelIds"] = [channelId]
+        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
+            completion(.failure(APIError.decodingFailed)); return
+        }
+        let headers: [String: String] = [
+            "Content-Type": "application/json",
+            "Authorization": "Bearer \(token)",
+        ]
+        print("[Innertube] executeUnsubscribe channelId=\(channelId)")
+        let task = api.post(url: url, headers: headers, body: bodyData) { result in
+            switch result {
+            case .failure(let e):
+                print("[Innertube] executeUnsubscribe failed: \(e)")
+                completion(.failure(e))
+            case .success(let data):
+                let preview = String(data: data.prefix(200), encoding: .utf8) ?? "?"
+                print("[Innertube] executeUnsubscribe success, response: \(preview)")
+                completion(.success(()))
+            }
+        }
+        cancellationToken?.register(task)
     }
 
 }

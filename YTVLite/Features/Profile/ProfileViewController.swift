@@ -30,6 +30,8 @@ class ProfileViewController: UIViewController {
     @objc private func signOut() {
         OAuthClient.shared.signOut()
         UserProfileStore.shared.clear()
+        AppCache.shared.clearHomeFeed()
+        NotificationCenter.default.post(name: .userDidSignOut, object: nil)
         (UIApplication.shared.delegate as? AppDelegate)?.showAuth()
     }
 

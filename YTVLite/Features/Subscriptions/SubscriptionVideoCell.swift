@@ -25,9 +25,8 @@ class SubscriptionVideoCell: UITableViewCell {
     private func setupUI() {
         selectionStyle = .none
 
-        thumbnail.layer.cornerRadius = 4
+        thumbnail.layer.cornerRadius = 0
         thumbnail.layer.masksToBounds = true
-        thumbnail.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(thumbnail)
 
         durationLabel.font = UIFont.systemFont(ofSize: 11, weight: .semibold)
@@ -36,70 +35,117 @@ class SubscriptionVideoCell: UITableViewCell {
         durationLabel.layer.cornerRadius = 3
         durationLabel.layer.masksToBounds = true
         durationLabel.textAlignment = .center
-        durationLabel.translatesAutoresizingMaskIntoConstraints = false
         thumbnail.addSubview(durationLabel)
 
         channelAvatarView.layer.cornerRadius = 18
         channelAvatarView.layer.masksToBounds = true
-        channelAvatarView.translatesAutoresizingMaskIntoConstraints = false
         channelAvatarView.isUserInteractionEnabled = true
         contentView.addSubview(channelAvatarView)
 
         titleLabel.numberOfLines = 2
         titleLabel.font = UIFont.systemFont(ofSize: 14, weight: .medium)
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(titleLabel)
 
         channelLabel.font = UIFont.systemFont(ofSize: 12)
-        channelLabel.translatesAutoresizingMaskIntoConstraints = false
         channelLabel.isUserInteractionEnabled = true
         contentView.addSubview(channelLabel)
 
         dateLabel.font = UIFont.systemFont(ofSize: 12)
-        dateLabel.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(dateLabel)
-
-        NSLayoutConstraint.activate([
-            thumbnail.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
-            thumbnail.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
-            thumbnail.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8),
-            thumbnail.widthAnchor.constraint(equalTo: thumbnail.heightAnchor, multiplier: 16.0/9.0),
-
-            durationLabel.trailingAnchor.constraint(equalTo: thumbnail.trailingAnchor, constant: -6),
-            durationLabel.bottomAnchor.constraint(equalTo: thumbnail.bottomAnchor, constant: -6),
-            durationLabel.heightAnchor.constraint(equalToConstant: 18),
-            durationLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 36),
-
-            titleLabel.topAnchor.constraint(equalTo: thumbnail.topAnchor),
-            titleLabel.leadingAnchor.constraint(equalTo: thumbnail.trailingAnchor, constant: 12),
-            titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
-
-            channelAvatarView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
-            channelAvatarView.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
-            channelAvatarView.widthAnchor.constraint(equalToConstant: 36),
-            channelAvatarView.heightAnchor.constraint(equalToConstant: 36),
-
-            channelLabel.centerYAnchor.constraint(equalTo: channelAvatarView.centerYAnchor),
-            channelLabel.leadingAnchor.constraint(equalTo: channelAvatarView.trailingAnchor, constant: 10),
-            channelLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
-
-            dateLabel.topAnchor.constraint(equalTo: channelAvatarView.bottomAnchor, constant: 6),
-            dateLabel.leadingAnchor.constraint(equalTo: channelAvatarView.leadingAnchor),
-            dateLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
-        ])
 
         let avatarTap = UITapGestureRecognizer(target: self, action: #selector(handleChannelTap))
         channelAvatarView.addGestureRecognizer(avatarTap)
-
         let labelTap = UITapGestureRecognizer(target: self, action: #selector(handleChannelTap))
         channelLabel.addGestureRecognizer(labelTap)
 
         applyTheme()
     }
 
-    @objc private func handleChannelTap() {
-        onChannelTap?()
+    // MARK: - Manual layout
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        let w = contentView.bounds.width
+        if w > 500 {
+            layoutHorizontal(w: w)
+        } else {
+            layoutVertical(w: w)
+        }
     }
+
+    override func sizeThatFits(_ size: CGSize) -> CGSize {
+        let w = size.width
+        if w > 500 {
+            return CGSize(width: w, height: 220)
+        } else {
+            let thumbH = (w * 9.0 / 16.0).rounded()
+            let textW = w - 12 - 36 - 10 - 12
+            let titleH = min(titleLabel.sizeThatFits(CGSize(width: textW, height: 52)).height, 40)
+            return CGSize(width: w, height: thumbH + 10 + titleH + 4 + 16 + 2 + 16 + 12)
+        }
+    }
+
+    /// iPad / wide: thumbnail left, text right — matches original subscriptions style
+    private func layoutHorizontal(w: CGFloat) {
+        let h: CGFloat = 220
+        let vPad: CGFloat = 10
+        let hPad: CGFloat = 12
+        let thumbH: CGFloat = h - vPad * 2
+        let thumbW: CGFloat = (thumbH * 16.0 / 9.0).rounded()
+
+        thumbnail.frame = CGRect(x: hPad, y: vPad, width: thumbW, height: thumbH)
+
+        if !durationLabel.isHidden {
+            let dW = max(36, durationLabel.intrinsicContentSize.width + 8)
+            durationLabel.frame = CGRect(x: thumbnail.bounds.width - dW - 4,
+                                         y: thumbnail.bounds.height - 22, width: dW, height: 18)
+        }
+
+        let avatarSz: CGFloat = 36
+        let textX = thumbnail.frame.maxX + hPad
+        let textW = w - textX - hPad
+
+        let titleH = min(titleLabel.sizeThatFits(CGSize(width: textW, height: 52)).height, 40)
+        titleLabel.frame = CGRect(x: textX, y: vPad, width: textW, height: titleH)
+
+        let afterTitle = titleLabel.frame.maxY + 8
+        channelAvatarView.isHidden = false
+        channelAvatarView.frame = CGRect(x: textX, y: afterTitle, width: avatarSz, height: avatarSz)
+        let labelX = textX + avatarSz + 10
+        let labelW = w - labelX - hPad
+        channelLabel.frame = CGRect(x: labelX, y: afterTitle + (avatarSz - 15) / 2, width: labelW, height: 15)
+        dateLabel.frame = CGRect(x: textX, y: channelAvatarView.frame.maxY + 6, width: textW, height: 15)
+    }
+
+    /// iPhone / slide-over / narrow: thumbnail full-width on top, text below
+    private func layoutVertical(w: CGFloat) {
+        let thumbH = (w * 9.0 / 16.0).rounded()
+        thumbnail.frame = CGRect(x: 0, y: 0, width: w, height: thumbH)
+
+        if !durationLabel.isHidden {
+            let dW = max(36, durationLabel.intrinsicContentSize.width + 8)
+            durationLabel.frame = CGRect(x: thumbnail.bounds.width - dW - 6,
+                                         y: thumbnail.bounds.height - 24, width: dW, height: 18)
+        }
+
+        let avatarSz: CGFloat = 36
+        let hPad: CGFloat = 12
+        let avatarX: CGFloat = hPad
+        let textX = avatarX + avatarSz + 10
+        let textW = w - textX - hPad
+
+        channelAvatarView.isHidden = false
+        channelAvatarView.frame = CGRect(x: avatarX, y: thumbH + 10, width: avatarSz, height: avatarSz)
+
+        let titleH = min(titleLabel.sizeThatFits(CGSize(width: textW, height: 52)).height, 40)
+        titleLabel.frame = CGRect(x: textX, y: thumbH + 10, width: textW, height: titleH)
+
+        let channelTop = titleLabel.frame.maxY + 4
+        channelLabel.frame = CGRect(x: textX, y: channelTop, width: textW, height: 16)
+        dateLabel.frame = CGRect(x: textX, y: channelLabel.frame.maxY + 2, width: textW, height: 16)
+    }
+
+    @objc private func handleChannelTap() { onChannelTap?() }
 
     @objc private func applyTheme() {
         let t = ThemeManager.shared
@@ -123,7 +169,10 @@ class SubscriptionVideoCell: UITableViewCell {
         representedChannelId = video.channelId
         titleLabel.text = video.title
         channelLabel.text = video.channelName
-        dateLabel.text = video.publishedAt.map(VideoFormatters.formatRelativeDate) ?? ""
+        dateLabel.text = [
+            video.viewCount,
+            video.publishedAt.map(VideoFormatters.formatRelativeDate)
+        ].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
 
         if let channelAvatarURL = video.channelAvatarURL, let url = URL(string: channelAvatarURL) {
             channelAvatarView.isHidden = false
@@ -140,7 +189,6 @@ class SubscriptionVideoCell: UITableViewCell {
                 self.channelAvatarView.setImage(url: url)
             }
         } else {
-            print("[SubscriptionVideoCell] no channelId for video \(video.id) (\(video.channelName))")
             channelAvatarView.isHidden = true
             channelAvatarView.cancel()
         }
@@ -155,6 +203,7 @@ class SubscriptionVideoCell: UITableViewCell {
         if let url = URL(string: video.thumbnailURL) {
             thumbnail.setImage(url: url)
         }
+        setNeedsLayout()
     }
 
     override func prepareForReuse() {

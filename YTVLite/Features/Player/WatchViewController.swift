@@ -9,6 +9,7 @@ final class WatchViewController: UIViewController {
     private let cache = AppCache.shared
 
     private var watchPage: WatchPage?
+    private var isSubscribed: Bool = false
     private var visibleRelatedVideos: [Video] = []
     private var comments: [Comment] = []
     private var commentsContinuation: String?
@@ -127,11 +128,11 @@ final class WatchViewController: UIViewController {
         applyTheme()
         setupNavigationBar()
         loadInitialState()
+        // Always refresh watch page from network; cache used only for immediate display
         if let cachedPage = cache.cachedWatchPage(videoId: initialVideo.id) {
             applyWatchPage(cachedPage)
-        } else {
-            loadWatchPage()
         }
+        loadWatchPage()
         NotificationCenter.default.addObserver(self, selector: #selector(applyTheme),
                                                name: ThemeManager.didChangeNotification, object: nil)
     }
@@ -156,11 +157,17 @@ final class WatchViewController: UIViewController {
 
         let backBtn: UIBarButtonItem
         if #available(iOS 13.0, *) {
-            let img = UIImage(systemName: "chevron.left",
+            let img = UIImage(systemName: "chevron.down",
                               withConfiguration: UIImage.SymbolConfiguration(weight: .semibold))
             backBtn = UIBarButtonItem(image: img, style: .plain, target: self, action: #selector(closeTapped))
         } else {
-            backBtn = UIBarButtonItem(title: "Back", style: .plain, target: self, action: #selector(closeTapped))
+            // iOS 12: no SF Symbols — use a styled "✕" close indicator
+            let btn = UIButton(type: .system)
+            btn.setTitle("⌄", for: .normal)
+            btn.titleLabel?.font = UIFont.systemFont(ofSize: 26, weight: .semibold)
+            btn.sizeToFit()
+            btn.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
+            backBtn = UIBarButtonItem(customView: btn)
         }
         navigationItem.leftBarButtonItem = backBtn
     }
@@ -329,7 +336,8 @@ final class WatchViewController: UIViewController {
         subscribeButton.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
         subscribeButton.layer.cornerRadius = 18
         subscribeButton.contentEdgeInsets = UIEdgeInsets(top: 10, left: 18, bottom: 10, right: 18)
-        subscribeButton.isEnabled = false
+        subscribeButton.isEnabled = !OAuthClient.shared.isAnonymous
+        subscribeButton.addTarget(self, action: #selector(subscribeButtonTapped), for: .touchUpInside)
         subscribeButton.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(subscribeButton)
 
@@ -415,6 +423,7 @@ final class WatchViewController: UIViewController {
         relatedCollectionView.isScrollEnabled = false
         contentView.addSubview(relatedCollectionView)
         relatedHeightConstraint = relatedCollectionView.heightAnchor.constraint(equalToConstant: 0)
+        relatedHeightConstraint.priority = .defaultHigh  // allows other constraints to win when related videos load
 
         NSLayoutConstraint.activate([
             playerSpinner.centerXAnchor.constraint(equalTo: playerContainer.centerXAnchor),
@@ -516,7 +525,7 @@ final class WatchViewController: UIViewController {
         }
         let availableWidth = max(baseWidth - inset - spacing, 120)
         let itemWidth = floor(availableWidth / columns)
-        let itemHeight = itemWidth * (9.0 / 16.0) + 90
+        let itemHeight = itemWidth * (9.0 / 16.0) + 92
         let size = CGSize(width: itemWidth, height: itemHeight)
         if layout.itemSize != size {
             layout.itemSize = size
@@ -613,6 +622,8 @@ final class WatchViewController: UIViewController {
             .joined(separator: " • ")
         channelNameLabel.text = initialVideo.channelName
         channelMetaLabel.text = nil
+        // Hide until we have real subscription state from the network
+        subscribeButton.isHidden = !OAuthClient.shared.isAnonymous
         subscribeButton.setTitle("Subscribe", for: .normal)
         descriptionLabel.text = nil
         descriptionButton.isHidden = true
@@ -728,6 +739,8 @@ final class WatchViewController: UIViewController {
         }
 
         subscribeButton.setTitle(page.subscribeButtonText ?? (page.isSubscribed ? "Subscribed" : "Subscribe"), for: .normal)
+        isSubscribed = page.isSubscribed
+        subscribeButton.isHidden = false
         descriptionLabel.text = page.description
         descriptionExpanded = false
         updateDescriptionUI()
@@ -1866,7 +1879,7 @@ final class WatchViewController: UIViewController {
         guard context == &playerItemContext,
               keyPath == #keyPath(AVPlayerItem.status),
               let item = object as? AVPlayerItem else {
-            super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
+            // Do NOT call super — NSObject's Swift overlay fatals on unrecognised KVO
             return
         }
 
@@ -1935,6 +1948,37 @@ final class WatchViewController: UIViewController {
         likeCountLabel.textColor = currentLikeStatus == .like ? activeTint : ThemeManager.shared.secondaryText
         dislikeButton.tintColor = currentLikeStatus == .dislike ? activeTint : tint
         dislikeCountLabel.textColor = currentLikeStatus == .dislike ? activeTint : ThemeManager.shared.secondaryText
+    }
+
+    @objc private func subscribeButtonTapped() {
+        guard let channelId = watchPage?.channelInfo?.id ?? watchPage?.video.channelId else { return }
+        let wasSubscribed = isSubscribed
+        isSubscribed = !wasSubscribed
+        subscribeButton.setTitle(isSubscribed ? "Subscribed" : "Subscribe", for: .normal)
+        subscribeButton.isEnabled = false
+        applyTheme()
+
+        let completion: (Result<Void, Error>) -> Void = { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                self.subscribeButton.isEnabled = true
+                switch result {
+                case .success:
+                    print("[Subscribe] \(wasSubscribed ? "unsubscribed" : "subscribed") channelId=\(channelId)")
+                case .failure(let e):
+                    print("[Subscribe] \(wasSubscribed ? "unsubscribe" : "subscribe") failed channelId=\(channelId): \(e)")
+                    self.isSubscribed = wasSubscribed
+                    self.subscribeButton.setTitle(wasSubscribed ? "Subscribed" : "Subscribe", for: .normal)
+                    self.applyTheme()
+                }
+            }
+        }
+
+        if wasSubscribed {
+            client.unsubscribeFromChannel(channelId: channelId, completion: completion)
+        } else {
+            client.subscribeToChannel(channelId: channelId, completion: completion)
+        }
     }
 
     @objc private func likeTapped() {
@@ -2221,6 +2265,8 @@ extension WatchViewController: UICollectionViewDataSource {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: VideoCell.reuseId, for: indexPath) as! VideoCell
         guard visibleRelatedVideos.indices.contains(indexPath.item) else { return cell }
         let video = visibleRelatedVideos[indexPath.item]
+        let isLandscape = view.bounds.width > view.bounds.height
+        cell.forceGridLayout = !isLandscape
         cell.configure(with: video)
         cell.onChannelTap = { [weak self] in
             guard let channelId = video.channelId else { return }

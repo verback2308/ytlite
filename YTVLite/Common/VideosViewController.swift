@@ -80,17 +80,28 @@ class VideosViewController: UIViewController {
         spinner.startAnimating()
     }
 
-    private func updateItemSize() {
+    func updateItemSize() {
         guard let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout else { return }
         let inset = layout.sectionInset.left + layout.sectionInset.right
-        let spacing = layout.minimumInteritemSpacing * CGFloat(columns - 1)
+        let spacing = layout.minimumInteritemSpacing * CGFloat(max(columns - 1, 0))
         let width = floor((collectionView.bounds.width - inset - spacing) / CGFloat(columns))
-        let height = width * (9.0 / 16.0) + 80
+        // Always use grid layout (thumbnail on top, text below) regardless of device or columns.
+        let useGrid = true
+        let height: CGFloat = width * (9.0 / 16.0) + 92
         let newSize = CGSize(width: width, height: height)
         if layout.itemSize != newSize {
             layout.itemSize = newSize
             layout.invalidateLayout()
         }
+    }
+
+    override func viewWillTransition(to size: CGSize,
+                                     with coordinator: UIViewControllerTransitionCoordinator) {
+        super.viewWillTransition(to: size, with: coordinator)
+        coordinator.animate(alongsideTransition: { [weak self] _ in
+            self?.updateItemSize()
+            self?.collectionView.collectionViewLayout.invalidateLayout()
+        })
     }
 
     @objc func applyTheme() {
@@ -145,6 +156,7 @@ extension VideosViewController: UICollectionViewDataSource {
 
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: VideoCell.reuseId, for: indexPath) as! VideoCell
+        cell.forceGridLayout = true
         if isLoadingInitial {
             cell.configureSkeleton()
             return cell

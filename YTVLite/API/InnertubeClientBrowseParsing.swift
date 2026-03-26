@@ -90,9 +90,14 @@ extension InnertubeClient {
         if let richGrid = contents?["richGridRenderer"] as? [String: Any],
            let items = richGrid["contents"] as? [[String: Any]] {
             for item in items {
-                if let richItem = (item["richItemRenderer"] as? [String: Any])?["content"] as? [String: Any],
-                   let vr = richItem["videoRenderer"] as? [String: Any],
-                   let video = parseWebVideoRenderer(vr) { videos.append(video) }
+                if let richItem = (item["richItemRenderer"] as? [String: Any])?["content"] as? [String: Any] {
+                    if let vr = richItem["videoRenderer"] as? [String: Any],
+                       let video = parseWebVideoRenderer(vr) { videos.append(video) }
+                    if let rr = richItem["radioRenderer"] as? [String: Any],
+                       let video = parseRadioRenderer(rr) { videos.append(video) }
+                    if let pr = richItem["playlistRenderer"] as? [String: Any],
+                       let video = parsePlaylistRenderer(pr) { videos.append(video) }
+                }
                 if let ct = (item["continuationItemRenderer"] as? [String: Any])?["continuationEndpoint"] as? [String: Any],
                    let token = (ct["continuationCommand"] as? [String: Any])?["token"] as? String {
                     continuation = token
@@ -140,10 +145,13 @@ extension InnertubeClient {
            let richGrid = (json["contents"] as? [String: Any])?["richGridRenderer"] as? [String: Any],
            let contents = richGrid["contents"] as? [[String: Any]] {
             for item in contents {
-                if let richItem = (item["richItemRenderer"] as? [String: Any])?["content"] as? [String: Any],
-                   let vr = richItem["videoRenderer"] as? [String: Any],
-                   let video = parseWebVideoRenderer(vr) {
-                    videos.append(video)
+                if let richItem = (item["richItemRenderer"] as? [String: Any])?["content"] as? [String: Any] {
+                    if let vr = richItem["videoRenderer"] as? [String: Any],
+                       let video = parseWebVideoRenderer(vr) { videos.append(video) }
+                    if let rr = richItem["radioRenderer"] as? [String: Any],
+                       let video = parseRadioRenderer(rr) { videos.append(video) }
+                    if let pr = richItem["playlistRenderer"] as? [String: Any],
+                       let video = parsePlaylistRenderer(pr) { videos.append(video) }
                 }
                 if let ct = (item["continuationItemRenderer"] as? [String: Any])?["continuationEndpoint"] as? [String: Any],
                    let token = (ct["continuationCommand"] as? [String: Any])?["token"] as? String {
@@ -174,6 +182,14 @@ extension InnertubeClient {
                        let video = parseWebVideoRenderer(cvr) {
                         videos.append(video)
                     }
+                    if let rr = item["radioRenderer"] as? [String: Any],
+                       let video = parseRadioRenderer(rr) {
+                        videos.append(video)
+                    }
+                    if let pr = item["playlistRenderer"] as? [String: Any],
+                       let video = parsePlaylistRenderer(pr) {
+                        videos.append(video)
+                    }
                 }
             }
             // shelfRenderer — also used by history (sections titled "Today", "This week", etc.)
@@ -187,6 +203,10 @@ extension InnertubeClient {
                            let video = parseWebVideoRenderer(vr) { videos.append(video) }
                         if let cvr = item["compactVideoRenderer"] as? [String: Any],
                            let video = parseWebVideoRenderer(cvr) { videos.append(video) }
+                        if let rr = item["radioRenderer"] as? [String: Any],
+                           let video = parseRadioRenderer(rr) { videos.append(video) }
+                        if let pr = item["playlistRenderer"] as? [String: Any],
+                           let video = parsePlaylistRenderer(pr) { videos.append(video) }
                     }
                 }
                 // Horizontal list
@@ -197,6 +217,10 @@ extension InnertubeClient {
                            let video = parseWebVideoRenderer(vr) { videos.append(video) }
                         if let tile = item["tileRenderer"] as? [String: Any],
                            let video = parseTileRenderer(tile) { videos.append(video) }
+                        if let rr = item["radioRenderer"] as? [String: Any],
+                           let video = parseRadioRenderer(rr) { videos.append(video) }
+                        if let pr = item["playlistRenderer"] as? [String: Any],
+                           let video = parsePlaylistRenderer(pr) { videos.append(video) }
                     }
                 }
                 // Expanded shelf with contents directly
@@ -204,6 +228,10 @@ extension InnertubeClient {
                     for item in items {
                         if let vr = item["videoRenderer"] as? [String: Any],
                            let video = parseWebVideoRenderer(vr) { videos.append(video) }
+                        if let rr = item["radioRenderer"] as? [String: Any],
+                           let video = parseRadioRenderer(rr) { videos.append(video) }
+                        if let pr = item["playlistRenderer"] as? [String: Any],
+                           let video = parsePlaylistRenderer(pr) { videos.append(video) }
                     }
                 }
             }
@@ -261,9 +289,14 @@ extension InnertubeClient {
         // Published date
         let publishedAt = simpleText(from: vr["publishedTimeText"])
 
-        // Duration
+        // Duration + isLive
         let duration: String?
-        if let d = simpleText(from: vr["lengthText"]) {
+        var isLive = false
+        let overlays = vr["thumbnailOverlays"] as? [[String: Any]] ?? []
+        if overlays.contains(where: { ($0["thumbnailOverlayTimeStatusRenderer"] as? [String: Any])?["style"] as? String == "LIVE" }) {
+            duration = nil
+            isLive = true
+        } else if let d = simpleText(from: vr["lengthText"]) {
             duration = d
         } else if let acc = (vr["lengthText"] as? [String: Any])?["accessibility"] as? [String: Any],
                   let data = acc["accessibilityData"] as? [String: Any] {
@@ -275,7 +308,7 @@ extension InnertubeClient {
         return Video(id: videoId, title: title, channelId: channelId,
                      channelName: channelName, channelAvatarURL: nil,
                      thumbnailURL: thumbURL, viewCount: viewCount,
-                     publishedAt: publishedAt, duration: duration)
+                     publishedAt: publishedAt, duration: duration, isLive: isLive)
     }
 
     static func parseWatchMetadata(_ json: [String: Any]) -> (title: String?, viewCountText: String?, publishedText: String?) {
@@ -331,7 +364,9 @@ extension InnertubeClient {
             if !title.isEmpty || avatarURL != nil {
                 return ChannelInfo(id: channelId, title: title,
                                    avatarURL: avatarURL,
-                                   subscriberCountText: subtitle)
+                                   subscriberCountText: subtitle,
+                                   bannerURL: nil, isVerified: false,
+                                   description: nil, contactInfo: nil, videoCountText: nil)
             }
         }
 
@@ -339,7 +374,9 @@ extension InnertubeClient {
             return ChannelInfo(id: fallbackId,
                                title: fallbackVideo.channelName,
                                avatarURL: fallbackVideo.channelAvatarURL,
-                               subscriberCountText: nil)
+                               subscriberCountText: nil,
+                               bannerURL: nil, isVerified: false,
+                               description: nil, contactInfo: nil, videoCountText: nil)
         }
 
         return nil
@@ -365,7 +402,10 @@ extension InnertubeClient {
         let thumbURL = preferredThumbnailURL(videoId: videoId, fallbackURL: rawThumbURL)
 
         let overlays = tileHeader?["thumbnailOverlays"] as? [[String: Any]] ?? []
-        let duration = overlays.compactMap {
+        let isLive = overlays.contains {
+            ($0["thumbnailOverlayTimeStatusRenderer"] as? [String: Any])?["style"] as? String == "LIVE"
+        }
+        let duration = isLive ? nil : overlays.compactMap {
             ((($0["thumbnailOverlayTimeStatusRenderer"] as? [String: Any])?["text"] as? [String: Any])?["simpleText"] as? String)
         }.first
 
@@ -392,7 +432,46 @@ extension InnertubeClient {
         return Video(id: videoId, title: title, channelId: channelId,
                      channelName: channel, channelAvatarURL: channelAvatarURL,
                      thumbnailURL: thumbURL, viewCount: viewCount,
-                     publishedAt: publishedAt, duration: duration)
+                     publishedAt: publishedAt, duration: duration, isLive: isLive)
+    }
+
+    /// Parse a radioRenderer (YouTube Mix / autoplay queue) into a Video.
+    static func parseRadioRenderer(_ rr: [String: Any]) -> Video? {
+        guard let videoId = rr["videoId"] as? String else { return nil }
+        let title = simpleText(from: rr["title"]) ?? "YouTube Mix"
+        let thumbs = (rr["thumbnail"] as? [String: Any])?["thumbnails"] as? [[String: Any]] ?? []
+        let thumbURL = thumbs.last?["url"] as? String
+            ?? "https://i.ytimg.com/vi/\(videoId)/hqdefault.jpg"
+        let videoCount = (rr["videoCountText"] as? [String: Any]).flatMap { obj -> String? in
+            if let simple = obj["simpleText"] as? String { return simple }
+            return (obj["runs"] as? [[String: Any]])?.compactMap { $0["text"] as? String }.joined()
+        }
+        return Video(id: videoId, title: title, channelId: nil,
+                     channelName: "YouTube Mix", channelAvatarURL: nil,
+                     thumbnailURL: thumbURL, viewCount: videoCount,
+                     publishedAt: nil, duration: "Mix", isLive: false)
+    }
+
+    /// Parse a playlistRenderer into a Video using its first video as the entry point.
+    static func parsePlaylistRenderer(_ pr: [String: Any]) -> Video? {
+        // Need a videoId to play — use firstVideoId from the renderer if available
+        let firstVideoId = pr["firstVideoId"] as? String
+            ?? (pr["navigationEndpoint"] as? [String: Any]).flatMap {
+                ($0["watchEndpoint"] as? [String: Any])?["videoId"] as? String
+            }
+            ?? (pr["videos"] as? [[String: Any]])?.first.flatMap {
+                ($0["childVideoRenderer"] as? [String: Any])?["videoId"] as? String
+            }
+        guard let videoId = firstVideoId else { return nil }
+        let title = simpleText(from: pr["title"]) ?? "Playlist"
+        let thumbs = (pr["thumbnail"] as? [String: Any])?["thumbnails"] as? [[String: Any]] ?? []
+        let thumbURL = thumbs.last?["url"] as? String
+            ?? "https://i.ytimg.com/vi/\(videoId)/hqdefault.jpg"
+        let videoCount = pr["videoCount"] as? String
+        return Video(id: videoId, title: title, channelId: nil,
+                     channelName: "Playlist", channelAvatarURL: nil,
+                     thumbnailURL: thumbURL, viewCount: videoCount.map { "\($0) videos" },
+                     publishedAt: nil, duration: nil, isLive: false)
     }
 
 }

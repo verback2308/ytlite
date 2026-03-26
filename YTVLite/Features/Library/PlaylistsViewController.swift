@@ -81,17 +81,21 @@ final class PlaylistsViewController: UIViewController {
     }
 
     private func loadPlaylists() {
+        let watchLater = Playlist(id: "WL", title: "Watch Later",
+                                  description: "", thumbnailURL: nil, itemCount: nil)
+        playlists = [watchLater]
+        tableView.reloadData()
+
         service.fetchPlaylists { [weak self] result in
             DispatchQueue.main.async {
                 self?.spinner.stopAnimating()
                 switch result {
                 case .success(let list):
-                    self?.playlists = list
+                    self?.playlists = [watchLater] + list
+                    self?.tableView.reloadData()
                     if list.isEmpty {
-                        self?.emptyLabel.text = "No playlists found"
-                        self?.emptyLabel.isHidden = false
-                    } else {
-                        self?.tableView.reloadData()
+                        self?.emptyLabel.text = nil
+                        self?.emptyLabel.isHidden = true
                     }
                 case .failure:
                     self?.emptyLabel.text = "Could not load playlists"
@@ -115,6 +119,9 @@ extension PlaylistsViewController: UITableViewDataSource, UITableViewDelegate {
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
+        let playlist = playlists[indexPath.row]
+        navigationController?.pushViewController(
+            PlaylistVideosViewController(playlist: playlist), animated: true)
     }
 }
 
