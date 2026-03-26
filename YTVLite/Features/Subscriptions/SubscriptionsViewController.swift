@@ -165,6 +165,11 @@ class SubscriptionsViewController: UIViewController {
     private func appendPage(_ page: FeedPage) {
         let newVideos = page.videos.filter { seenVideoIds.insert($0.id).inserted }
         videos.append(contentsOf: newVideos)
+        videos.sort { a, b in
+            let da = a.publishedAt.flatMap { VideoFormatters.approximateDate(fromRelative: $0) } ?? .distantPast
+            let db = b.publishedAt.flatMap { VideoFormatters.approximateDate(fromRelative: $0) } ?? .distantPast
+            return da > db
+        }
         continuationToken = page.continuation
         isLoadingMore = false
         tableView.reloadData()
