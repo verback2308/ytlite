@@ -120,7 +120,10 @@ extension PlaylistsViewController: UITableViewDataSource, UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         let playlist = playlists[indexPath.row]
-        navigationController?.pushViewController(
+        // Push on the outer RotatingNavigationController (the child nav's bar is hidden,
+        // so using the parent nav ensures the system back button is visible).
+        let targetNav = navigationController?.parent?.navigationController ?? navigationController
+        targetNav?.pushViewController(
             PlaylistVideosViewController(playlist: playlist), animated: true)
     }
 }

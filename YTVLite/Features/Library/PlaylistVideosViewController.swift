@@ -142,7 +142,8 @@ extension PlaylistVideosViewController: UITableViewDataSource, UITableViewDelega
         cell.configure(with: video)
         cell.onChannelTap = { [weak self] in
             guard let channelId = video.channelId else { return }
-            self?.navigationController?.pushViewController(
+            let targetNav = self?.navigationController?.parent?.navigationController ?? self?.navigationController
+            targetNav?.pushViewController(
                 ChannelViewController(channelId: channelId, channelName: video.channelName),
                 animated: true)
         }
