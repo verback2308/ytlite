@@ -118,6 +118,7 @@ final class OAuthClient {
                                     clientId: clientId, clientSecret: clientSecret)
                 self?.tokens = t
                 self?.saveToKeychain(t)
+                AppLog.auth("New token obtained: \(accessToken)")
                 completion(.success(()))
             } else if (json["error"] as? String) == "authorization_pending" {
                 self?.pollForToken(deviceCode: deviceCode, clientId: clientId, clientSecret: clientSecret,
@@ -144,6 +145,7 @@ final class OAuthClient {
             return
         }
         if !tokens.isExpired {
+            AppLog.auth("Using cached token: \(tokens.accessToken)")
             completion(.success(tokens.accessToken)); return
         }
         doRefresh(tokens: tokens, completion: completion)
@@ -173,6 +175,7 @@ final class OAuthClient {
             updated.expiryDate = Date().addingTimeInterval(TimeInterval(expiresIn))
             self?.tokens = updated
             self?.saveToKeychain(updated)
+            AppLog.auth("Token refreshed: \(accessToken)")
             completion(.success(accessToken))
         }.resume()
     }

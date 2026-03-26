@@ -115,68 +115,120 @@ extension InnertubeClient {
 
     func executePlaylistsFetch(token: String,
                                        completion: @escaping (Result<[Playlist], Error>) -> Void) {
-        guard let url = URL(string:
-            "https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=50")
-        else { completion(.failure(APIError.invalidURL)); return }
-        let headers = ["Authorization": "Bearer \(token)"]
-        api.get(url: url, headers: headers) { result in
+        guard let url = URL(string: "\(baseURL)/browse") else {
+            completion(.failure(APIError.invalidURL)); return
+        }
+        var body = tvContext
+        body["browseId"] = "FEmy_youtube"
+        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
+            completion(.failure(APIError.decodingFailed)); return
+        }
+        let headers = ["Content-Type": "application/json", "Authorization": "Bearer \(token)"]
+        api.post(url: url, headers: headers, body: bodyData) { result in
             switch result {
             case .failure(let e): completion(.failure(e))
             case .success(let data):
-                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                      let items = json["items"] as? [[String: Any]]
-                else { completion(.failure(APIError.decodingFailed)); return }
-                let playlists: [Playlist] = items.compactMap { item in
-                    guard let id = item["id"] as? String,
-                          let snippet = item["snippet"] as? [String: Any],
-                          let title = snippet["title"] as? String
-                    else { return nil }
-                    let desc = snippet["description"] as? String ?? ""
-                    let thumbs = snippet["thumbnails"] as? [String: Any] ?? [:]
-                    let thumb = (thumbs["medium"] ?? thumbs["default"]) as? [String: Any]
-                    let thumbURL = thumb?["url"] as? String
-                    let count = (item["contentDetails"] as? [String: Any])?["itemCount"] as? Int
-                    return Playlist(id: id, title: title, description: desc,
-                                    thumbnailURL: thumbURL, itemCount: count)
+                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                    completion(.failure(APIError.decodingFailed)); return
                 }
+                let tabs = ((json["contents"] as? [String: Any])?["tvBrowseRenderer"] as? [String: Any])?["content"] as? [String: Any]
+                let navRenderer = (tabs?["tvSecondaryNavRenderer"] as? [String: Any])
+                let sections = navRenderer?["sections"] as? [[String: Any]] ?? []
+                let allTabs = sections.first.flatMap {
+                    ($0["tvSecondaryNavSectionRenderer"] as? [String: Any])?["tabs"] as? [[String: Any]]
+                } ?? []
+
+                let playlists: [Playlist] = allTabs.compactMap { tab in
+                    guard let tr = tab["tabRenderer"] as? [String: Any],
+                          let title = tr["title"] as? String,
+                          let params = (tr["endpoint"] as? [String: Any]).flatMap({
+                              ($0["browseEndpoint"] as? [String: Any])?["params"] as? String
+                          }),
+                          let playlistId = Self.extractPlaylistIdFromParams(params)
+                    else { return nil }
+                    return Playlist(id: playlistId, title: title, description: "",
+                                    thumbnailURL: nil, itemCount: nil)
+                }
+                print("[Innertube] playlists via FEmy_youtube: \(playlists.count)")
                 completion(.success(playlists))
             }
         }
     }
 
+    /// Decodes an Innertube browse params string (URL-encoded base64 protobuf)
+    /// and extracts the playlist ID from field 70 (wiretype 2).
+    private static func extractPlaylistIdFromParams(_ params: String) -> String? {
+        guard let urlDecoded = params.removingPercentEncoding,
+              let data = Data(base64Encoded: urlDecoded, options: .ignoreUnknownCharacters)
+        else { return nil }
+        let bytes = [UInt8](data)
+        var i = 0
+        while i < bytes.count {
+            // Parse varint tag
+            var tag: UInt64 = 0
+            var shift = 0
+            while i < bytes.count {
+                let b = bytes[i]; i += 1
+                tag |= UInt64(b & 0x7f) << shift
+                shift += 7
+                if b & 0x80 == 0 { break }
+            }
+            let fieldNum = tag >> 3
+            let wireType = tag & 0x7
+            switch wireType {
+            case 0: // varint — skip
+                while i < bytes.count { let b = bytes[i]; i += 1; if b & 0x80 == 0 { break } }
+            case 2: // length-delimited
+                guard i < bytes.count else { return nil }
+                let len = Int(bytes[i]); i += 1
+                guard i + len <= bytes.count else { return nil }
+                if fieldNum == 70,
+                   let id = String(bytes: bytes[i..<i+len], encoding: .utf8),
+                   id.hasPrefix("PL") || id == "LL" {
+                    return id
+                }
+                i += len
+            default:
+                return nil
+            }
+        }
+        return nil
+    }
+
     func executePlaylistVideosFetch(playlistId: String, token: String,
                                     completion: @escaping (Result<[Video], Error>) -> Void) {
-        guard let url = URL(string:
-            "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=\(playlistId)&maxResults=50")
-        else { completion(.failure(APIError.invalidURL)); return }
-        let headers = ["Authorization": "Bearer \(token)"]
-        api.get(url: url, headers: headers) { result in
+        guard let url = URL(string: "\(baseURL)/browse") else {
+            completion(.failure(APIError.invalidURL)); return
+        }
+        var body = tvContext
+        body["browseId"] = "VL\(playlistId)"
+        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
+            completion(.failure(APIError.decodingFailed)); return
+        }
+        let headers = ["Content-Type": "application/json", "Authorization": "Bearer \(token)"]
+        api.post(url: url, headers: headers, body: bodyData) { result in
             switch result {
             case .failure(let e): completion(.failure(e))
             case .success(let data):
-                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                      let items = json["items"] as? [[String: Any]]
-                else { completion(.failure(APIError.decodingFailed)); return }
-                let videos: [Video] = items.compactMap { item in
-                    guard let snippet = item["snippet"] as? [String: Any],
-                          let resourceId = snippet["resourceId"] as? [String: Any],
-                          let videoId = resourceId["videoId"] as? String,
-                          let title = snippet["title"] as? String,
-                          !title.isEmpty, title != "Deleted video", title != "Private video"
-                    else { return nil }
-                    let channelName = snippet["channelTitle"] as? String ?? ""
-                    let channelId = snippet["videoOwnerChannelId"] as? String
-                        ?? snippet["channelId"] as? String
-                    let thumbs = snippet["thumbnails"] as? [String: Any] ?? [:]
-                    let thumb = (thumbs["maxres"] ?? thumbs["high"] ?? thumbs["medium"] ?? thumbs["default"]) as? [String: Any]
-                    let thumbURL = thumb?["url"] as? String
-                        ?? "https://i.ytimg.com/vi/\(videoId)/hqdefault.jpg"
-                    return Video(id: videoId, title: title, channelId: channelId,
-                                 channelName: channelName, channelAvatarURL: nil,
-                                 thumbnailURL: thumbURL, viewCount: nil,
-                                 publishedAt: nil, duration: nil)
+                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                    completion(.failure(APIError.decodingFailed)); return
                 }
-                completion(.success(videos))
+                let rightColumn = ((json["contents"] as? [String: Any])?["tvBrowseRenderer"] as? [String: Any])?["content"] as? [String: Any]
+                let surface = (rightColumn?["tvSurfaceContentRenderer"] as? [String: Any])?["content"] as? [String: Any]
+                let twoCol = surface?["twoColumnRenderer"] as? [String: Any]
+                let playlistVL = (twoCol?["rightColumn"] as? [String: Any])?["playlistVideoListRenderer"] as? [String: Any]
+                let items = playlistVL?["contents"] as? [[String: Any]] ?? []
+
+                let videos: [Video] = items.compactMap { item in
+                    guard let tile = item["tileRenderer"] as? [String: Any] else { return nil }
+                    return InnertubeClient.parseTileRenderer(tile)
+                }
+                print("[Innertube] playlist \(playlistId): \(videos.count) videos via Innertube")
+                if videos.isEmpty {
+                    completion(.failure(APIError.decodingFailed))
+                } else {
+                    completion(.success(videos))
+                }
             }
         }
     }

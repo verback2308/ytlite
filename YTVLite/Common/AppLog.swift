@@ -20,4 +20,5 @@ enum AppLog {
     static func cache(_ msg: String)  { log("Cache", msg) }
     static func img(_ msg: String)    { log("Img", msg) }
     static func channel(_ msg: String){ log("Channel", msg) }
+    static func auth(_ msg: String)   { log("Auth", msg) }
 }
