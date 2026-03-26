@@ -24,7 +24,9 @@ extension InnertubeClient {
             let channelId = (vr["ownerText"] as? [String: Any]).flatMap {
                 ($0["runs"] as? [[String: Any]])?.first?["navigationEndpoint"] as? [String: Any]
             }.flatMap { ($0["browseEndpoint"] as? [String: Any])?["browseId"] as? String }
-            let viewCount = (vr["viewCountText"] as? [String: Any])?["simpleText"] as? String
+            let viewCountObj = vr["viewCountText"] as? [String: Any]
+            let viewCount = viewCountObj?["simpleText"] as? String
+                ?? (viewCountObj?["runs"] as? [[String: Any]])?.compactMap { $0["text"] as? String }.joined()
             let publishedAt = (vr["publishedTimeText"] as? [String: Any])?["simpleText"] as? String
             let thumbs = (vr["thumbnail"] as? [String: Any])?["thumbnails"] as? [[String: Any]] ?? []
             let rawThumbURL = thumbs.last?["url"] as? String ?? ""

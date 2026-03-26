@@ -414,13 +414,32 @@ extension InnertubeClient {
 
         for section in sections {
             guard let shelf = section["shelfRenderer"] as? [String: Any],
-                  let shelfContent = shelf["content"] as? [String: Any],
-                  let items = (shelfContent["horizontalListRenderer"] as? [String: Any])?["items"] as? [[String: Any]]
+                  let shelfContent = shelf["content"] as? [String: Any]
             else { continue }
-            for item in items {
-                if let tile = item["tileRenderer"] as? [String: Any],
-                   let video = parseTileRenderer(tile) {
-                    videos.append(video)
+
+            // Horizontal shelf (main format for home/subscriptions)
+            if let items = (shelfContent["horizontalListRenderer"] as? [String: Any])?["items"] as? [[String: Any]] {
+                for item in items {
+                    if let tile = item["tileRenderer"] as? [String: Any],
+                       let video = parseTileRenderer(tile) { videos.append(video) }
+                }
+            }
+
+            // Vertical list shelf (used for some content types)
+            if let items = (shelfContent["verticalListRenderer"] as? [String: Any])?["items"] as? [[String: Any]] {
+                for item in items {
+                    if let tile = item["tileRenderer"] as? [String: Any],
+                       let video = parseTileRenderer(tile) { videos.append(video) }
+                    if let vr = item["videoRenderer"] as? [String: Any],
+                       let video = parseWebVideoRenderer(vr) { videos.append(video) }
+                }
+            }
+
+            // Grid inside shelf
+            if let items = (shelfContent["gridRenderer"] as? [String: Any])?["items"] as? [[String: Any]] {
+                for item in items {
+                    if let tile = item["tileRenderer"] as? [String: Any],
+                       let video = parseTileRenderer(tile) { videos.append(video) }
                 }
             }
         }

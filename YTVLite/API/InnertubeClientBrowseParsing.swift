@@ -278,10 +278,9 @@ extension InnertubeClient {
 
         // View count
         let viewCount: String?
-        if let vc = simpleText(from: vr["viewCountText"]) {
-            viewCount = vc
-        } else if let runs = (vr["viewCountText"] as? [String: Any])?["runs"] as? [[String: Any]] {
-            viewCount = runs.compactMap { $0["text"] as? String }.joined()
+        if let vcObj = vr["viewCountText"] as? [String: Any] {
+            viewCount = vcObj["simpleText"] as? String
+                ?? (vcObj["runs"] as? [[String: Any]])?.compactMap { $0["text"] as? String }.joined()
         } else {
             viewCount = nil
         }
@@ -414,14 +413,20 @@ extension InnertubeClient {
         if lines.count > 1 {
             let items = (lines[1]["lineRenderer"] as? [String: Any])?["items"] as? [[String: Any]] ?? []
             for li in items {
-                let text = ((li["lineItemRenderer"] as? [String: Any])?["text"] as? [String: Any])?["simpleText"] as? String ?? ""
-                if text == "•" || text.isEmpty { continue }
-                if text.contains("view") || text.contains("просмотр") {
+                let textObj = (li["lineItemRenderer"] as? [String: Any])?["text"] as? [String: Any]
+                // Support both simpleText and runs formats
+                let text = textObj?["simpleText"] as? String
+                    ?? (textObj?["runs"] as? [[String: Any]])?.compactMap { $0["text"] as? String }.joined()
+                    ?? ""
+                if text == "•" || text == "·" || text.isEmpty { continue }
+                if text.contains("view") || text.contains("просмотр")
+                    || text.contains("watching") || text.contains("смотр") {
                     viewCount = text
                 } else if text.contains("ago") || text.contains("назад") || text.contains("hour")
                        || text.contains("day") || text.contains("week") || text.contains("month")
-                       || text.contains("year") || text.contains("час") || text.contains("день")
-                       || text.contains("нед") || text.contains("мес") || text.contains("лет") {
+                       || text.contains("year") || text.contains("час") || text.contains("нед")
+                       || text.contains("мес") || text.contains("лет") || text.contains("дн")
+                       || text.contains("мин") || text.contains("сек") {
                     publishedAt = text
                 }
             }
