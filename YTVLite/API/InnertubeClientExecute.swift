@@ -150,7 +150,33 @@ extension InnertubeClient {
                                     thumbnailURL: nil, itemCount: nil)
                 }
                 print("[Innertube] playlists via FEmy_youtube: \(playlists.count)")
-                completion(.success(playlists))
+
+                // Include Watch Later in thumbnail batch
+                let wl = Playlist(id: "WL", title: "Watch Later", description: "",
+                                  thumbnailURL: nil, itemCount: nil)
+                let allPlaylists = [wl] + playlists
+
+                // Fetch thumbnails (first valid video thumbnail) in parallel
+                guard !allPlaylists.isEmpty else { completion(.success(allPlaylists)); return }
+                let group = DispatchGroup()
+                var thumbnails: [String: String] = [:]
+                let lock = NSLock()
+                for playlist in allPlaylists {
+                    group.enter()
+                    self.fetchPlaylistFirstThumbnail(playlistId: playlist.id, token: token) { url in
+                        if let url = url {
+                            lock.lock(); thumbnails[playlist.id] = url; lock.unlock()
+                        }
+                        group.leave()
+                    }
+                }
+                group.notify(queue: .global()) {
+                    let withThumbs = allPlaylists.map { p in
+                        Playlist(id: p.id, title: p.title, description: p.description,
+                                 thumbnailURL: thumbnails[p.id], itemCount: p.itemCount)
+                    }
+                    completion(.success(withThumbs))
+                }
             }
         }
     }
@@ -220,7 +246,10 @@ extension InnertubeClient {
                 let items = playlistVL?["contents"] as? [[String: Any]] ?? []
 
                 let videos: [Video] = items.compactMap { item in
-                    guard let tile = item["tileRenderer"] as? [String: Any] else { return nil }
+                    guard let tile = item["tileRenderer"] as? [String: Any],
+                          let thr = (tile["header"] as? [String: Any])?["tileHeaderRenderer"] as? [String: Any],
+                          thr["thumbnailOverlays"] != nil  // absent on deleted/unavailable videos
+                    else { return nil }
                     return InnertubeClient.parseTileRenderer(tile)
                 }
                 print("[Innertube] playlist \(playlistId): \(videos.count) videos via Innertube")
@@ -914,6 +943,40 @@ extension InnertubeClient {
             }
         }
         cancellationToken?.register(task)
+    }
+
+    // Fetch first video thumbnail for a playlist (used to show cover in playlist list)
+    private func fetchPlaylistFirstThumbnail(playlistId: String, token: String,
+                                              completion: @escaping (String?) -> Void) {
+        guard let url = URL(string: "\(baseURL)/browse") else { completion(nil); return }
+        var body = tvContext
+        body["browseId"] = "VL\(playlistId)"
+        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
+            completion(nil); return
+        }
+        let headers = ["Content-Type": "application/json", "Authorization": "Bearer \(token)"]
+        api.post(url: url, headers: headers, body: bodyData) { result in
+            guard case .success(let data) = result,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+            else { completion(nil); return }
+            let right = ((json["contents"] as? [String: Any])?["tvBrowseRenderer"] as? [String: Any])
+                .flatMap { $0["content"] as? [String: Any] }
+                .flatMap { $0["tvSurfaceContentRenderer"] as? [String: Any] }
+                .flatMap { $0["content"] as? [String: Any] }
+                .flatMap { $0["twoColumnRenderer"] as? [String: Any] }
+                .flatMap { $0["rightColumn"] as? [String: Any] }
+            let items = (right?["playlistVideoListRenderer"] as? [String: Any])?["contents"] as? [[String: Any]]
+            let best: String? = items?.lazy.compactMap { item -> String? in
+                guard let tile = item["tileRenderer"] as? [String: Any],
+                      let thr = (tile["header"] as? [String: Any])?["tileHeaderRenderer"] as? [String: Any],
+                      thr["thumbnailOverlays"] != nil  // absent on deleted/unavailable videos
+                else { return nil }
+                let thumbs = (thr["thumbnail"] as? [String: Any])?["thumbnails"] as? [[String: Any]]
+                return thumbs?.last.flatMap { $0["url"] as? String }
+                    ?? thumbs?.first.flatMap { $0["url"] as? String }
+            }.first
+            completion(best)
+        }
     }
 
 }

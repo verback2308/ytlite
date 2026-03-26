@@ -81,17 +81,12 @@ final class PlaylistsViewController: UIViewController {
     }
 
     private func loadPlaylists() {
-        let watchLater = Playlist(id: "WL", title: "Watch Later",
-                                  description: "", thumbnailURL: nil, itemCount: nil)
-        playlists = [watchLater]
-        tableView.reloadData()
-
         service.fetchPlaylists { [weak self] result in
             DispatchQueue.main.async {
                 self?.spinner.stopAnimating()
                 switch result {
                 case .success(let list):
-                    self?.playlists = [watchLater] + list
+                    self?.playlists = list
                     self?.tableView.reloadData()
                     if list.isEmpty {
                         self?.emptyLabel.text = nil
