@@ -28,11 +28,12 @@ private final class SkeletonOverlayView: UIView {
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        backgroundColor = UIColor(white: 0.13, alpha: 1)
+        let t = ThemeManager.shared
+        backgroundColor = t.skeletonBase
         gradientLayer.colors = [
-            UIColor(white: 0.13, alpha: 1).cgColor,
-            UIColor(white: 0.22, alpha: 1).cgColor,
-            UIColor(white: 0.13, alpha: 1).cgColor,
+            t.skeletonBase.cgColor,
+            t.skeletonShimmer.cgColor,
+            t.skeletonBase.cgColor,
         ]
         gradientLayer.startPoint = CGPoint(x: 0, y: 0.5)
         gradientLayer.endPoint   = CGPoint(x: 1, y: 0.5)
@@ -64,7 +65,7 @@ final class SkeletonBlockView: UIView {
 
     init(cornerRadius: CGFloat = 4) {
         super.init(frame: .zero)
-        backgroundColor = UIColor(white: 0.18, alpha: 1)
+        backgroundColor = ThemeManager.shared.skeletonBlock
         layer.cornerRadius = cornerRadius
         translatesAutoresizingMaskIntoConstraints = false
     }

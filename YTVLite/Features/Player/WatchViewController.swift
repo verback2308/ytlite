@@ -155,7 +155,7 @@ final class WatchViewController: UIViewController {
             navigationController?.navigationBar.isTranslucent = false
             navigationController?.navigationBar.titleTextAttributes = [.foregroundColor: t.primaryText]
         }
-        navigationController?.navigationBar.tintColor = t.isDark ? .white : UIColor(red: 1, green: 0, blue: 0, alpha: 1)
+        navigationController?.navigationBar.tintColor = t.isDark ? .white : t.accent
         navigationController?.setNavigationBarHidden(false, animated: false)
 
         let backBtn: UIBarButtonItem
@@ -288,7 +288,7 @@ final class WatchViewController: UIViewController {
         descriptionLabel.textColor = theme.secondaryText
         descriptionButton.setTitleColor(theme.secondaryText, for: .normal)
         commentsLabel.textColor = theme.primaryText
-        loadMoreCommentsButton.setTitleColor(theme.isDark ? .white : UIColor(red: 1, green: 0, blue: 0, alpha: 1), for: .normal)
+        loadMoreCommentsButton.setTitleColor(theme.isDark ? .white : theme.accent, for: .normal)
         for btn in [likeButton, dislikeButton, shareButton, saveButton, downloadButton] {
             btn.tintColor = theme.primaryText
         }
@@ -301,7 +301,7 @@ final class WatchViewController: UIViewController {
             subscribeButton.backgroundColor = theme.surface
             subscribeButton.setTitleColor(theme.primaryText, for: .normal)
         } else {
-            subscribeButton.backgroundColor = UIColor(red: 1, green: 0, blue: 0, alpha: 1)
+            subscribeButton.backgroundColor = theme.accent
             subscribeButton.setTitleColor(.white, for: .normal)
         }
 
@@ -1499,7 +1499,7 @@ final class WatchViewController: UIViewController {
 
     private func updateLikeDislikeUI() {
         let tint = ThemeManager.shared.primaryText
-        let activeTint = UIColor(red: 1, green: 0, blue: 0, alpha: 1)
+        let activeTint = ThemeManager.shared.accent
         likeButton.tintColor = currentLikeStatus == .like ? activeTint : tint
         likeCountLabel.textColor = currentLikeStatus == .like ? activeTint : ThemeManager.shared.secondaryText
         dislikeButton.tintColor = currentLikeStatus == .dislike ? activeTint : tint

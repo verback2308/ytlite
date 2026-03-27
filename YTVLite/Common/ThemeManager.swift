@@ -17,6 +17,13 @@ class ThemeManager {
     private(set) var primaryText: UIColor  = .white
     private(set) var secondaryText: UIColor = UIColor(white: 0.55, alpha: 1)
     private(set) var separator: UIColor    = UIColor(white: 0.15, alpha: 1)
+    private(set) var accent: UIColor       = UIColor(red: 1, green: 0, blue: 0, alpha: 1)
+    private(set) var durationBackground: UIColor = UIColor.black.withAlphaComponent(0.8)
+    private(set) var liveBadgeBackground: UIColor = UIColor(red: 1, green: 0, blue: 0, alpha: 0.9)
+    private(set) var thumbnailPlaceholder: UIColor = UIColor(white: 0.15, alpha: 1)
+    private(set) var skeletonBase: UIColor    = UIColor(white: 0.13, alpha: 1)
+    private(set) var skeletonShimmer: UIColor = UIColor(white: 0.22, alpha: 1)
+    private(set) var skeletonBlock: UIColor   = UIColor(white: 0.18, alpha: 1)
     private(set) var barStyle: UIBarStyle  = .black
     private(set) var statusBarStyle: UIStatusBarStyle = .lightContent
 
@@ -57,6 +64,13 @@ class ThemeManager {
         primaryText   = dark ? .white : UIColor(white: 0.1, alpha: 1)
         secondaryText = dark ? UIColor(white: 0.55, alpha: 1) : UIColor(white: 0.45, alpha: 1)
         separator     = dark ? UIColor(white: 0.15, alpha: 1) : UIColor(white: 0.88, alpha: 1)
+        accent        = UIColor(red: 1, green: 0, blue: 0, alpha: 1)
+        durationBackground = UIColor.black.withAlphaComponent(0.8)
+        liveBadgeBackground = UIColor(red: 1, green: 0, blue: 0, alpha: 0.9)
+        thumbnailPlaceholder = dark ? UIColor(white: 0.15, alpha: 1) : UIColor(white: 0.85, alpha: 1)
+        skeletonBase    = dark ? UIColor(white: 0.13, alpha: 1) : UIColor(white: 0.88, alpha: 1)
+        skeletonShimmer = dark ? UIColor(white: 0.22, alpha: 1) : UIColor(white: 0.78, alpha: 1)
+        skeletonBlock   = dark ? UIColor(white: 0.18, alpha: 1) : UIColor(white: 0.82, alpha: 1)
         barStyle      = dark ? .black : .default
         statusBarStyle = dark ? .lightContent : .default
     }
@@ -64,11 +78,11 @@ class ThemeManager {
     func applyGlobal() {
         let nav = UINavigationBar.appearance()
         nav.barStyle = barStyle
-        nav.tintColor = isDark ? .white : UIColor(red: 1, green: 0, blue: 0, alpha: 1)
+        nav.tintColor = isDark ? .white : accent
         nav.titleTextAttributes = [.foregroundColor: primaryText]
 
         let tab = UITabBar.appearance()
         tab.barStyle = barStyle
-        tab.tintColor = isDark ? .white : UIColor(red: 1, green: 0, blue: 0, alpha: 1)
+        tab.tintColor = isDark ? .white : accent
     }
 }

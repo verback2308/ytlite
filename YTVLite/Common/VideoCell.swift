@@ -36,7 +36,7 @@ class VideoCell: UICollectionViewCell {
 
         durationLabel.font = UIFont.systemFont(ofSize: 11, weight: .semibold)
         durationLabel.textColor = .white
-        durationLabel.backgroundColor = UIColor.black.withAlphaComponent(0.8)
+        durationLabel.backgroundColor = ThemeManager.shared.durationBackground
         durationLabel.layer.cornerRadius = 3
         durationLabel.layer.masksToBounds = true
         durationLabel.textAlignment = .center
@@ -45,7 +45,7 @@ class VideoCell: UICollectionViewCell {
         liveBadgeView.text = "● LIVE"
         liveBadgeView.textColor = .white
         liveBadgeView.font = UIFont.systemFont(ofSize: 10, weight: .bold)
-        liveBadgeView.backgroundColor = UIColor(red: 1, green: 0, blue: 0, alpha: 0.9)
+        liveBadgeView.backgroundColor = ThemeManager.shared.liveBadgeBackground
         liveBadgeView.layer.cornerRadius = 3
         liveBadgeView.layer.masksToBounds = true
         liveBadgeView.textAlignment = .center
@@ -223,40 +223,13 @@ class VideoCell: UICollectionViewCell {
         representedChannelId = video.channelId
         titleLabel.text = video.title
         channelLabel.text = video.channelName
-        let views = video.viewCount ?? ""
-        let date = video.publishedAt.map(VideoFormatters.formatRelativeDate) ?? ""
-        metaLabel.text = [views, date].filter { !$0.isEmpty }.joined(separator: " • ")
+        metaLabel.text = VideoCardHelper.metaText(viewCount: video.viewCount, publishedAt: video.publishedAt)
 
-        if let channelAvatarURL = video.channelAvatarURL, let url = URL(string: channelAvatarURL) {
-            channelAvatarView.isHidden = false
-            channelAvatarView.setImage(url: url)
-        } else if let channelId = video.channelId {
-            channelAvatarView.isHidden = false
-            channelAvatarView.cancel()
-            ChannelInfoStore.shared.fetch(channelId: channelId) { [weak self] result in
-                guard let self = self, self.representedChannelId == channelId else { return }
-                guard case .success(let info) = result,
-                      let avatarURL = info.avatarURL,
-                      let url = URL(string: avatarURL)
-                else { return }
-                self.channelAvatarView.setImage(url: url)
-            }
-        } else {
-            channelAvatarView.isHidden = true
-            channelAvatarView.cancel()
+        representedChannelId = video.channelId
+        VideoCardHelper.loadChannelAvatar(for: video, into: channelAvatarView) { [weak self] in
+            self?.representedChannelId == video.channelId
         }
-
-        if video.isLive {
-            durationLabel.isHidden = true
-            liveBadgeView.isHidden = false
-        } else if let duration = video.duration, !duration.isEmpty {
-            durationLabel.text = " \(duration) "
-            durationLabel.isHidden = false
-            liveBadgeView.isHidden = true
-        } else {
-            durationLabel.isHidden = true
-            liveBadgeView.isHidden = true
-        }
+        VideoCardHelper.configureBadges(video: video, durationLabel: durationLabel, liveBadgeView: liveBadgeView)
 
         if let url = URL(string: video.thumbnailURL) {
             thumbnail.setImage(url: url)

@@ -32,7 +32,7 @@ final class SignInEmptyStateView: UIView {
         let btn = UIButton(type: .system)
         btn.setTitle("Sign In", for: .normal)
         btn.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
-        btn.backgroundColor = UIColor(red: 1, green: 0, blue: 0, alpha: 1)
+        btn.backgroundColor = ThemeManager.shared.accent
         btn.setTitleColor(.white, for: .normal)
         btn.layer.cornerRadius = 20
         btn.contentEdgeInsets = UIEdgeInsets(top: 10, left: 32, bottom: 10, right: 32)

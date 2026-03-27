@@ -41,7 +41,7 @@ final class AuthViewController: UIViewController {
 
         openButton.setTitle("Open google.com/device", for: .normal)
         openButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 17)
-        openButton.backgroundColor = UIColor(red: 1, green: 0, blue: 0, alpha: 1)
+        openButton.backgroundColor = ThemeManager.shared.accent
         openButton.setTitleColor(.white, for: .normal)
         openButton.layer.cornerRadius = 10
         openButton.contentEdgeInsets = UIEdgeInsets(top: 14, left: 28, bottom: 14, right: 28)

@@ -31,7 +31,7 @@ class SubscriptionVideoCell: UITableViewCell {
 
         durationLabel.font = UIFont.systemFont(ofSize: 11, weight: .semibold)
         durationLabel.textColor = .white
-        durationLabel.backgroundColor = UIColor.black.withAlphaComponent(0.8)
+        durationLabel.backgroundColor = ThemeManager.shared.durationBackground
         durationLabel.layer.cornerRadius = 3
         durationLabel.layer.masksToBounds = true
         durationLabel.textAlignment = .center
@@ -169,36 +169,13 @@ class SubscriptionVideoCell: UITableViewCell {
         representedChannelId = video.channelId
         titleLabel.text = video.title
         channelLabel.text = video.channelName
-        dateLabel.text = [
-            video.viewCount,
-            video.publishedAt.map(VideoFormatters.formatRelativeDate)
-        ].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
+        dateLabel.text = VideoCardHelper.metaText(viewCount: video.viewCount, publishedAt: video.publishedAt,
+                                                  separator: " · ")
 
-        if let channelAvatarURL = video.channelAvatarURL, let url = URL(string: channelAvatarURL) {
-            channelAvatarView.isHidden = false
-            channelAvatarView.setImage(url: url)
-        } else if let channelId = video.channelId {
-            channelAvatarView.isHidden = false
-            channelAvatarView.cancel()
-            ChannelInfoStore.shared.fetch(channelId: channelId) { [weak self] result in
-                guard let self = self, self.representedChannelId == channelId else { return }
-                guard case .success(let info) = result,
-                      let avatarURL = info.avatarURL,
-                      let url = URL(string: avatarURL)
-                else { return }
-                self.channelAvatarView.setImage(url: url)
-            }
-        } else {
-            channelAvatarView.isHidden = true
-            channelAvatarView.cancel()
+        VideoCardHelper.loadChannelAvatar(for: video, into: channelAvatarView) { [weak self] in
+            self?.representedChannelId == video.channelId
         }
-
-        if let duration = video.duration, !duration.isEmpty {
-            durationLabel.text = " \(duration) "
-            durationLabel.isHidden = false
-        } else {
-            durationLabel.isHidden = true
-        }
+        VideoCardHelper.configureBadges(video: video, durationLabel: durationLabel, liveBadgeView: nil)
 
         if let url = URL(string: video.thumbnailURL) {
             thumbnail.setImage(url: url)

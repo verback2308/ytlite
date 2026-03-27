@@ -14,7 +14,7 @@ class ThumbnailImageView: UIImageView {
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        backgroundColor = UIColor(white: 0.15, alpha: 1)
+        backgroundColor = ThemeManager.shared.thumbnailPlaceholder
         contentMode = .scaleAspectFill
         clipsToBounds = true
     }

@@ -312,7 +312,7 @@ final class ChannelViewController: VideosViewController {
             subscribeButton.backgroundColor = theme.surface
             subscribeButton.setTitleColor(theme.primaryText, for: .normal)
         } else {
-            subscribeButton.backgroundColor = UIColor(red: 1, green: 0, blue: 0, alpha: 1)
+            subscribeButton.backgroundColor = theme.accent
             subscribeButton.setTitleColor(.white, for: .normal)
         }
     }

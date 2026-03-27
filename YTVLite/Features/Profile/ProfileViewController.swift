@@ -128,7 +128,7 @@ class ProfileViewController: UIViewController {
         subscribersLabel.textColor = t.secondaryText
         themeSegment.selectedSegmentIndex = t.isDark ? 0 : 1
         clearImageCacheButton.backgroundColor = t.isDark ? UIColor(white: 0.16, alpha: 1) : .white
-        clearImageCacheButton.setTitleColor(t.isDark ? .white : UIColor(red: 1, green: 0, blue: 0, alpha: 1), for: .normal)
+        clearImageCacheButton.setTitleColor(t.isDark ? .white : t.accent, for: .normal)
     }
 
     @objc private func themeChanged() {

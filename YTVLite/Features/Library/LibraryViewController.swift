@@ -110,7 +110,7 @@ final class LibraryViewController: UIViewController {
         view.backgroundColor = t.background
         contentView.backgroundColor = t.background
         if #available(iOS 13, *) {
-            segmentedControl.selectedSegmentTintColor = UIColor(red: 1, green: 0, blue: 0, alpha: 1)
+            segmentedControl.selectedSegmentTintColor = t.accent
             segmentedControl.setTitleTextAttributes([.foregroundColor: t.primaryText], for: .normal)
             segmentedControl.setTitleTextAttributes([.foregroundColor: UIColor.white], for: .selected)
         }
