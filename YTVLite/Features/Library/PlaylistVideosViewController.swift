@@ -95,7 +95,7 @@ final class PlaylistVideosViewController: UIViewController {
 
     private func loadVideos() {
         isLoading = true
-        InnertubeClient.shared.fetchPlaylistVideos(playlistId: playlist.id) { [weak self] result in
+        ServiceContainer.video.fetchPlaylistVideos(playlistId: playlist.id) { [weak self] result in
             DispatchQueue.main.async {
                 guard let self = self else { return }
                 self.isLoading = false

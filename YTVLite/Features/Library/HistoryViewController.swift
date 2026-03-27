@@ -118,7 +118,7 @@ final class HistoryViewController: UIViewController {
             isLoadingInitial = true
             spinner.startAnimating()
         }
-        InnertubeClient.shared.fetchHistory { [weak self] result in
+        ServiceContainer.video.fetchHistory { [weak self] result in
             DispatchQueue.main.async {
                 guard let self = self else { return }
                 self.spinner.stopAnimating()
@@ -159,7 +159,7 @@ final class HistoryViewController: UIViewController {
                 self?.isLoadingMore = false
                 return
             }
-            InnertubeClient.shared.fetchHistoryNextPage(continuation: continuation, token: token) { [weak self] result in
+            ServiceContainer.video.fetchHistoryNextPage(continuation: continuation, token: token) { [weak self] result in
                 DispatchQueue.main.async {
                     guard let self = self else { return }
                     self.isLoadingMore = false

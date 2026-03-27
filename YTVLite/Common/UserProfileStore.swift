@@ -19,7 +19,7 @@ final class UserProfileStore {
 
         // Use Innertube /account/accounts_list (TV context + Bearer token)
         // This is how YouTube.js AccountManager.getInfo() works.
-        InnertubeClient.shared.fetchAccountInfo { [weak self] result in
+        ServiceContainer.video.fetchAccountInfo { [weak self] result in
             guard let self = self else { return }
             switch result {
             case .failure(let err):

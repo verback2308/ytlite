@@ -2,8 +2,6 @@ import Foundation
 
 final class InnertubeClient: VideoService {
 
-    static let shared = InnertubeClient()
-
     let api = APIClient()
     let baseURL = "https://www.youtube.com/youtubei/v1"
     var webContext: [String: Any] { InnertubeContexts.web }

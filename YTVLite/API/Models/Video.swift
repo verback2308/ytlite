@@ -149,7 +149,7 @@ struct CommentsPage {
 final class ChannelInfoStore {
     static let shared = ChannelInfoStore()
 
-    private let client = InnertubeClient()
+    private let client: VideoService = ServiceContainer.video
     private let queue = DispatchQueue(label: "com.ytvlite.channel-info-store")
     private var cache: [String: ChannelInfo] = [:]
     private var pending: [String: [(Result<ChannelInfo, Error>) -> Void]] = [:]

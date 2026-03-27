@@ -2,7 +2,7 @@ import UIKit
 
 final class ChannelViewController: VideosViewController {
 
-    private let client = InnertubeClient()
+    private let client: VideoService = ServiceContainer.video
     private let cache = AppCache.shared
     private let channelId: String
     private let initialChannelName: String

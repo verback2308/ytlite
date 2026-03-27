@@ -4,7 +4,7 @@ import AVKit
 final class WatchViewController: UIViewController {
 
     private var initialVideo: Video
-    private let client = InnertubeClient()
+    private let client: VideoService = ServiceContainer.video
     private let cache = AppCache.shared
 
     private var watchPage: WatchPage?
