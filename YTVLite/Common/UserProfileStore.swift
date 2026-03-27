@@ -3,7 +3,6 @@ import UIKit
 /// Shared cache for the authenticated user's profile data (avatar + display name).
 /// Loaded once after sign-in and cleared on sign-out.
 final class UserProfileStore {
-
     static let shared = UserProfileStore()
     static let didUpdateNotification = Notification.Name("UserProfileStoreDidUpdate")
 
@@ -14,38 +13,53 @@ final class UserProfileStore {
     private init() {}
 
     func load() {
-        guard OAuthClient.shared.isSignedIn, !isLoading else { return }
+        guard OAuthClient.shared.isSignedIn, !isLoading
+        else { return }
         isLoading = true
 
-        // Use Innertube /account/accounts_list (TV context + Bearer token)
-        // This is how YouTube.js AccountManager.getInfo() works.
         ServiceContainer.account.fetchAccountInfo { [weak self] result in
-            guard let self = self else { return }
+            guard let self
+            else { return }
             switch result {
             case .failure(let err):
                 AppLog.auth("fetchAccountInfo failed: \(err)")
                 self.isLoading = false
             case .success(let info):
-                self.displayName = info.name
-                guard let urlStr = info.avatarURL, let avatarURL = URL(string: urlStr) else {
-                    self.isLoading = false
-                    DispatchQueue.main.async {
-                        NotificationCenter.default.post(name: Self.didUpdateNotification, object: nil)
-                    }
-                    return
-                }
-                URLSession.shared.dataTask(with: avatarURL) { [weak self] data, _, _ in
-                    guard let self = self else { return }
-                    self.isLoading = false
-                    if let data = data, let img = UIImage(data: data) {
-                        DispatchQueue.main.async {
-                            self.avatarImage = img
-                            NotificationCenter.default.post(name: Self.didUpdateNotification, object: nil)
-                        }
-                    }
-                }.resume()
+                self.handleAccountInfo(info)
             }
         }
+    }
+
+    private func handleAccountInfo(_ info: AccountInfo) {
+        displayName = info.name
+        guard let urlStr = info.avatarURL,
+              let avatarURL = URL(string: urlStr)
+        else {
+            isLoading = false
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(
+                    name: Self.didUpdateNotification,
+                    object: nil
+                )
+            }
+            return
+        }
+        let task = URLSession.shared
+            .dataTask(with: avatarURL) { [weak self] data, _, _ in
+                guard let self
+                else { return }
+                self.isLoading = false
+                if let data, let img = UIImage(data: data) {
+                    DispatchQueue.main.async {
+                        self.avatarImage = img
+                        NotificationCenter.default.post(
+                            name: Self.didUpdateNotification,
+                            object: nil
+                        )
+                    }
+                }
+            }
+        task.resume()
     }
 
     func clear() {

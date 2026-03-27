@@ -9,7 +9,8 @@ final class ChannelAboutViewController: UIViewController {
         super.init(nibName: nil, bundle: nil)
     }
 
-    required init?(coder: NSCoder) { fatalError() }
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -17,10 +18,17 @@ final class ChannelAboutViewController: UIViewController {
         title = "About"
         if #available(iOS 13, *) {
             navigationItem.rightBarButtonItem = UIBarButtonItem(
-                barButtonSystemItem: .close, target: self, action: #selector(dismissSelf))
+                barButtonSystemItem: .close,
+                target: self,
+                action: #selector(dismissSelf)
+            )
         } else {
             navigationItem.rightBarButtonItem = UIBarButtonItem(
-                title: "Close", style: .done, target: self, action: #selector(dismissSelf))
+                title: "Close",
+                style: .done,
+                target: self,
+                action: #selector(dismissSelf)
+            )
         }
         setupUI()
     }
@@ -30,7 +38,8 @@ final class ChannelAboutViewController: UIViewController {
         view.backgroundColor = theme.background
     }
 
-    @objc private func dismissSelf() { dismiss(animated: true) }
+    @objc
+    private func dismissSelf() { dismiss(animated: true) }
 
     private func setupUI() {
         let scrollView = UIScrollView()
@@ -56,7 +65,12 @@ final class ChannelAboutViewController: UIViewController {
             stack.widthAnchor.constraint(equalTo: scrollView.widthAnchor, constant: -40)
         ])
 
-        // Stats row: subscribers + videos
+        addStatsSection(to: stack)
+        addDescriptionSection(to: stack)
+        addContactSection(to: stack)
+    }
+
+    private func addStatsSection(to stack: UIStackView) {
         let statsStack = UIStackView()
         statsStack.axis = .horizontal
         statsStack.spacing = 24
@@ -71,34 +85,51 @@ final class ChannelAboutViewController: UIViewController {
                 .replacingOccurrences(of: " video", with: "", options: .caseInsensitive)
             statsStack.addArrangedSubview(makeStatView(value: count, label: "Videos"))
         }
-        if statsStack.arrangedSubviews.count > 0 {
+        if !statsStack.arrangedSubviews.isEmpty {
             stack.addArrangedSubview(statsStack)
             addSeparator(to: stack)
         }
-
-        // Description
-        if let desc = page.info.description, !desc.isEmpty {
-            stack.addArrangedSubview(makeLabel(text: "Description", style: .subheadline, color: theme.secondaryText))
-            let descLabel = makeLabel(text: desc, style: .body, color: theme.primaryText)
-            descLabel.numberOfLines = 0
-            stack.addArrangedSubview(descLabel)
-            addSeparator(to: stack)
-        }
-
-        // Contact
-        if let contact = page.info.contactInfo, !contact.isEmpty {
-            stack.addArrangedSubview(makeLabel(text: "Contact", style: .subheadline, color: theme.secondaryText))
-            let btn = UIButton(type: .system)
-            btn.setTitle(contact, for: .normal)
-            btn.contentHorizontalAlignment = .leading
-            btn.titleLabel?.font = UIFont.systemFont(ofSize: 15)
-            btn.addTarget(self, action: #selector(contactTapped), for: .touchUpInside)
-            stack.addArrangedSubview(btn)
-        }
     }
 
-    @objc private func contactTapped() {
-        guard let contact = page.info.contactInfo else { return }
+    private func addDescriptionSection(to stack: UIStackView) {
+        guard let desc = page.info.description, !desc.isEmpty else {
+            return
+        }
+        let descHeader = makeLabel(
+            text: "Description",
+            style: .subheadline,
+            color: theme.secondaryText
+        )
+        stack.addArrangedSubview(descHeader)
+        let descLabel = makeLabel(text: desc, style: .body, color: theme.primaryText)
+        descLabel.numberOfLines = 0
+        stack.addArrangedSubview(descLabel)
+        addSeparator(to: stack)
+    }
+
+    private func addContactSection(to stack: UIStackView) {
+        guard let contact = page.info.contactInfo, !contact.isEmpty else {
+            return
+        }
+        let header = makeLabel(
+            text: "Contact",
+            style: .subheadline,
+            color: theme.secondaryText
+        )
+        stack.addArrangedSubview(header)
+        let btn = UIButton(type: .system)
+        btn.setTitle(contact, for: .normal)
+        btn.contentHorizontalAlignment = .leading
+        btn.titleLabel?.font = UIFont.systemFont(ofSize: 15)
+        btn.addTarget(self, action: #selector(contactTapped), for: .touchUpInside)
+        stack.addArrangedSubview(btn)
+    }
+
+    @objc
+    private func contactTapped() {
+        guard let contact = page.info.contactInfo else {
+            return
+        }
         let urlStr: String
         if contact.contains("@") && !contact.hasPrefix("http") {
             urlStr = "mailto:\(contact)"
@@ -113,7 +144,7 @@ final class ChannelAboutViewController: UIViewController {
     }
 
     private func makeStatView(value: String, label: String) -> UIView {
-        let v = UIView()
+        let container = UIView()
         let valueLabel = UILabel()
         valueLabel.text = value
         valueLabel.font = UIFont.boldSystemFont(ofSize: 20)
@@ -124,27 +155,27 @@ final class ChannelAboutViewController: UIViewController {
         nameLabel.font = UIFont.systemFont(ofSize: 12)
         nameLabel.textColor = theme.secondaryText
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
-        v.addSubview(valueLabel)
-        v.addSubview(nameLabel)
+        container.addSubview(valueLabel)
+        container.addSubview(nameLabel)
         NSLayoutConstraint.activate([
-            valueLabel.topAnchor.constraint(equalTo: v.topAnchor),
-            valueLabel.leadingAnchor.constraint(equalTo: v.leadingAnchor),
-            valueLabel.trailingAnchor.constraint(equalTo: v.trailingAnchor),
+            valueLabel.topAnchor.constraint(equalTo: container.topAnchor),
+            valueLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            valueLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor),
             nameLabel.topAnchor.constraint(equalTo: valueLabel.bottomAnchor, constant: 2),
-            nameLabel.leadingAnchor.constraint(equalTo: v.leadingAnchor),
-            nameLabel.trailingAnchor.constraint(equalTo: v.trailingAnchor),
-            nameLabel.bottomAnchor.constraint(equalTo: v.bottomAnchor)
+            nameLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            nameLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            nameLabel.bottomAnchor.constraint(equalTo: container.bottomAnchor)
         ])
-        return v
+        return container
     }
 
     private func makeLabel(text: String, style: UIFont.TextStyle, color: UIColor) -> UILabel {
-        let l = UILabel()
-        l.text = text
-        l.font = UIFont.preferredFont(forTextStyle: style)
-        l.textColor = color
-        l.numberOfLines = 1
-        return l
+        let resultLabel = UILabel()
+        resultLabel.text = text
+        resultLabel.font = UIFont.preferredFont(forTextStyle: style)
+        resultLabel.textColor = color
+        resultLabel.numberOfLines = 1
+        return resultLabel
     }
 
     private func addSeparator(to stack: UIStackView) {

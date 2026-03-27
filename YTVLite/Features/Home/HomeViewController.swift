@@ -1,41 +1,49 @@
 import UIKit
 
 class HomeViewController: VideosViewController {
-
     private let service: FeedService = ServiceContainer.video
     private let cache = AppCache.shared
     override var columns: Int {
         if UIDevice.current.userInterfaceIdiom == .phone {
             return 1
         }
-        let w = view.bounds.width
-        if w < 500 { return 1 }
-        return w > view.bounds.height ? 3 : 2
+        let width = view.bounds.width
+        if width < 500 {
+            return 1
+        }
+        return width > view.bounds.height ? 3 : 2
     }
 
     private lazy var errorLabel: UILabel = {
-        let l = UILabel()
-        l.text = "Couldn't load feed\nPull down to retry"
-        l.textColor = .lightGray
-        l.textAlignment = .center
-        l.numberOfLines = 0
-        l.font = UIFont.systemFont(ofSize: 15)
-        l.translatesAutoresizingMaskIntoConstraints = false
-        l.isHidden = true
-        return l
+        let label = UILabel()
+        label.text = "Couldn't load feed\nPull down to retry"
+        label.textColor = .lightGray
+        label.textAlignment = .center
+        label.numberOfLines = 0
+        label.font = UIFont.systemFont(ofSize: 15)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.isHidden = true
+        return label
     }()
 
     private lazy var signInEmptyView: SignInEmptyStateView = {
-        let v = SignInEmptyStateView(message: "Sign in to see your recommendations")
-        v.isHidden = true
-        v.onSignIn = { [weak self] in self?.toolbarOpenProfile() }
-        return v
+        let emptyView = SignInEmptyStateView(message: "Sign in to see your recommendations")
+        emptyView.isHidden = true
+        emptyView.onSignIn = { [weak self] in self?.toolbarOpenProfile() }
+        return emptyView
     }()
 
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Home"
         AppLog.home("viewDidLoad")
+        setupEmptyViews()
+        setupToolbar()
+        observeSignOut()
+        loadCachedOrFetchFeed()
+    }
+
+    private func setupEmptyViews() {
         view.addSubview(errorLabel)
         view.addSubview(signInEmptyView)
         NSLayoutConstraint.activate([
@@ -47,12 +55,20 @@ class HomeViewController: VideosViewController {
             signInEmptyView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             signInEmptyView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -40),
             signInEmptyView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 40),
-            signInEmptyView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -40),
+            signInEmptyView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -40)
         ])
-        setupToolbar()
-        NotificationCenter.default.addObserver(self, selector: #selector(handleSignOut),
-                                               name: .userDidSignOut, object: nil)
+    }
 
+    private func observeSignOut() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleSignOut),
+            name: .userDidSignOut,
+            object: nil
+        )
+    }
+
+    private func loadCachedOrFetchFeed() {
         if let cachedPage = cache.cachedHomeFeed() {
             AppLog.home("cache-hit → showing \(cachedPage.videos.count) videos instantly")
             isLoadingInitial = false
@@ -68,7 +84,8 @@ class HomeViewController: VideosViewController {
         ToolbarManager.shared.install(in: self)
     }
 
-    @objc private func handleSignOut() {
+    @objc
+    private func handleSignOut() {
         cache.clearHomeFeed()
         setPage(FeedPage(videos: [], continuation: nil))
         toolbarRefreshProfileButton()
@@ -87,8 +104,10 @@ class HomeViewController: VideosViewController {
         signInEmptyView.isHidden = true
         service.fetchHomeFeed { [weak self] result in
             DispatchQueue.main.async {
-                guard let self = self else { return }
-                let ms = Int(Date().timeIntervalSince(t0) * 1000)
+                guard let self else {
+                    return
+                }
+                let ms = Int(Date().timeIntervalSince(t0) * 1_000)
                 self.spinner.stopAnimating()
                 self.endRefreshing()
                 switch result {

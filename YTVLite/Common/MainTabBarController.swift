@@ -6,57 +6,100 @@ final class RotatingNavigationController: UINavigationController {
         topViewController?.shouldAutorotate ?? super.shouldAutorotate
     }
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
-        topViewController?.supportedInterfaceOrientations ?? super.supportedInterfaceOrientations
+        topViewController?.supportedInterfaceOrientations
+            ?? super.supportedInterfaceOrientations
     }
 
-    override func pushViewController(_ viewController: UIViewController, animated: Bool) {
-        // Blank title on the current top VC → pushed screen's back button shows only chevron
-        topViewController?.navigationItem.backBarButtonItem = UIBarButtonItem(title: "", style: .plain,
-                                                                              target: nil, action: nil)
-        // Blank title on the pushed VC → any deeper screen's back button also shows only chevron
-        viewController.navigationItem.backBarButtonItem = UIBarButtonItem(title: "", style: .plain,
-                                                                          target: nil, action: nil)
+    override func pushViewController(
+        _ viewController: UIViewController,
+        animated: Bool
+    ) {
+        topViewController?.navigationItem.backBarButtonItem =
+            UIBarButtonItem(
+                title: "",
+                style: .plain,
+                target: nil,
+                action: nil
+            )
+        viewController.navigationItem.backBarButtonItem =
+            UIBarButtonItem(
+                title: "",
+                style: .plain,
+                target: nil,
+                action: nil
+            )
         super.pushViewController(viewController, animated: animated)
     }
 }
 
 class MainTabBarController: UITabBarController {
-
     override var shouldAutorotate: Bool {
-        selectedViewController?.shouldAutorotate ?? super.shouldAutorotate
+        selectedViewController?.shouldAutorotate
+            ?? super.shouldAutorotate
     }
 
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
-        selectedViewController?.supportedInterfaceOrientations ?? super.supportedInterfaceOrientations
+        selectedViewController?.supportedInterfaceOrientations
+            ?? super.supportedInterfaceOrientations
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        let home = RotatingNavigationController(rootViewController: HomeViewController())
-        home.tabBarItem = UITabBarItem(title: "Home", image: TabBarIcons.home(), tag: 0)
-
-        let subs = RotatingNavigationController(rootViewController: SubscriptionsViewController())
-        subs.tabBarItem = UITabBarItem(title: "Subscriptions", image: TabBarIcons.subscriptions(), tag: 1)
-
-        let library = RotatingNavigationController(rootViewController: LibraryViewController())
-        library.tabBarItem = UITabBarItem(title: "Library", image: TabBarIcons.library(), tag: 2)
-
-        viewControllers = [home, subs, library]
-
-        NotificationCenter.default.addObserver(self, selector: #selector(applyTheme),
-                                               name: ThemeManager.didChangeNotification, object: nil)
+        viewControllers = buildTabs()
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(applyTheme),
+            name: ThemeManager.didChangeNotification,
+            object: nil
+        )
         applyTheme()
     }
 
-    @objc private func applyTheme() {
-        let t = ThemeManager.shared
-        tabBar.barStyle = t.barStyle
-        tabBar.tintColor = t.isDark ? .white : t.accent
-        (viewControllers ?? []).compactMap { $0 as? UINavigationController }.forEach { nav in
-            nav.navigationBar.barStyle = t.barStyle
-            nav.navigationBar.tintColor = t.isDark ? .white : t.accent
-            nav.navigationBar.titleTextAttributes = [.foregroundColor: t.primaryText]
+    private func buildTabs() -> [UIViewController] {
+        let home = RotatingNavigationController(
+            rootViewController: HomeViewController()
+        )
+        home.tabBarItem = UITabBarItem(
+            title: "Home",
+            image: TabBarIcons.home(),
+            tag: 0
+        )
+
+        let subs = RotatingNavigationController(
+            rootViewController: SubscriptionsViewController()
+        )
+        subs.tabBarItem = UITabBarItem(
+            title: "Subscriptions",
+            image: TabBarIcons.subscriptions(),
+            tag: 1
+        )
+
+        let library = RotatingNavigationController(
+            rootViewController: LibraryViewController()
+        )
+        library.tabBarItem = UITabBarItem(
+            title: "Library",
+            image: TabBarIcons.library(),
+            tag: 2
+        )
+
+        return [home, subs, library]
+    }
+
+    @objc
+    private func applyTheme() {
+        let theme = ThemeManager.shared
+        tabBar.barStyle = theme.barStyle
+        tabBar.tintColor = theme.isDark ? .white : theme.accent
+        let navControllers = (viewControllers ?? [])
+            .compactMap { $0 as? UINavigationController }
+        for nav in navControllers {
+            nav.navigationBar.barStyle = theme.barStyle
+            nav.navigationBar.tintColor = theme.isDark
+                ? .white : theme.accent
+            nav.navigationBar.titleTextAttributes = [
+                .foregroundColor: theme.primaryText
+            ]
         }
     }
 }

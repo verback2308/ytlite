@@ -31,9 +31,31 @@ final class AutoplayOverlayView: UIView {
         configure(with: nextVideo)
     }
 
-    required init?(coder: NSCoder) { fatalError() }
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
     private func setupUI() {
+        setupBackgroundViews()
+        setupLabels()
+
+        let ringSize: CGFloat = 56
+        let ringContainer = UIView()
+        ringContainer.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(ringContainer)
+
+        countdownLabel.font = .monospacedDigitSystemFont(ofSize: 20, weight: .bold)
+        countdownLabel.textColor = .white
+        countdownLabel.textAlignment = .center
+        countdownLabel.translatesAutoresizingMaskIntoConstraints = false
+        ringContainer.addSubview(countdownLabel)
+
+        setupButtons()
+        setupConstraints(ringContainer: ringContainer, ringSize: ringSize)
+        setupRingLayers(in: ringContainer, ringSize: ringSize)
+        countdownLabel.text = "\(secondsRemaining)"
+    }
+
+    private func setupBackgroundViews() {
         thumbnailView.contentMode = .scaleAspectFill
         thumbnailView.clipsToBounds = true
         thumbnailView.translatesAutoresizingMaskIntoConstraints = false
@@ -45,7 +67,9 @@ final class AutoplayOverlayView: UIView {
         dimView.backgroundColor = UIColor.black.withAlphaComponent(0.55)
         dimView.translatesAutoresizingMaskIntoConstraints = false
         addSubview(dimView)
+    }
 
+    private func setupLabels() {
         upNextLabel.text = "Up Next"
         upNextLabel.font = .systemFont(ofSize: 11, weight: .semibold)
         upNextLabel.textColor = UIColor.white.withAlphaComponent(0.7)
@@ -65,18 +89,9 @@ final class AutoplayOverlayView: UIView {
         channelLabel.textAlignment = .center
         channelLabel.translatesAutoresizingMaskIntoConstraints = false
         addSubview(channelLabel)
+    }
 
-        let ringSize: CGFloat = 56
-        let ringContainer = UIView()
-        ringContainer.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(ringContainer)
-
-        countdownLabel.font = .monospacedDigitSystemFont(ofSize: 20, weight: .bold)
-        countdownLabel.textColor = .white
-        countdownLabel.textAlignment = .center
-        countdownLabel.translatesAutoresizingMaskIntoConstraints = false
-        ringContainer.addSubview(countdownLabel)
-
+    private func setupButtons() {
         cancelButton.setTitle("Cancel", for: .normal)
         cancelButton.setTitleColor(UIColor.white.withAlphaComponent(0.85), for: .normal)
         cancelButton.titleLabel?.font = .systemFont(ofSize: 13)
@@ -93,7 +108,21 @@ final class AutoplayOverlayView: UIView {
         playButton.translatesAutoresizingMaskIntoConstraints = false
         playButton.addTarget(self, action: #selector(playTapped), for: .touchUpInside)
         addSubview(playButton)
+    }
 
+    private func setupConstraints(
+        ringContainer: UIView,
+        ringSize: CGFloat
+    ) {
+        activateBackgroundConstraints()
+        activateRingAndLabelConstraints(
+            ringContainer: ringContainer,
+            ringSize: ringSize
+        )
+        activateButtonConstraints()
+    }
+
+    private func activateBackgroundConstraints() {
         NSLayoutConstraint.activate([
             thumbnailView.topAnchor.constraint(equalTo: topAnchor),
             thumbnailView.leadingAnchor.constraint(equalTo: leadingAnchor),
@@ -108,8 +137,15 @@ final class AutoplayOverlayView: UIView {
             dimView.topAnchor.constraint(equalTo: topAnchor),
             dimView.leadingAnchor.constraint(equalTo: leadingAnchor),
             dimView.trailingAnchor.constraint(equalTo: trailingAnchor),
-            dimView.bottomAnchor.constraint(equalTo: bottomAnchor),
+            dimView.bottomAnchor.constraint(equalTo: bottomAnchor)
+        ])
+    }
 
+    private func activateRingAndLabelConstraints(
+        ringContainer: UIView,
+        ringSize: CGFloat
+    ) {
+        NSLayoutConstraint.activate([
             ringContainer.centerXAnchor.constraint(equalTo: centerXAnchor),
             ringContainer.centerYAnchor.constraint(equalTo: centerYAnchor, constant: -28),
             ringContainer.widthAnchor.constraint(equalToConstant: ringSize),
@@ -127,25 +163,36 @@ final class AutoplayOverlayView: UIView {
 
             channelLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 2),
             channelLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
-            channelLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
+            channelLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor)
+        ])
+    }
 
+    private func activateButtonConstraints() {
+        NSLayoutConstraint.activate([
             playButton.topAnchor.constraint(equalTo: channelLabel.bottomAnchor, constant: 10),
             playButton.centerXAnchor.constraint(equalTo: centerXAnchor, constant: -44),
 
             cancelButton.centerYAnchor.constraint(equalTo: playButton.centerYAnchor),
-            cancelButton.leadingAnchor.constraint(equalTo: playButton.trailingAnchor, constant: 10),
+            cancelButton.leadingAnchor.constraint(equalTo: playButton.trailingAnchor, constant: 10)
         ])
+    }
 
-        let r = ringSize / 2
-        let center = CGPoint(x: r, y: r)
-        let path = UIBezierPath(arcCenter: center, radius: r - 4,
-                                startAngle: -.pi / 2, endAngle: 3 * .pi / 2,
-                                clockwise: true)
+    private func setupRingLayers(in ringContainer: UIView, ringSize: CGFloat) {
+        let radius = ringSize / 2
+        let center = CGPoint(x: radius, y: radius)
+        let path = UIBezierPath(
+            arcCenter: center,
+            radius: radius - 4,
+            startAngle: -.pi / 2,
+            endAngle: 3 * .pi / 2,
+            clockwise: true
+        )
         ringTrack.path = path.cgPath
         ringTrack.fillColor = UIColor.clear.cgColor
         ringTrack.strokeColor = UIColor.white.withAlphaComponent(0.25).cgColor
         ringTrack.lineWidth = 3
-        ringTrack.frame = CGRect(x: 0, y: 0, width: ringSize, height: ringSize)
+        let ringFrame = CGRect(x: 0, y: 0, width: ringSize, height: ringSize)
+        ringTrack.frame = ringFrame
 
         ringFill.path = path.cgPath
         ringFill.fillColor = UIColor.clear.cgColor
@@ -153,12 +200,10 @@ final class AutoplayOverlayView: UIView {
         ringFill.lineWidth = 3
         ringFill.lineCap = .round
         ringFill.strokeEnd = 1.0
-        ringFill.frame = CGRect(x: 0, y: 0, width: ringSize, height: ringSize)
+        ringFill.frame = ringFrame
 
         ringContainer.layer.addSublayer(ringTrack)
         ringContainer.layer.addSublayer(ringFill)
-
-        countdownLabel.text = "\(secondsRemaining)"
     }
 
     private func configure(with video: Video) {
@@ -169,19 +214,46 @@ final class AutoplayOverlayView: UIView {
         }
     }
 
+    @objc
+    private func playTapped() {
+        stopCountdown()
+        onPlay?()
+    }
+
+    @objc
+    private func cancelTapped() {
+        stopCountdown()
+        onCancel?()
+    }
+}
+
+// MARK: - Countdown & Ring
+extension AutoplayOverlayView {
     func startCountdown() {
         countdownLabel.text = "\(secondsRemaining)"
         animateRing()
-        countdownTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self = self else { return }
-            self.secondsRemaining -= 1
-            self.countdownLabel.text = "\(self.secondsRemaining)"
-            if self.secondsRemaining <= 0 {
-                self.countdownTimer?.invalidate()
-                self.countdownTimer = nil
-                self.onPlay?()
-            }
+        countdownTimer = Timer.scheduledTimer(
+            withTimeInterval: 1.0,
+            repeats: true
+        ) { [weak self] _ in
+            self?.handleCountdownTick()
         }
+    }
+
+    private func handleCountdownTick() {
+        secondsRemaining -= 1
+        countdownLabel.text = "\(secondsRemaining)"
+        if secondsRemaining <= 0 {
+            countdownTimer?.invalidate()
+            countdownTimer = nil
+            onPlay?()
+        }
+    }
+
+    func stopCountdown() {
+        countdownTimer?.invalidate()
+        countdownTimer = nil
+        ringFill.removeAllAnimations()
     }
 
     private func animateRing() {
@@ -192,21 +264,5 @@ final class AutoplayOverlayView: UIView {
         anim.fillMode = .forwards
         anim.isRemovedOnCompletion = false
         ringFill.add(anim, forKey: "countdown")
-    }
-
-    func stopCountdown() {
-        countdownTimer?.invalidate()
-        countdownTimer = nil
-        ringFill.removeAllAnimations()
-    }
-
-    @objc private func playTapped() {
-        stopCountdown()
-        onPlay?()
-    }
-
-    @objc private func cancelTapped() {
-        stopCountdown()
-        onCancel?()
     }
 }

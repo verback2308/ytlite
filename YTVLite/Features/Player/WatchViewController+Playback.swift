@@ -1,0 +1,270 @@
+import AVFoundation
+import AVKit
+import UIKit
+
+struct HLSBuildRequest {
+    let videoURL: URL
+    let audioURL: URL
+    let videoFormat: DashFormatInfo
+    let audioFormat: DashFormatInfo
+    let headers: [String: String]
+    let quality: String
+}
+
+// MARK: - Playback
+extension WatchViewController {
+    func startPlayback() {
+        playbackFacade.start(
+            videoId: initialVideo.id,
+            apiClient: client,
+            cancellationToken: pageLoadToken
+        )
+    }
+    func prepareDirectPlaybackURL(
+        baseURL: URL,
+        client: DirectPlaybackClient,
+        poToken: String?
+    ) -> URL {
+        guard var components = URLComponents(
+            url: baseURL,
+            resolvingAgainstBaseURL: false
+        ) else {
+            return baseURL
+        }
+        var items = components.queryItems ?? []
+        items.removeAll {
+            $0.name == "pot" || $0.name == "cver"
+        }
+        if let pot = poToken, !pot.isEmpty {
+            items.append(
+                URLQueryItem(name: "pot", value: pot)
+            )
+        }
+        items.append(URLQueryItem(
+            name: "cver",
+            value: client.clientVersion
+        ))
+        components.queryItems = items
+        return components.url ?? baseURL
+    }
+    func attachComposedPlayer(
+        videoURL: URL,
+        audioURL: URL,
+        headers: [String: String],
+        completion: @escaping (Bool) -> Void
+    ) {
+        AdaptiveCompositionBuilder.build(
+            videoURL: videoURL,
+            audioURL: audioURL,
+            headers: headers
+        ) { [weak self] item in
+            guard let self, let item else {
+                completion(false)
+                return
+            }
+            self.attachPlayer(
+                item: item,
+                minimizeStalling: false
+            )
+            completion(true)
+        }
+    }
+    func prepareAdaptiveUpgrade(
+        videoURL: URL,
+        audioURL: URL,
+        headers: [String: String],
+        quality: String
+    ) {
+        AdaptiveCompositionBuilder.build(
+            videoURL: videoURL,
+            audioURL: audioURL,
+            headers: headers
+        ) { [weak self] item in
+            guard let self, let item else {
+                return
+            }
+            self.performAdaptiveSwitch(
+                item: item,
+                quality: quality
+            )
+        }
+    }
+    func performAdaptiveSwitch(
+        item: AVPlayerItem,
+        quality: String
+    ) {
+        let player = videoPlayerView?.player
+            ?? playerViewController?.player
+        guard let player else {
+            return
+        }
+        let currentTime = player.currentTime()
+        let wasPlaying = player.rate > 0
+        if let oldItem = player.currentItem {
+            stopObservingPlayerItem(oldItem)
+        }
+        startObservingPlayerItem(item)
+        player.replaceCurrentItem(with: item)
+        player.seek(
+            to: currentTime,
+            toleranceBefore: .zero,
+            toleranceAfter: .zero
+        )
+        if wasPlaying { player.play() }
+        AppLog.player(
+            "adaptive upgrade: switched to \(quality)"
+        )
+    }
+    func buildHLSAndPlay(
+        _ request: HLSBuildRequest
+    ) {
+        playbackFacade.activeVideoFormat =
+            request.videoFormat
+        playbackFacade.activePlaybackHeaders =
+            request.headers
+        HLSPlaybackBuilder.build(
+            videoURL: request.videoURL,
+            audioURL: request.audioURL,
+            videoFormat: request.videoFormat,
+            audioFormat: request.audioFormat,
+            headers: request.headers
+        ) { [weak self] result in
+            self?.handleHLSBuildResult(
+                result,
+                quality: request.quality
+            )
+        }
+    }
+
+    private func handleHLSBuildResult(
+        _ result: HLSBuildResult?,
+        quality: String
+    ) {
+        guard let result else {
+            fallbackToProgressivePlayback()
+            return
+        }
+        DispatchQueue.main.async {
+            self.playbackFacade
+                .hlsPlaylistLoader =
+                result.loader
+            self.attachPlayer(
+                item: result.playerItem
+            )
+            AppLog.player(
+                "HLS: player attached"
+                    + " for \(quality)"
+            )
+        }
+    }
+    func fallbackToProgressivePlayback() {
+        AppLog.player(
+            "HLS: falling back to progressive + adaptive upgrade"
+        )
+        DispatchQueue.main.async {
+            self.showPlaybackError(
+                "HLS generation failed — no fallback available"
+            )
+        }
+    }
+    func attachPlayer(url: URL) {
+        attachPlayer(item: AVPlayerItem(url: url))
+    }
+    func attachDirectPlayer(
+        url: URL,
+        visitorData: String?,
+        client: DirectPlaybackClient
+    ) {
+        resetPlaybackSurfaces()
+        let headers = makeDirectRequestHeaders(
+            visitorData: visitorData,
+            client: client
+        )
+        let prefix = url.absoluteString.prefix(120)
+        AppLog.player(
+            "attachDirectPlayer (\(client)):"
+                + " url=\(prefix)..."
+        )
+        AppLog.player(
+            "attachDirectPlayer headers: \(headers)"
+        )
+        let opts = ["AVURLAssetHTTPHeaderFieldsKey": headers]
+        let asset = AVURLAsset(url: url, options: opts)
+        attachPlayer(item: AVPlayerItem(asset: asset))
+    }
+    func makeDirectRequestHeaders(
+        visitorData: String?,
+        client: DirectPlaybackClient
+    ) -> [String: String] {
+        client.streamHeaders(visitorData: visitorData)
+    }
+    func attachPlayer(
+        item: AVPlayerItem,
+        minimizeStalling: Bool = true
+    ) {
+        guard !pageLoadToken.isCancelled else {
+            return
+        }
+        resetPlaybackSurfaces()
+        playerSpinner.stopAnimating()
+        playerStatusLabel.isHidden = true
+        startObservingPlayerItem(item)
+        let player = AVPlayer(playerItem: item)
+        if !minimizeStalling {
+            player
+                .automaticallyWaitsToMinimizeStalling
+                = false
+        }
+        let pv = getOrCreatePlayerView()
+        configureSponsorBlock(on: pv)
+        playerContainer.bringSubviewToFront(pv)
+        pv.attach(player: player)
+        player.play()
+    }
+    func getOrCreatePlayerView() -> VideoPlayerView {
+        if let existing = videoPlayerView {
+            return existing
+        }
+        let playerView = VideoPlayerView()
+        playerView
+            .translatesAutoresizingMaskIntoConstraints
+            = false
+        playerView.delegate = self
+        playerContainer.addSubview(playerView)
+        applyEdgeConstraints(playerView, to: playerContainer)
+        videoPlayerView = playerView
+        return playerView
+    }
+    func configureSponsorBlock(
+        on playerView: VideoPlayerView
+    ) {
+        sponsorBlock.attach(to: playerView)
+        playerView.onTimeUpdate = { [weak self] time in
+            self?.sponsorBlock.checkTime(time)
+        }
+        playerView.onSkipTapped = { [weak self] in
+            self?.sponsorBlock.skipCurrentSegment()
+        }
+        if !sponsorBlock.segments.isEmpty {
+            playerView.setSponsorSegments(
+                sponsorBlock.segments
+            )
+        }
+    }
+    func resetPlaybackSurfaces() {
+        if let existingItem =
+            playerViewController?.player?.currentItem {
+            stopObservingPlayerItem(existingItem)
+        }
+        playerViewController?.player?.pause()
+        playerViewController?.willMove(toParent: nil)
+        playerViewController?.view.removeFromSuperview()
+        playerViewController?.removeFromParent()
+        playerViewController = nil
+        if let existing =
+            videoPlayerView?.player?.currentItem {
+            stopObservingPlayerItem(existing)
+        }
+        videoPlayerView?.detach()
+    }
+}

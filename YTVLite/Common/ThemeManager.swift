@@ -1,13 +1,14 @@
 import UIKit
 
+// swiftlint:disable redundant_string_enum_value
 enum ThemeMode: String {
-    case dark  = "dark"
+    case dark = "dark"
     case light = "light"
-    case auto  = "auto"   // light 07:00–19:00, dark otherwise
+    case auto = "auto"
 }
+// swiftlint:enable redundant_string_enum_value
 
 class ThemeManager {
-
     static let shared = ThemeManager()
     static let didChangeNotification = Notification.Name("ThemeManagerDidChange")
 
@@ -24,16 +25,14 @@ class ThemeManager {
     private(set) var skeletonBase: UIColor    = UIColor(white: 0.13, alpha: 1)
     private(set) var skeletonShimmer: UIColor = UIColor(white: 0.22, alpha: 1)
     private(set) var skeletonBlock: UIColor   = UIColor(white: 0.18, alpha: 1)
-    private(set) var barStyle: UIBarStyle  = .black
+    private(set) var barStyle: UIBarStyle = .black
     private(set) var statusBarStyle: UIStatusBarStyle = .lightContent
-
-    private init() {
-        rebuildCache()
-    }
 
     var themeMode: ThemeMode {
         get {
-            let raw = UserDefaults.standard.string(forKey: UserDefaultsKeys.Theme.mode) ?? ThemeMode.dark.rawValue
+            let raw = UserDefaults.standard.string(
+                forKey: UserDefaultsKeys.Theme.mode
+            ) ?? ThemeMode.dark.rawValue
             return ThemeMode(rawValue: raw) ?? .dark
         }
         set {
@@ -47,14 +46,20 @@ class ThemeManager {
     var isDark: Bool {
         get {
             switch themeMode {
-            case .dark:  return true
-            case .light: return false
+            case .dark:
+                return true
+            case .light:
+                return false
             case .auto:
                 let hour = Calendar.current.component(.hour, from: Date())
                 return !(hour >= 7 && hour < 19)
             }
         }
         set { themeMode = newValue ? .dark : .light }
+    }
+
+    private init() {
+        rebuildCache()
     }
 
     private func rebuildCache() {
@@ -67,11 +72,13 @@ class ThemeManager {
         accent        = UIColor(red: 1, green: 0, blue: 0, alpha: 1)
         durationBackground = UIColor.black.withAlphaComponent(0.8)
         liveBadgeBackground = UIColor(red: 1, green: 0, blue: 0, alpha: 0.9)
-        thumbnailPlaceholder = dark ? UIColor(white: 0.15, alpha: 1) : UIColor(white: 0.85, alpha: 1)
+        thumbnailPlaceholder = dark
+            ? UIColor(white: 0.15, alpha: 1)
+            : UIColor(white: 0.85, alpha: 1)
         skeletonBase    = dark ? UIColor(white: 0.13, alpha: 1) : UIColor(white: 0.88, alpha: 1)
         skeletonShimmer = dark ? UIColor(white: 0.22, alpha: 1) : UIColor(white: 0.78, alpha: 1)
         skeletonBlock   = dark ? UIColor(white: 0.18, alpha: 1) : UIColor(white: 0.82, alpha: 1)
-        barStyle      = dark ? .black : .default
+        barStyle = dark ? .black : .default
         statusBarStyle = dark ? .lightContent : .default
     }
 

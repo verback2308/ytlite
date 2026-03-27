@@ -4,31 +4,41 @@ enum DirectPlaybackClient: Equatable, CustomStringConvertible {
     case androidVR
     case web
 
+    var description: String { clientName }
+
     var clientName: String {
         switch self {
-        case .androidVR: return "ANDROID_VR"
-        case .web:       return "WEB"
+        case .androidVR:
+            return "ANDROID_VR"
+        case .web:
+            return "WEB"
         }
     }
 
     var clientVersion: String {
         switch self {
-        case .androidVR: return "1.71.26"
-        case .web:       return "2.20231121.08.00"
+        case .androidVR:
+            return "1.71.26"
+        case .web:
+            return "2.20231121.08.00"
         }
     }
 
     var clientHeaderName: String {
         switch self {
-        case .androidVR: return "28"
-        case .web:       return "1"
+        case .androidVR:
+            return "28"
+        case .web:
+            return "1"
         }
     }
 
     var userAgent: String {
         switch self {
         case .androidVR:
-            return "com.google.android.apps.youtube.vr.oculus/1.71.26 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip"
+            return "com.google.android.apps.youtube.vr.oculus/"
+                + "1.71.26 (Linux; U; Android 12L;"
+                + " eureka-user Build/SQ3A.220605.009.A1) gzip"
         case .web:
             return UserAgent.chromeMac
         }
@@ -37,27 +47,33 @@ enum DirectPlaybackClient: Equatable, CustomStringConvertible {
     /// Whether this client uses cookie-based auth (preflight) instead of OAuth Bearer token
     var usesCookieAuth: Bool {
         switch self {
-        case .androidVR: return true
-        case .web:       return false
+        case .androidVR:
+            return true
+        case .web:
+            return false
         }
     }
 
     /// Whether the /player body needs contentCheckOk / racyCheckOk / playbackContext flags
     var requiresContentCheckFlags: Bool {
-        return true
+        true
     }
 
     var context: [String: Any] {
         switch self {
-        case .androidVR: return InnertubeContexts.androidVR
-        case .web:       return InnertubeContexts.web
+        case .androidVR:
+            return InnertubeContexts.androidVR
+        case .web:
+            return InnertubeContexts.web
         }
     }
 
     var playerURLSuffix: String {
         switch self {
-        case .androidVR: return "?prettyPrint=false"
-        case .web:       return ""
+        case .androidVR:
+            return "?prettyPrint=false"
+        case .web:
+            return ""
         }
     }
 
@@ -104,6 +120,4 @@ enum DirectPlaybackClient: Equatable, CustomStringConvertible {
         }
         return headers
     }
-
-    var description: String { clientName }
 }

@@ -1,7 +1,6 @@
 import UIKit
 
 class SearchViewController: UIViewController {
-
     private let service: SearchService = ServiceContainer.video
     private var results: [Video] = []
     private var lastQuery: String = ""
@@ -16,8 +15,12 @@ class SearchViewController: UIViewController {
         setupSearchBar()
         setupTableView()
         applyTheme()
-        NotificationCenter.default.addObserver(self, selector: #selector(applyTheme),
-                                               name: ThemeManager.didChangeNotification, object: nil)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(applyTheme),
+            name: ThemeManager.didChangeNotification,
+            object: nil
+        )
     }
 
     private func setupSearchBar() {
@@ -27,42 +30,70 @@ class SearchViewController: UIViewController {
         searchBar.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(searchBar)
         NSLayoutConstraint.activate([
-            searchBar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            searchBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            searchBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            searchBar.topAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.topAnchor
+            ),
+            searchBar.leadingAnchor.constraint(
+                equalTo: view.leadingAnchor
+            ),
+            searchBar.trailingAnchor.constraint(
+                equalTo: view.trailingAnchor
+            )
         ])
     }
 
     private func setupTableView() {
-        tableView.register(SubscriptionVideoCell.self,
-                           forCellReuseIdentifier: SubscriptionVideoCell.reuseId)
+        tableView.register(
+            SubscriptionVideoCell.self,
+            forCellReuseIdentifier: SubscriptionVideoCell.reuseId
+        )
         tableView.dataSource = self
         tableView.delegate = self
         tableView.rowHeight = 220
-        tableView.separatorInset = UIEdgeInsets(top: 0, left: 12, bottom: 0, right: 12)
+        tableView.separatorInset = UIEdgeInsets(
+            top: 0, left: 12, bottom: 0, right: 12
+        )
         tableView.translatesAutoresizingMaskIntoConstraints = false
-        refreshControl.addTarget(self, action: #selector(handleRefresh), for: .valueChanged)
+        refreshControl.addTarget(
+            self,
+            action: #selector(handleRefresh),
+            for: .valueChanged
+        )
         tableView.refreshControl = refreshControl
         view.addSubview(tableView)
+        activateTableConstraints()
+    }
+
+    private func activateTableConstraints() {
         NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: searchBar.bottomAnchor),
-            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            tableView.topAnchor.constraint(
+                equalTo: searchBar.bottomAnchor
+            ),
+            tableView.leadingAnchor.constraint(
+                equalTo: view.leadingAnchor
+            ),
+            tableView.trailingAnchor.constraint(
+                equalTo: view.trailingAnchor
+            ),
+            tableView.bottomAnchor.constraint(
+                equalTo: view.bottomAnchor
+            )
         ])
     }
 
-    @objc private func applyTheme() {
-        let t = ThemeManager.shared
-        view.backgroundColor = t.background
-        tableView.backgroundColor = t.background
-        tableView.separatorColor = t.separator
-        searchBar.barStyle = t.barStyle
-        searchBar.backgroundColor = t.background
+    @objc
+    private func applyTheme() {
+        let theme = ThemeManager.shared
+        view.backgroundColor = theme.background
+        tableView.backgroundColor = theme.background
+        tableView.separatorColor = theme.separator
+        searchBar.barStyle = theme.barStyle
+        searchBar.backgroundColor = theme.background
         tableView.reloadData()
     }
 
-    @objc private func handleRefresh() {
+    @objc
+    private func handleRefresh() {
         guard !lastQuery.isEmpty else {
             refreshControl.endRefreshing()
             return
@@ -80,10 +111,14 @@ class SearchViewController: UIViewController {
                     self?.results = videos
                     self?.tableView.reloadData()
                 case .failure(let error):
-                    let alert = UIAlertController(title: "Error",
-                                                  message: error.localizedDescription,
-                                                  preferredStyle: .alert)
-                    alert.addAction(UIAlertAction(title: "OK", style: .default))
+                    let alert = UIAlertController(
+                        title: "Error",
+                        message: error.localizedDescription,
+                        preferredStyle: .alert
+                    )
+                    alert.addAction(
+                        UIAlertAction(title: "OK", style: .default)
+                    )
                     self?.present(alert, animated: true)
                 }
             }
@@ -93,12 +128,17 @@ class SearchViewController: UIViewController {
 
 extension SearchViewController: UISearchBarDelegate {
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-        guard let query = searchBar.text, !query.isEmpty else { return }
+        guard let query = searchBar.text, !query.isEmpty else {
+            return
+        }
         searchBar.resignFirstResponder()
         search(query: query)
     }
 
-    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+    func searchBar(
+        _ searchBar: UISearchBar,
+        textDidChange searchText: String
+    ) {
         if searchText.isEmpty {
             lastQuery = ""
             results = []
@@ -108,27 +148,46 @@ extension SearchViewController: UISearchBarDelegate {
 }
 
 extension SearchViewController: UITableViewDataSource {
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    func tableView(
+        _ tableView: UITableView,
+        numberOfRowsInSection section: Int
+    ) -> Int {
         results.count
     }
 
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: SubscriptionVideoCell.reuseId,
-                                                 for: indexPath) as! SubscriptionVideoCell
+    func tableView(
+        _ tableView: UITableView,
+        cellForRowAt indexPath: IndexPath
+    ) -> UITableViewCell {
+        guard let cell = tableView.dequeueReusableCell(
+            withIdentifier: SubscriptionVideoCell.reuseId,
+            for: indexPath
+        ) as? SubscriptionVideoCell else {
+            return UITableViewCell()
+        }
         let video = results[indexPath.row]
         cell.configure(with: video)
         cell.onChannelTap = { [weak self] in
-            guard let channelId = video.channelId else { return }
+            guard let channelId = video.channelId else {
+                return
+            }
             self?.navigationController?.pushViewController(
-                ChannelViewController(channelId: channelId, channelName: video.channelName),
-                animated: true)
+                ChannelViewController(
+                    channelId: channelId,
+                    channelName: video.channelName
+                ),
+                animated: true
+            )
         }
         return cell
     }
 }
 
 extension SearchViewController: UITableViewDelegate {
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+    func tableView(
+        _ tableView: UITableView,
+        didSelectRowAt indexPath: IndexPath
+    ) {
         let video = results[indexPath.row]
         VideoRouter.shared.open(video: video, from: self)
     }

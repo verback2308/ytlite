@@ -1,7 +1,6 @@
 import UIKit
 
 final class VideoSeekBar: UIControl {
-
     var onScrubStart: (() -> Void)?
     var onScrubEnd: ((Double) -> Void)?
     var onScrubChanged: ((Double) -> Void)?
@@ -10,26 +9,124 @@ final class VideoSeekBar: UIControl {
 
     private let trackView    = UIView()
     private let bufferView   = UIView()
-    private let segmentsView = UIView()  // SponsorBlock colored markers, above buffer
+    private let segmentsView = UIView()
     private let progressView = UIView()
     private let thumbView    = UIView()
 
     private var progress: Double = 0
     private var buffer: Double   = 0
-    private var segments: [(start: Double, end: Double, color: UIColor)] = []
+    private var segments: [SeekBarSegment] = []
+    private var bufferWidthConstraint: NSLayoutConstraint?
+    private var progressWidthConstraint: NSLayoutConstraint?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupViews()
-        let pan = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
+        let pan = UIPanGestureRecognizer(
+            target: self,
+            action: #selector(handlePan(_:))
+        )
         addGestureRecognizer(pan)
-        let tap = UITapGestureRecognizer(target: self, action: #selector(handleTrackTap(_:)))
+        let tap = UITapGestureRecognizer(
+            target: self,
+            action: #selector(handleTrackTap(_:))
+        )
         addGestureRecognizer(tap)
     }
 
-    required init?(coder: NSCoder) { fatalError() }
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) is not supported")
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        let trackWidth = bounds.width
+        let barY = (bounds.height - 4) / 2
+        bufferView.frame = CGRect(
+            x: 0,
+            y: barY,
+            width: trackWidth * CGFloat(buffer),
+            height: 4
+        )
+        progressView.frame = CGRect(
+            x: 0,
+            y: barY,
+            width: trackWidth * CGFloat(progress),
+            height: 4
+        )
+        thumbView.center = CGPoint(
+            x: trackWidth * CGFloat(progress),
+            y: bounds.height / 2
+        )
+        layoutSegmentViews()
+    }
+
+    func setProgress(_ value: Double) {
+        progress = max(0, min(1, value))
+        setNeedsLayout()
+    }
+
+    func setBuffer(_ value: Double) {
+        buffer = max(0, min(1, value))
+        setNeedsLayout()
+    }
+
+    /// Sets the SponsorBlock segment markers in 0-1 range.
+    func setSegments(_ newSegments: [SeekBarSegment]) {
+        segments = newSegments
+        setNeedsLayout()
+    }
+
+    @objc
+    private func handlePan(_ gesture: UIPanGestureRecognizer) {
+        let px = gesture.location(in: self).x
+        let pct = max(0, min(1, Double(px / bounds.width)))
+
+        switch gesture.state {
+        case .began:
+            isScrubbing = true
+            thumbView.isHidden = false
+            UIView.animate(withDuration: 0.15) {
+                self.thumbView.transform = CGAffineTransform(
+                    scaleX: 1.3, y: 1.3
+                )
+            }
+            onScrubStart?()
+        case .changed:
+            progress = pct
+            setNeedsLayout()
+            onScrubChanged?(pct)
+        case .ended, .cancelled:
+            UIView.animate(withDuration: 0.15) {
+                self.thumbView.transform = .identity
+            }
+            thumbView.isHidden = true
+            isScrubbing = false
+            onScrubEnd?(pct)
+        default:
+            break
+        }
+    }
+
+    @objc
+    private func handleTrackTap(
+        _ gesture: UITapGestureRecognizer
+    ) {
+        let px = gesture.location(in: self).x
+        let pct = max(0, min(1, Double(px / bounds.width)))
+        progress = pct
+        setNeedsLayout()
+        onScrubEnd?(pct)
+    }
 
     private func setupViews() {
+        configureTrackViews()
+        addTrackSubviews()
+        activateTrackConstraints()
+    }
+
+    private func configureTrackViews() {
         trackView.backgroundColor = UIColor.white.withAlphaComponent(0.3)
         trackView.layer.cornerRadius = 2
         trackView.clipsToBounds = true
@@ -51,13 +148,17 @@ final class VideoSeekBar: UIControl {
         thumbView.layer.cornerRadius = 6
         thumbView.frame = CGRect(x: 0, y: 0, width: 12, height: 12)
         thumbView.isHidden = true
+    }
 
+    private func addTrackSubviews() {
         addSubview(trackView)
         addSubview(bufferView)
         addSubview(segmentsView)
         addSubview(progressView)
         addSubview(thumbView)
+    }
 
+    private func activateTrackConstraints() {
         NSLayoutConstraint.activate([
             trackView.leadingAnchor.constraint(equalTo: leadingAnchor),
             trackView.trailingAnchor.constraint(equalTo: trailingAnchor),
@@ -75,84 +176,38 @@ final class VideoSeekBar: UIControl {
 
             progressView.leadingAnchor.constraint(equalTo: leadingAnchor),
             progressView.centerYAnchor.constraint(equalTo: centerYAnchor),
-            progressView.heightAnchor.constraint(equalToConstant: 4),
+            progressView.heightAnchor.constraint(equalToConstant: 4)
         ])
-    }
-
-    private var bufferWidthConstraint: NSLayoutConstraint?
-    private var progressWidthConstraint: NSLayoutConstraint?
-
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        let w = bounds.width
-        bufferView.frame   = CGRect(x: 0, y: (bounds.height - 4) / 2, width: w * CGFloat(buffer),   height: 4)
-        progressView.frame = CGRect(x: 0, y: (bounds.height - 4) / 2, width: w * CGFloat(progress), height: 4)
-        thumbView.center   = CGPoint(x: w * CGFloat(progress), y: bounds.height / 2)
-        layoutSegmentViews()
     }
 
     private func layoutSegmentViews() {
         segmentsView.subviews.forEach { $0.removeFromSuperview() }
-        let w = segmentsView.bounds.width
-        guard w > 0 else { return }
+        let trackWidth = segmentsView.bounds.width
+        guard trackWidth > 0 else {
+            return
+        }
         for seg in segments {
-            let x      = CGFloat(seg.start) * w
-            let segW   = max(2, CGFloat(seg.end - seg.start) * w)
-            let bar    = UIView(frame: CGRect(x: x, y: 0, width: segW, height: 4))
+            let segX = CGFloat(seg.start) * trackWidth
+            let segW = max(
+                2,
+                CGFloat(seg.end - seg.start) * trackWidth
+            )
+            let bar = UIView(
+                frame: CGRect(
+                    x: segX,
+                    y: 0,
+                    width: segW,
+                    height: 4
+                )
+            )
             bar.backgroundColor = seg.color
             segmentsView.addSubview(bar)
         }
     }
+}
 
-    func setProgress(_ value: Double) {
-        progress = max(0, min(1, value))
-        setNeedsLayout()
-    }
-
-    func setBuffer(_ value: Double) {
-        buffer = max(0, min(1, value))
-        setNeedsLayout()
-    }
-
-    /// Sets the SponsorBlock segment markers. Each tuple is (startFraction, endFraction, color) in 0-1 range.
-    func setSegments(_ newSegments: [(start: Double, end: Double, color: UIColor)]) {
-        segments = newSegments
-        setNeedsLayout()
-    }
-
-    @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
-        let x = gesture.location(in: self).x
-        let p = max(0, min(1, Double(x / bounds.width)))
-
-        switch gesture.state {
-        case .began:
-            isScrubbing = true
-            thumbView.isHidden = false
-            UIView.animate(withDuration: 0.15) {
-                self.thumbView.transform = CGAffineTransform(scaleX: 1.3, y: 1.3)
-            }
-            onScrubStart?()
-        case .changed:
-            progress = p
-            setNeedsLayout()
-            onScrubChanged?(p)
-        case .ended, .cancelled:
-            UIView.animate(withDuration: 0.15) {
-                self.thumbView.transform = .identity
-            }
-            thumbView.isHidden = true
-            isScrubbing = false
-            onScrubEnd?(p)
-        default:
-            break
-        }
-    }
-
-    @objc private func handleTrackTap(_ gesture: UITapGestureRecognizer) {
-        let x = gesture.location(in: self).x
-        let p = max(0, min(1, Double(x / bounds.width)))
-        progress = p
-        setNeedsLayout()
-        onScrubEnd?(p)
-    }
+struct SeekBarSegment {
+    let start: Double
+    let end: Double
+    let color: UIColor
 }
