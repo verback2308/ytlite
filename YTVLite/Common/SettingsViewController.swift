@@ -12,7 +12,7 @@ final class SettingsViewController: UIViewController {
     }()
 
     private enum Row {
-        case theme, quality, persistCache, clearCache, rydEnabled
+        case theme, quality, backgroundPlayback, persistCache, clearCache, rydEnabled
         case sponsorBlockEnabled, sponsorBlockSettings
     }
 
@@ -22,7 +22,7 @@ final class SettingsViewController: UIViewController {
 
         return [
             ("Theme",    nil, [.theme]),
-            ("Playback", nil, [.quality]),
+            ("Playback", nil, [.quality, .backgroundPlayback]),
             ("Cache",    nil, [.persistCache, .clearCache]),
             ("Return YouTube Dislike",
              "Dislike counts are powered by Return YouTube Dislike (returnyoutubedislike.com) — an open community project.",
@@ -95,6 +95,11 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             return makeThemeCell()
         case .quality:
             return makeDisclosureCell("Default Quality", value: VideoQualityStore.displayName)
+        case .backgroundPlayback:
+            return makeToggleCell("Background Playback", isOn: BackgroundPlaybackService.isEnabled) { isOn in
+                BackgroundPlaybackService.isEnabled = isOn
+                BackgroundPlaybackService.apply()
+            }
         case .persistCache:
             return makeToggleCell("Keep feed cache 24h", isOn: AppCache.persistenceEnabled) {
                 AppCache.persistenceEnabled = $0

@@ -76,6 +76,7 @@ struct WatchPage {
     let relatedVideos: [Video]
     let likeCount: String?
     let likeStatus: LikeStatus?
+    let nextVideo: Video?
 }
 
 struct DashFormatInfo {

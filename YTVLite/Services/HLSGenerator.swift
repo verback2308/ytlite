@@ -109,6 +109,17 @@ enum HLSGenerator {
         return lines.joined(separator: "\n") + "\n"
     }
 
+    /// Generate an audio-only master playlist for background playback.
+    static func audioOnlyMasterPlaylist(audioCodecs: String, audioBandwidth: Int, audioPlaylistURI: String) -> String {
+        var lines: [String] = []
+        lines.append("#EXTM3U")
+        lines.append("#EXT-X-VERSION:7")
+        lines.append("#EXT-X-INDEPENDENT-SEGMENTS")
+        lines.append("#EXT-X-STREAM-INF:BANDWIDTH=\(audioBandwidth),CODECS=\"\(audioCodecs)\"")
+        lines.append(audioPlaylistURI)
+        return lines.joined(separator: "\n") + "\n"
+    }
+
     /// Generate a master playlist with separate video and audio renditions.
     /// Playlist filenames must be absolute URIs (e.g. "ytv-hls://video.m3u8").
     static func masterPlaylist(videoBandwidth: Int, videoCodecs: String, audioCodecs: String,

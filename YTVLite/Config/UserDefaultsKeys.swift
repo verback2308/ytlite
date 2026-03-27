@@ -31,4 +31,8 @@ enum UserDefaultsKeys {
             "sb_behavior_\(categoryRawValue)"
         }
     }
+
+    enum Player {
+        static let backgroundPlayback = "player_backgroundPlayback"
+    }
 }

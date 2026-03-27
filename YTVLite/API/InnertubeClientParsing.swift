@@ -32,6 +32,25 @@ extension InnertubeClient {
             }
 
         let likeInfo = InnertubeClient.parseWatchLikeInfo(json)
+
+        // Parse autoplay next video from playerOverlays
+        let nextVideo: Video? = {
+            guard let ar = (json["playerOverlays"] as? [String: Any])
+                .flatMap({ $0["playerOverlayRenderer"] as? [String: Any] })
+                .flatMap({ $0["autoplay"] as? [String: Any] })
+                .flatMap({ $0["playerOverlayAutoplayRenderer"] as? [String: Any] })
+            else { return nil }
+            guard let videoId = ar["videoId"] as? String else { return nil }
+            let title = (ar["videoTitle"] as? [String: Any])?["simpleText"] as? String ?? ""
+            let channel = (ar["byline"] as? [String: Any])?["simpleText"] as? String ?? ""
+            let thumbs = (ar["background"] as? [String: Any])?["thumbnails"] as? [[String: Any]]
+            let thumbURL = thumbs?.last?["url"] as? String ?? thumbs?.first?["url"] as? String
+                ?? "https://i.ytimg.com/vi/\(videoId)/hqdefault.jpg"
+            return Video(id: videoId, title: title, channelId: nil, channelName: channel,
+                         channelAvatarURL: nil, thumbnailURL: thumbURL,
+                         viewCount: nil, publishedAt: nil, duration: nil)
+        }()
+
         return WatchPage(video: resolvedVideo,
                          description: description,
                          channelInfo: channelInfo,
@@ -39,7 +58,8 @@ extension InnertubeClient {
                          isSubscribed: subscribeState.isSubscribed,
                          relatedVideos: relatedVideos,
                          likeCount: likeInfo.likeCount,
-                         likeStatus: likeInfo.likeStatus)
+                         likeStatus: likeInfo.likeStatus,
+                         nextVideo: nextVideo)
     }
 
     static func parseWatchLikeInfo(_ json: [String: Any]) -> (likeCount: String?, likeStatus: LikeStatus?) {

@@ -1,5 +1,6 @@
 import UIKit
 import AVFoundation
+import AVKit
 
 protocol VideoPlayerViewDelegate: AnyObject {
     func videoPlayerViewDidTapSettings(_ playerView: VideoPlayerView)
@@ -24,6 +25,7 @@ final class VideoPlayerView: UIView {
         addPeriodicObserver()
         addPlayerObservers()
         updatePlayPauseIcon()
+        setupPiP()
     }
 
     func detach() {
@@ -63,6 +65,8 @@ final class VideoPlayerView: UIView {
 
     // Top bar
     private let settingsButton = UIButton(type: .system)
+    private let pipButton = UIButton(type: .system)
+    private var pipController: AVPictureInPictureController?
 
     // Center
     private let rewindButton  = UIButton(type: .system)
@@ -246,12 +250,41 @@ final class VideoPlayerView: UIView {
         settingsButton.translatesAutoresizingMaskIntoConstraints = false
         settingsButton.addTarget(self, action: #selector(settingsTapped), for: .touchUpInside)
         controlsView.addSubview(settingsButton)
+
+        // PiP button — left of settings (only if supported)
+        pipButton.setImage(PlayerIcons.pip(), for: .normal)
+        pipButton.tintColor = .white
+        pipButton.translatesAutoresizingMaskIntoConstraints = false
+        pipButton.addTarget(self, action: #selector(pipTapped), for: .touchUpInside)
+        pipButton.isHidden = !AVPictureInPictureController.isPictureInPictureSupported()
+        controlsView.addSubview(pipButton)
+
         NSLayoutConstraint.activate([
             settingsButton.topAnchor.constraint(equalTo: controlsView.safeAreaLayoutGuide.topAnchor, constant: 10),
             settingsButton.trailingAnchor.constraint(equalTo: controlsView.safeAreaLayoutGuide.trailingAnchor, constant: -12),
             settingsButton.widthAnchor.constraint(equalToConstant: 36),
             settingsButton.heightAnchor.constraint(equalToConstant: 36),
+
+            pipButton.centerYAnchor.constraint(equalTo: settingsButton.centerYAnchor),
+            pipButton.trailingAnchor.constraint(equalTo: settingsButton.leadingAnchor, constant: -4),
+            pipButton.widthAnchor.constraint(equalToConstant: 36),
+            pipButton.heightAnchor.constraint(equalToConstant: 36),
         ])
+    }
+
+    private func setupPiP() {
+        guard AVPictureInPictureController.isPictureInPictureSupported() else { return }
+        pipController = AVPictureInPictureController(playerLayer: playerLayer)
+        pipController?.delegate = self
+    }
+
+    @objc private func pipTapped() {
+        guard let pip = pipController else { return }
+        if pip.isPictureInPictureActive {
+            pip.stopPictureInPicture()
+        } else {
+            pip.startPictureInPicture()
+        }
     }
 
     private func setupCenterButtons() {
@@ -745,6 +778,29 @@ enum PlayerIcons {
         playerIcon("icon_Gear", size: 26)
     }
 
+    static func pip() -> UIImage {
+        if #available(iOS 13.0, *),
+           let img = UIImage(systemName: "pip.enter") {
+            return img.withTintColor(.white, renderingMode: .alwaysOriginal)
+        }
+        return draw(size: CGSize(width: 26, height: 26)) { _ in
+            UIColor.white.setStroke()
+            let outer = UIBezierPath(roundedRect: CGRect(x: 2, y: 5, width: 22, height: 16), cornerRadius: 2)
+            outer.lineWidth = 1.5
+            outer.stroke()
+            UIColor.white.setFill()
+            UIBezierPath(roundedRect: CGRect(x: 12, y: 11, width: 10, height: 7), cornerRadius: 1).fill()
+        }
+    }
+
+    static func pipExit() -> UIImage {
+        if #available(iOS 13.0, *),
+           let img = UIImage(systemName: "pip.exit") {
+            return img.withTintColor(.white, renderingMode: .alwaysOriginal)
+        }
+        return pip()
+    }
+
     private static func playerIcon(_ name: String, size: CGFloat) -> UIImage {
         let s = CGSize(width: size, height: size)
         let renderer = UIGraphicsImageRenderer(size: s)
@@ -880,5 +936,20 @@ private func formatTime(_ seconds: Double) -> String {
         return String(format: "%d:%02d:%02d", h, m, sec)
     } else {
         return String(format: "%d:%02d", m, sec)
+    }
+}
+
+// MARK: - PiP Delegate
+
+extension VideoPlayerView: AVPictureInPictureControllerDelegate {
+    func pictureInPictureControllerWillStartPictureInPicture(_ controller: AVPictureInPictureController) {
+        pipButton.setImage(PlayerIcons.pipExit(), for: .normal)
+    }
+    func pictureInPictureControllerDidStopPictureInPicture(_ controller: AVPictureInPictureController) {
+        pipButton.setImage(PlayerIcons.pip(), for: .normal)
+    }
+    func pictureInPictureController(_ controller: AVPictureInPictureController,
+                                    restoreUserInterfaceForPictureInPictureStopWithCompletionHandler completionHandler: @escaping (Bool) -> Void) {
+        completionHandler(true)
     }
 }

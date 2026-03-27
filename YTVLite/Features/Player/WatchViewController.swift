@@ -35,6 +35,10 @@ final class WatchViewController: UIViewController {
     private var activePlaybackClient: DirectPlaybackClient = .androidVR
     private var activePlaybackHeaders: [String: String] = [:]
     private var activeVideoFormat: DashFormatInfo?
+    private var backgroundRestoreTime: CMTime = .zero
+    private var backgroundEnteredAt: Date?
+
+    private var autoplayOverlay: AutoplayOverlayView?
 
     /// Token cancelled when the VC disappears — silences all in-flight network callbacks.
     private var pageLoadToken = CancellationToken()
@@ -135,6 +139,10 @@ final class WatchViewController: UIViewController {
         loadWatchPage()
         NotificationCenter.default.addObserver(self, selector: #selector(applyTheme),
                                                name: ThemeManager.didChangeNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(appDidEnterBackground),
+                                               name: UIApplication.didEnterBackgroundNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(appWillEnterForeground),
+                                               name: UIApplication.willEnterForegroundNotification, object: nil)
     }
 
     private func setupNavigationBar() {
@@ -191,11 +199,81 @@ final class WatchViewController: UIViewController {
         super.viewWillDisappear(animated)
         if isMovingFromParent || isBeingDismissed {
             pageLoadToken.cancel()
+            // Only pause when actually leaving the screen, not on background transition
+            playerViewController?.player?.pause()
+            videoPlayerView?.player?.pause()
+            directPlayerView?.pause()
+            manifestPlayerView?.stop()
         }
-        playerViewController?.player?.pause()
-        videoPlayerView?.player?.pause()
-        directPlayerView?.pause()
-        manifestPlayerView?.stop()
+    }
+
+    @objc private func appDidEnterBackground() {
+        let bgEnabled = BackgroundPlaybackService.isEnabled
+        let hasVideoPlayer = videoPlayerView?.player != nil
+        let hasDirectPlayer = directPlayerView != nil
+        let hasManifestPlayer = manifestPlayerView != nil
+        let hasPVCPlayer = playerViewController?.player != nil
+        print("[WatchVC] appDidEnterBackground: bgEnabled=\(bgEnabled) videoPlayer=\(hasVideoPlayer) directPlayer=\(hasDirectPlayer) manifestPlayer=\(hasManifestPlayer) pvcPlayer=\(hasPVCPlayer)")
+        if let player = videoPlayerView?.player {
+            print("[WatchVC] videoPlayer rate=\(player.rate) status=\(player.status.rawValue) timeControlStatus=\(player.timeControlStatus.rawValue)")
+        }
+
+        guard bgEnabled else {
+            playerViewController?.player?.pause()
+            videoPlayerView?.player?.pause()
+            directPlayerView?.pause()
+            manifestPlayerView?.stop()
+            return
+        }
+
+        // For generated HLS (video+audio): iOS suspends video segment downloads in background
+        // causing -12889 timeouts that stall the player. Replace with audio-only HLS item
+        // so only audio segments are fetched. Call play() synchronously so it fires before
+        // the app fully suspends.
+        if let player = videoPlayerView?.player,
+           let loader = hlsPlaylistLoader {
+            backgroundRestoreTime = player.currentTime()
+            backgroundEnteredAt = Date()
+            let audioMasterURL = URL(string: "\(HLSGenerator.scheme)://audio-master.m3u8")!
+            let assetOptions: [String: Any] = ["AVURLAssetHTTPHeaderFieldsKey": activePlaybackHeaders]
+            let audioAsset = AVURLAsset(url: audioMasterURL, options: assetOptions)
+            audioAsset.resourceLoader.setDelegate(loader, queue: loader.loaderQueue)
+            let audioItem = AVPlayerItem(asset: audioAsset)
+            audioItem.preferredForwardBufferDuration = 10.0
+            player.replaceCurrentItem(with: audioItem)
+            player.seek(to: backgroundRestoreTime, toleranceBefore: CMTime(seconds: 1, preferredTimescale: 1000), toleranceAfter: CMTime(seconds: 1, preferredTimescale: 1000))
+            player.play()
+            print("[WatchVC] switched to audio-only HLS at \(CMTimeGetSeconds(backgroundRestoreTime))s")
+        }
+    }
+
+    @objc private func appWillEnterForeground() {
+        print("[WatchVC] appWillEnterForeground")
+
+        guard BackgroundPlaybackService.isEnabled,
+              let player = videoPlayerView?.player,
+              let loader = hlsPlaylistLoader else {
+            backgroundEnteredAt = nil
+            return
+        }
+
+        // Restore video+audio HLS using wall-clock elapsed time for accurate position
+        let elapsed = backgroundEnteredAt.map { Date().timeIntervalSince($0) } ?? 0
+        let restoreSeconds = CMTimeGetSeconds(backgroundRestoreTime) + elapsed
+        let restoreTime = CMTime(seconds: restoreSeconds, preferredTimescale: 1000)
+        backgroundEnteredAt = nil
+
+        let masterURL = URL(string: "\(HLSGenerator.scheme)://master.m3u8")!
+        let assetOptions: [String: Any] = ["AVURLAssetHTTPHeaderFieldsKey": activePlaybackHeaders]
+        let asset = AVURLAsset(url: masterURL, options: assetOptions)
+        asset.resourceLoader.setDelegate(loader, queue: loader.loaderQueue)
+        let item = AVPlayerItem(asset: asset)
+        item.preferredForwardBufferDuration = 5.0
+        player.replaceCurrentItem(with: item)
+        player.seek(to: restoreTime, toleranceBefore: CMTime(seconds: 0.5, preferredTimescale: 1000), toleranceAfter: CMTime(seconds: 0.5, preferredTimescale: 1000)) { [weak player] _ in
+            player?.play()
+        }
+        print("[WatchVC] restored video+audio HLS at \(restoreSeconds)s (base=\(CMTimeGetSeconds(backgroundRestoreTime))s + elapsed=\(String(format: "%.1f", elapsed))s)")
     }
 
     deinit {
@@ -580,8 +658,13 @@ final class WatchViewController: UIViewController {
             sidebarContainer.isHidden = false
             playerTrailingConstraint.isActive = false
             playerToSidebarConstraint.isActive = true
+            // Move related collection first (deactivates relatedPortraitConstraints),
+            // then activate contentBottomToCommentsConstraint to avoid brief conflict
+            moveRelatedCollection(toLandscape: true)
             contentBottomToCommentsConstraint.isActive = true
         } else {
+            // Deactivate contentBottomToCommentsConstraint first before activating portrait constraints
+            contentBottomToCommentsConstraint.isActive = false
             scrollToSidebarConstraint.isActive = false
             scrollTrailingConstraint.isActive = true
             sidebarTopConstraint.isActive = false
@@ -591,10 +674,8 @@ final class WatchViewController: UIViewController {
             sidebarContainer.isHidden = true
             playerToSidebarConstraint.isActive = false
             playerTrailingConstraint.isActive = true
-            contentBottomToCommentsConstraint.isActive = false
+            moveRelatedCollection(toLandscape: false)
         }
-
-        moveRelatedCollection(toLandscape: isLandscape)
         relatedCollectionView.backgroundColor = ThemeManager.shared.background
         let expectedLayout = isLandscape ? landscapeRelatedLayout : portraitRelatedLayout
         if relatedCollectionView.collectionViewLayout !== expectedLayout {
@@ -671,6 +752,8 @@ final class WatchViewController: UIViewController {
     }
 
     func loadVideo(_ video: Video) {
+        dismissAutoplayOverlay()
+
         relatedExpansionWorkItem?.cancel()
         relatedExpansionWorkItem = nil
 
@@ -1622,6 +1705,13 @@ final class WatchViewController: UIViewController {
             loader.register(path: "video.m3u8", content: videoPlaylist)
             loader.register(path: "audio.m3u8", content: audioPlaylist)
 
+            let audioOnlyMaster = HLSGenerator.audioOnlyMasterPlaylist(
+                audioCodecs: audioFormat.codecs,
+                audioBandwidth: audioFormat.bitrate,
+                audioPlaylistURI: "\(HLSGenerator.scheme)://audio.m3u8"
+            )
+            loader.register(path: "audio-master.m3u8", content: audioOnlyMaster)
+
             let totalElapsed = CACurrentMediaTime() - startTime
             print(String(format: "[WatchViewController] HLS: playlists ready in %.1fs", totalElapsed))
 
@@ -1867,11 +1957,16 @@ final class WatchViewController: UIViewController {
                                                selector: #selector(playerItemNewErrorLogEntry(_:)),
                                                name: .AVPlayerItemNewErrorLogEntry,
                                                object: item)
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(playerItemDidPlayToEnd(_:)),
+                                               name: .AVPlayerItemDidPlayToEndTime,
+                                               object: item)
     }
 
     private func stopObservingPlayerItem(_ item: AVPlayerItem) {
         NotificationCenter.default.removeObserver(self, name: .AVPlayerItemFailedToPlayToEndTime, object: item)
         NotificationCenter.default.removeObserver(self, name: .AVPlayerItemNewErrorLogEntry, object: item)
+        NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: item)
         item.removeObserver(self, forKeyPath: #keyPath(AVPlayerItem.status), context: &playerItemContext)
     }
 
@@ -1904,6 +1999,42 @@ final class WatchViewController: UIViewController {
     @objc private func playerItemDidFailToPlayToEnd(_ note: Notification) {
         let error = (note.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error)?.localizedDescription ?? "unknown"
         print("[WatchViewController] player item failed to end: \(error)")
+    }
+
+    @objc private func playerItemDidPlayToEnd(_ notification: Notification) {
+        guard let nextVideo = watchPage?.nextVideo else { return }
+        showAutoplayOverlay(for: nextVideo)
+    }
+
+    private func showAutoplayOverlay(for video: Video) {
+        autoplayOverlay?.removeFromSuperview()
+        let overlay = AutoplayOverlayView(nextVideo: video, countdownSecs: 5)
+        overlay.translatesAutoresizingMaskIntoConstraints = false
+        overlay.alpha = 0
+        overlay.onPlay = { [weak self] in
+            self?.dismissAutoplayOverlay()
+            self?.loadVideo(video)
+        }
+        overlay.onCancel = { [weak self] in
+            self?.dismissAutoplayOverlay()
+        }
+        playerContainer.addSubview(overlay)
+        NSLayoutConstraint.activate([
+            overlay.topAnchor.constraint(equalTo: playerContainer.topAnchor),
+            overlay.leadingAnchor.constraint(equalTo: playerContainer.leadingAnchor),
+            overlay.trailingAnchor.constraint(equalTo: playerContainer.trailingAnchor),
+            overlay.bottomAnchor.constraint(equalTo: playerContainer.bottomAnchor),
+        ])
+        autoplayOverlay = overlay
+        UIView.animate(withDuration: 0.25) { overlay.alpha = 1 }
+        overlay.startCountdown()
+    }
+
+    private func dismissAutoplayOverlay() {
+        guard let overlay = autoplayOverlay else { return }
+        autoplayOverlay = nil
+        UIView.animate(withDuration: 0.2, animations: { overlay.alpha = 0 },
+                       completion: { _ in overlay.removeFromSuperview() })
     }
 
     @objc private func playerItemNewErrorLogEntry(_ note: Notification) {
