@@ -23,8 +23,7 @@ final class WatchViewController: UIViewController {
     private var hlsPlaylistLoader: HLSPlaylistLoader?
 
     // SponsorBlock
-    private var sponsorBlockSegments: [SponsorBlockSegment] = []
-    private var activeSegmentUUID: String?
+    private let sponsorBlock = SponsorBlockController()
 
     // Quality switching context — set when HLS playback starts
     private var activePlaybackInfo: DirectPlaybackInfo?
@@ -762,8 +761,7 @@ final class WatchViewController: UIViewController {
         likeCountLabel.text = "—"
         dislikeCountLabel.text = "—"
         currentLikeStatus = .indifferent
-        sponsorBlockSegments = []
-        activeSegmentUUID = nil
+        sponsorBlock.reset()
 
         commentsStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
         loadMoreCommentsButton.isHidden = true
@@ -847,7 +845,7 @@ final class WatchViewController: UIViewController {
                 DispatchQueue.main.async {
                     guard let self = self, self.watchPage?.video.id == videoId else { return }
                     if case .success(let segments) = result {
-                        self.sponsorBlockSegments = segments
+                        self.sponsorBlock.segments = segments
                         self.videoPlayerView?.setSponsorSegments(segments)
                     }
                 }
@@ -934,77 +932,7 @@ final class WatchViewController: UIViewController {
     }
 
     private func makeCommentView(_ comment: Comment) -> UIView {
-        let container = UIView()
-        container.translatesAutoresizingMaskIntoConstraints = false
-
-        let avatarView = ThumbnailImageView(frame: .zero)
-        avatarView.layer.cornerRadius = 16
-        avatarView.layer.masksToBounds = true
-        avatarView.translatesAutoresizingMaskIntoConstraints = false
-        if let urlString = comment.authorAvatarURL, let url = URL(string: urlString) {
-            avatarView.setImage(url: url)
-        }
-
-        let authorLabel = UILabel()
-        authorLabel.font = UIFont.systemFont(ofSize: 13, weight: .semibold)
-        authorLabel.textColor = ThemeManager.shared.primaryText
-        authorLabel.numberOfLines = 1
-        authorLabel.text = comment.isPinned ? "\(comment.authorName) • Pinned" : comment.authorName
-        authorLabel.translatesAutoresizingMaskIntoConstraints = false
-
-        let metaLabel = UILabel()
-        metaLabel.font = UIFont.systemFont(ofSize: 11)
-        metaLabel.textColor = ThemeManager.shared.secondaryText
-        metaLabel.numberOfLines = 0
-        metaLabel.text = [comment.publishedTime, comment.likeCount.map { "\($0) likes" }, comment.replyCount.map { "\($0) replies" }]
-            .compactMap { $0 }
-            .filter { !$0.isEmpty }
-            .joined(separator: " • ")
-        metaLabel.translatesAutoresizingMaskIntoConstraints = false
-
-        let contentLabel = UILabel()
-        contentLabel.font = UIFont.systemFont(ofSize: 13)
-        contentLabel.textColor = ThemeManager.shared.primaryText
-        contentLabel.numberOfLines = 0
-        contentLabel.text = comment.content
-        contentLabel.translatesAutoresizingMaskIntoConstraints = false
-
-        let separator = UIView()
-        separator.translatesAutoresizingMaskIntoConstraints = false
-        separator.backgroundColor = ThemeManager.shared.separator
-
-        container.addSubview(avatarView)
-        container.addSubview(authorLabel)
-        container.addSubview(metaLabel)
-        container.addSubview(contentLabel)
-        container.addSubview(separator)
-
-        NSLayoutConstraint.activate([
-            avatarView.topAnchor.constraint(equalTo: container.topAnchor),
-            avatarView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            avatarView.widthAnchor.constraint(equalToConstant: 32),
-            avatarView.heightAnchor.constraint(equalToConstant: 32),
-
-            authorLabel.topAnchor.constraint(equalTo: container.topAnchor),
-            authorLabel.leadingAnchor.constraint(equalTo: avatarView.trailingAnchor, constant: 12),
-            authorLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-
-            metaLabel.topAnchor.constraint(equalTo: authorLabel.bottomAnchor, constant: 2),
-            metaLabel.leadingAnchor.constraint(equalTo: authorLabel.leadingAnchor),
-            metaLabel.trailingAnchor.constraint(equalTo: authorLabel.trailingAnchor),
-
-            contentLabel.topAnchor.constraint(equalTo: metaLabel.bottomAnchor, constant: 6),
-            contentLabel.leadingAnchor.constraint(equalTo: authorLabel.leadingAnchor),
-            contentLabel.trailingAnchor.constraint(equalTo: authorLabel.trailingAnchor),
-
-            separator.topAnchor.constraint(equalTo: contentLabel.bottomAnchor, constant: 12),
-            separator.leadingAnchor.constraint(equalTo: authorLabel.leadingAnchor),
-            separator.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            separator.heightAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale),
-            separator.bottomAnchor.constraint(equalTo: container.bottomAnchor),
-        ])
-
-        return container
+        CommentViewBuilder.makeCommentView(comment)
     }
 
     private func scheduleRelatedExpansion(for page: WatchPage) {
@@ -1026,13 +954,29 @@ final class WatchViewController: UIViewController {
 
     private func startPlayback(using client: DirectPlaybackClient) {
         activeDirectPlaybackClient = client
-        playerStatusLabel.text = "Resolving direct stream..."
-        self.client.fetchDirectPlayback(videoId: initialVideo.id, client: client, cancellationToken: pageLoadToken) { [weak self] result in
-            switch result {
+        playerStatusLabel.text = "Minting PoToken..."
+
+        WebPoTokenService.shared.fetchSessionToken(identifier: initialVideo.id) { [weak self] tokenResult in
+            guard let self, !self.pageLoadToken.isCancelled else { return }
+            let poToken: String?
+            switch tokenResult {
+            case .success(let token): poToken = token
             case .failure(let error):
-                self?.showPlaybackError(error.localizedDescription)
-            case .success(let info):
-                self?.startDirectPlayback(info, client: client)
+                print("[WatchViewController] PoToken mint failed: \(error), proceeding without")
+                poToken = nil
+            }
+
+            DispatchQueue.main.async {
+                self.playerStatusLabel.text = "Resolving direct stream..."
+            }
+            self.client.fetchDirectPlayback(videoId: self.initialVideo.id, client: client, poToken: poToken,
+                                            cancellationToken: self.pageLoadToken) { [weak self] result in
+                switch result {
+                case .failure(let error):
+                    self?.showPlaybackError(error.localizedDescription)
+                case .success(let info):
+                    self?.startDirectPlayback(info, client: client)
+                }
             }
         }
     }
@@ -1285,253 +1229,37 @@ final class WatchViewController: UIViewController {
             .replacingOccurrences(of: "=", with: "")
     }
 
-    private func attachComposedPlayer(videoURL: URL,
-                                      audioURL: URL,
+    private func attachComposedPlayer(videoURL: URL, audioURL: URL,
                                       headers: [String: String],
                                       completion: @escaping (Bool) -> Void) {
-        let startTime = CACurrentMediaTime()
-        let assetOptions = ["AVURLAssetHTTPHeaderFieldsKey": headers]
-        let videoAsset = AVURLAsset(url: videoURL, options: assetOptions)
-        let audioAsset = AVURLAsset(url: audioURL, options: assetOptions)
-        let group = DispatchGroup()
-        var loadError = false
-
-        print("[WatchViewController] composedPlayer: loading asset metadata...")
-
-        group.enter()
-        videoAsset.loadValuesAsynchronously(forKeys: ["tracks"]) {
-            let elapsed = CACurrentMediaTime() - startTime
-            var error: NSError?
-            if videoAsset.statusOfValue(forKey: "tracks", error: &error) != .loaded {
-                print("[WatchViewController] video tracks failed (%.1fs): \(error?.localizedDescription ?? "unknown")")
-                loadError = true
-            } else {
-                print(String(format: "[WatchViewController] video tracks loaded (%.1fs)", elapsed))
-            }
-            group.leave()
-        }
-
-        group.enter()
-        audioAsset.loadValuesAsynchronously(forKeys: ["tracks"]) {
-            let elapsed = CACurrentMediaTime() - startTime
-            var error: NSError?
-            if audioAsset.statusOfValue(forKey: "tracks", error: &error) != .loaded {
-                print("[WatchViewController] audio tracks failed (%.1fs): \(error?.localizedDescription ?? "unknown")")
-                loadError = true
-            } else {
-                print(String(format: "[WatchViewController] audio tracks loaded (%.1fs)", elapsed))
-            }
-            group.leave()
-        }
-
-        group.notify(queue: .main) { [weak self] in
-            let elapsed = CACurrentMediaTime() - startTime
-            guard let self = self, !loadError else {
-                print(String(format: "[WatchViewController] composedPlayer: metadata failed (%.1fs)", elapsed))
+        AdaptiveCompositionBuilder.build(videoURL: videoURL, audioURL: audioURL, headers: headers) { [weak self] item in
+            guard let self = self, let item = item else {
                 completion(false)
                 return
             }
-
-            guard let sourceVideoTrack = videoAsset.tracks(withMediaType: .video).first,
-                  let sourceAudioTrack = audioAsset.tracks(withMediaType: .audio).first
-            else {
-                print("[WatchViewController] no video/audio tracks found")
-                completion(false)
-                return
-            }
-
-            let composition = AVMutableComposition()
-            guard let videoTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid),
-                  let audioTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
-            else {
-                completion(false)
-                return
-            }
-
-            let videoDuration = videoAsset.duration
-            let audioDuration = audioAsset.duration
-            let duration = CMTimeMinimum(videoDuration, audioDuration)
-            print(String(format: "[WatchViewController] composedPlayer: video=%.1fs audio=%.1fs using=%.1fs (%.1fs elapsed)",
-                         CMTimeGetSeconds(videoDuration), CMTimeGetSeconds(audioDuration), CMTimeGetSeconds(duration), elapsed))
-
-            do {
-                try videoTrack.insertTimeRange(CMTimeRange(start: .zero, duration: duration), of: sourceVideoTrack, at: .zero)
-                try audioTrack.insertTimeRange(CMTimeRange(start: .zero, duration: duration), of: sourceAudioTrack, at: .zero)
-                videoTrack.preferredTransform = sourceVideoTrack.preferredTransform
-            } catch {
-                print("[WatchViewController] direct composition failed: \(error)")
-                completion(false)
-                return
-            }
-
-            let item = AVPlayerItem(asset: composition)
-            item.preferredForwardBufferDuration = 2.0
-            print(String(format: "[WatchViewController] composedPlayer: attaching player (%.1fs elapsed)", elapsed))
             self.attachPlayer(item: item, minimizeStalling: false)
             completion(true)
         }
     }
 
-    /// Prepares adaptive (720p) composition in background, then seamlessly switches from progressive.
     private func prepareAdaptiveUpgrade(videoURL: URL, audioURL: URL, headers: [String: String], quality: String) {
-        let startTime = CACurrentMediaTime()
-        let assetOptions = ["AVURLAssetHTTPHeaderFieldsKey": headers]
-        let videoAsset = AVURLAsset(url: videoURL, options: assetOptions)
-        let audioAsset = AVURLAsset(url: audioURL, options: assetOptions)
-        let group = DispatchGroup()
-        var loadError = false
+        AdaptiveCompositionBuilder.build(videoURL: videoURL, audioURL: audioURL, headers: headers) { [weak self] item in
+            guard let self = self, let item = item else { return }
 
-        group.enter()
-        videoAsset.loadValuesAsynchronously(forKeys: ["tracks"]) {
-            var error: NSError?
-            if videoAsset.statusOfValue(forKey: "tracks", error: &error) != .loaded {
-                print(String(format: "[WatchViewController] adaptive upgrade: video tracks failed (%.1fs)", CACurrentMediaTime() - startTime))
-                loadError = true
-            }
-            group.leave()
-        }
-
-        group.enter()
-        audioAsset.loadValuesAsynchronously(forKeys: ["tracks"]) {
-            var error: NSError?
-            if audioAsset.statusOfValue(forKey: "tracks", error: &error) != .loaded {
-                print(String(format: "[WatchViewController] adaptive upgrade: audio tracks failed (%.1fs)", CACurrentMediaTime() - startTime))
-                loadError = true
-            }
-            group.leave()
-        }
-
-        group.notify(queue: .main) { [weak self] in
-            guard let self = self, !loadError else {
-                print(String(format: "[WatchViewController] adaptive upgrade: failed (%.1fs)", CACurrentMediaTime() - startTime))
-                return
-            }
-
-            guard let sourceVideoTrack = videoAsset.tracks(withMediaType: .video).first,
-                  let sourceAudioTrack = audioAsset.tracks(withMediaType: .audio).first
-            else { return }
-
-            let composition = AVMutableComposition()
-            guard let videoTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid),
-                  let audioTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
-            else { return }
-
-            let duration = CMTimeMinimum(videoAsset.duration, audioAsset.duration)
-            do {
-                try videoTrack.insertTimeRange(CMTimeRange(start: .zero, duration: duration), of: sourceVideoTrack, at: .zero)
-                try audioTrack.insertTimeRange(CMTimeRange(start: .zero, duration: duration), of: sourceAudioTrack, at: .zero)
-                videoTrack.preferredTransform = sourceVideoTrack.preferredTransform
-            } catch {
-                print("[WatchViewController] adaptive upgrade: composition failed: \(error)")
-                return
-            }
-
-            // Switch from progressive to adaptive
             guard let player = self.videoPlayerView?.player ?? self.playerViewController?.player else { return }
             let currentTime = player.currentTime()
             let wasPlaying = player.rate > 0
 
-            let oldItem = player.currentItem
-            if let oldItem = oldItem {
+            if let oldItem = player.currentItem {
                 self.stopObservingPlayerItem(oldItem)
             }
 
-            let newItem = AVPlayerItem(asset: composition)
-            newItem.preferredForwardBufferDuration = 2.0
-            self.startObservingPlayerItem(newItem)
-            player.replaceCurrentItem(with: newItem)
+            self.startObservingPlayerItem(item)
+            player.replaceCurrentItem(with: item)
             player.seek(to: currentTime, toleranceBefore: .zero, toleranceAfter: .zero)
-            if wasPlaying {
-                player.play()
-            }
-
-            let elapsed = CACurrentMediaTime() - startTime
-            print(String(format: "[WatchViewController] adaptive upgrade: switched to %@ (%.1fs)", quality, elapsed))
+            if wasPlaying { player.play() }
+            print("[WatchViewController] adaptive upgrade: switched to \(quality)")
         }
-    }
-
-    /// Sends a HEAD request to check URL accessibility before AVPlayer tries it.
-    /// Always calls completion (even on failure) so playback attempt proceeds regardless.
-    private func probeURL(_ url: URL, visitorData: String?, client: DirectPlaybackClient, completion: @escaping () -> Void) {
-        var request = URLRequest(url: url)
-        request.httpMethod = "HEAD"
-        let headers = makeDirectRequestHeaders(visitorData: visitorData, client: client)
-        for (key, value) in headers {
-            request.setValue(value, forHTTPHeaderField: key)
-        }
-        print("[WatchViewController] probe HEAD start: \(url.host ?? "?")")
-        URLSession.shared.dataTask(with: request) { _, response, error in
-            let httpResponse = response as? HTTPURLResponse
-            let status = httpResponse?.statusCode ?? 0
-            let contentType = (httpResponse?.allHeaderFields["Content-Type"] as? String) ?? "nil"
-            let contentLength = (httpResponse?.allHeaderFields["Content-Length"] as? String) ?? "nil"
-            if let error = error {
-                print("[WatchViewController] probe HEAD error: \(error.localizedDescription)")
-            } else {
-                print("[WatchViewController] probe HEAD result: status=\(status) contentType=\(contentType) contentLength=\(contentLength)")
-            }
-            if status == 403 {
-                // Also try a GET with Range to see if response differs
-                var getRequest = URLRequest(url: url)
-                getRequest.httpMethod = "GET"
-                for (key, value) in headers {
-                    getRequest.setValue(value, forHTTPHeaderField: key)
-                }
-                getRequest.setValue("bytes=0-1023", forHTTPHeaderField: "Range")
-                URLSession.shared.dataTask(with: getRequest) { data, response2, error2 in
-                    let httpResponse2 = response2 as? HTTPURLResponse
-                    let status2 = httpResponse2?.statusCode ?? 0
-                    let body = data.flatMap { String(data: $0, encoding: .utf8) } ?? "nil"
-                    print("[WatchViewController] probe GET result: status=\(status2) bodyLen=\(data?.count ?? 0) body=\(body.prefix(500))")
-                    completion()
-                }.resume()
-            } else {
-                completion()
-            }
-        }.resume()
-    }
-
-    private func generateDashMPD(video: DashFormatInfo, audio: DashFormatInfo, duration: Double) -> String {
-        let hours = Int(duration) / 3600
-        let minutes = (Int(duration) % 3600) / 60
-        let seconds = duration - Double(hours * 3600 + minutes * 60)
-        let ptDuration = String(format: "PT%dH%dM%.3fS", hours, minutes, seconds)
-
-        // XML-escape URLs (& → &amp;)
-        let videoURLEscaped = video.url.absoluteString.replacingOccurrences(of: "&", with: "&amp;")
-        let audioURLEscaped = audio.url.absoluteString.replacingOccurrences(of: "&", with: "&amp;")
-
-        let videoAttrs: String
-        if let w = video.width, let h = video.height {
-            videoAttrs = "width=\"\(w)\" height=\"\(h)\" "
-        } else {
-            videoAttrs = ""
-        }
-        let fpsAttr = video.fps.map { " frameRate=\"\($0)\"" } ?? ""
-
-        return """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <MPD xmlns="urn:mpeg:dash:schema:mpd:2011" type="static" mediaPresentationDuration="\(ptDuration)" minBufferTime="PT2S" profiles="urn:mpeg:dash:profile:isoff-main:2011">
-          <Period>
-            <AdaptationSet mimeType="video/mp4" \(videoAttrs)subsegmentAlignment="true">
-              <Representation id="\(video.itag)" bandwidth="\(video.bitrate)" codecs="\(video.codecs)" \(videoAttrs)\(fpsAttr)>
-                <BaseURL>\(videoURLEscaped)</BaseURL>
-                <SegmentBase indexRange="\(video.indexRangeStart)-\(video.indexRangeEnd)">
-                  <Initialization range="0-\(video.initRangeEnd)"/>
-                </SegmentBase>
-              </Representation>
-            </AdaptationSet>
-            <AdaptationSet mimeType="audio/mp4" subsegmentAlignment="true">
-              <Representation id="\(audio.itag)" bandwidth="\(audio.bitrate)" codecs="\(audio.codecs)">
-                <BaseURL>\(audioURLEscaped)</BaseURL>
-                <SegmentBase indexRange="\(audio.indexRangeStart)-\(audio.indexRangeEnd)">
-                  <Initialization range="0-\(audio.initRangeEnd)"/>
-                </SegmentBase>
-              </Representation>
-            </AdaptationSet>
-          </Period>
-        </MPD>
-        """
     }
 
     private func buildHLSAndPlay(videoURL: URL, audioURL: URL,
@@ -1539,118 +1267,21 @@ final class WatchViewController: UIViewController {
                                  headers: [String: String], quality: String) {
         activeVideoFormat = videoFormat
         activePlaybackHeaders = headers
-        let startTime = CACurrentMediaTime()
 
-        // Fetch sidx (index) data for both streams in parallel
-        let group = DispatchGroup()
-        var videoSidxData: Data?
-        var audioSidxData: Data?
-
-        let videoIndexStart = videoFormat.indexRangeStart
-        let videoIndexEnd = videoFormat.indexRangeEnd
-        let audioIndexStart = audioFormat.indexRangeStart
-        let audioIndexEnd = audioFormat.indexRangeEnd
-
-        group.enter()
-        fetchRangeData(url: videoURL, start: Int64(videoIndexStart), end: Int64(videoIndexEnd), headers: headers) { data in
-            videoSidxData = data
-            group.leave()
-        }
-
-        group.enter()
-        fetchRangeData(url: audioURL, start: Int64(audioIndexStart), end: Int64(audioIndexEnd), headers: headers) { data in
-            audioSidxData = data
-            group.leave()
-        }
-
-        group.notify(queue: .global(qos: .userInitiated)) { [weak self] in
+        HLSPlaybackBuilder.build(videoURL: videoURL, audioURL: audioURL,
+                                 videoFormat: videoFormat, audioFormat: audioFormat,
+                                 headers: headers) { [weak self] result in
             guard let self = self else { return }
-
-            guard let vData = videoSidxData, let aData = audioSidxData else {
-                print("[WatchViewController] HLS: failed to fetch sidx data")
+            guard let result = result else {
                 self.fallbackToProgressivePlayback()
                 return
             }
-
-            guard let videoSegments = HLSGenerator.parseSidx(data: vData),
-                  let audioSegments = HLSGenerator.parseSidx(data: aData) else {
-                print("[WatchViewController] HLS: failed to parse sidx (video=\(vData.count)B audio=\(aData.count)B)")
-                self.fallbackToProgressivePlayback()
-                return
-            }
-
-            let fetchElapsed = CACurrentMediaTime() - startTime
-            print(String(format: "[WatchViewController] HLS: sidx parsed in %.1fs — video: %d segments, audio: %d segments",
-                         fetchElapsed, videoSegments.count, audioSegments.count))
-
-            // Generate HLS playlists
-            let videoInitBytes = videoFormat.initRangeEnd + 1
-            let audioInitBytes = audioFormat.initRangeEnd + 1
-            let videoDataStart = Int64(videoFormat.indexRangeEnd + 1)
-            let audioDataStart = Int64(audioFormat.indexRangeEnd + 1)
-
-            let videoPlaylist = HLSGenerator.mediaPlaylist(url: videoURL, initBytes: videoInitBytes,
-                                                           dataStartOffset: videoDataStart, segments: videoSegments)
-            let audioPlaylist = HLSGenerator.mediaPlaylist(url: audioURL, initBytes: audioInitBytes,
-                                                           dataStartOffset: audioDataStart, segments: audioSegments)
-
-            let videoWidth = videoFormat.width ?? 1280
-            let videoHeight = videoFormat.height ?? 720
-            let masterPlaylist = HLSGenerator.masterPlaylist(
-                videoBandwidth: videoFormat.bitrate,
-                videoCodecs: videoFormat.codecs,
-                audioCodecs: audioFormat.codecs,
-                width: videoWidth, height: videoHeight,
-                videoPlaylistURI: "\(HLSGenerator.scheme)://video.m3u8",
-                audioPlaylistURI: "\(HLSGenerator.scheme)://audio.m3u8"
-            )
-
-            // Serve playlists via AVAssetResourceLoaderDelegate with custom scheme
-            let loader = HLSPlaylistLoader()
-            loader.register(path: "master.m3u8", content: masterPlaylist)
-            loader.register(path: "video.m3u8", content: videoPlaylist)
-            loader.register(path: "audio.m3u8", content: audioPlaylist)
-
-            let audioOnlyMaster = HLSGenerator.audioOnlyMasterPlaylist(
-                audioCodecs: audioFormat.codecs,
-                audioBandwidth: audioFormat.bitrate,
-                audioPlaylistURI: "\(HLSGenerator.scheme)://audio.m3u8"
-            )
-            loader.register(path: "audio-master.m3u8", content: audioOnlyMaster)
-
-            let totalElapsed = CACurrentMediaTime() - startTime
-            print(String(format: "[WatchViewController] HLS: playlists ready in %.1fs", totalElapsed))
-
             DispatchQueue.main.async {
-                self.hlsPlaylistLoader = loader
-                let masterURL = URL(string: "\(HLSGenerator.scheme)://master.m3u8")!
-                let assetOptions: [String: Any] = ["AVURLAssetHTTPHeaderFieldsKey": headers]
-                let asset = AVURLAsset(url: masterURL, options: assetOptions)
-                asset.resourceLoader.setDelegate(loader, queue: loader.loaderQueue)
-                let item = AVPlayerItem(asset: asset)
-                item.preferredForwardBufferDuration = 5.0
-                self.attachPlayer(item: item)
-                print(String(format: "[WatchViewController] HLS: player attached for %@ (%.1fs total)", quality, CACurrentMediaTime() - startTime))
+                self.hlsPlaylistLoader = result.loader
+                self.attachPlayer(item: result.playerItem)
+                print("[WatchViewController] HLS: player attached for \(quality)")
             }
         }
-    }
-
-    private func fetchRangeData(url: URL, start: Int64, end: Int64, headers: [String: String], completion: @escaping (Data?) -> Void) {
-        var request = URLRequest(url: url)
-        for (k, v) in headers { request.setValue(v, forHTTPHeaderField: k) }
-        request.setValue("bytes=\(start)-\(end)", forHTTPHeaderField: "Range")
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                print("[WatchViewController] HLS: range fetch failed: \(error.localizedDescription)")
-                completion(nil)
-                return
-            }
-            let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-            if status != 206 && status != 200 {
-                print("[WatchViewController] HLS: range fetch status \(status)")
-            }
-            completion(data)
-        }.resume()
     }
 
     private func fallbackToProgressivePlayback() {
@@ -1712,10 +1343,11 @@ final class WatchViewController: UIViewController {
         }()
 
         // Wire SponsorBlock callbacks
-        pv.onTimeUpdate = { [weak self] time in self?.checkSponsorBlock(at: time) }
-        pv.onSkipTapped  = { [weak self] in self?.skipCurrentSegment() }
-        if !sponsorBlockSegments.isEmpty {
-            pv.setSponsorSegments(sponsorBlockSegments)
+        sponsorBlock.attach(to: pv)
+        pv.onTimeUpdate = { [weak self] time in self?.sponsorBlock.checkTime(time) }
+        pv.onSkipTapped  = { [weak self] in self?.sponsorBlock.skipCurrentSegment() }
+        if !sponsorBlock.segments.isEmpty {
+            pv.setSponsorSegments(sponsorBlock.segments)
         }
 
         playerContainer.bringSubviewToFront(pv)
@@ -2015,58 +1647,6 @@ final class WatchViewController: UIViewController {
         DispatchQueue.main.async {
             playerVC.showsPlaybackControls = true
         }
-    }
-}
-
-// MARK: - SponsorBlock
-
-extension WatchViewController {
-
-    private func checkSponsorBlock(at time: Double) {
-        guard SponsorBlockService.enabled, !sponsorBlockSegments.isEmpty else { return }
-
-        // Find the first active segment (not disabled, actionType is skippable)
-        let active = sponsorBlockSegments.first { seg in
-            guard seg.actionType == "skip" || seg.actionType == "poi" else { return false }
-            let behavior = SponsorBlockService.skipBehavior(for: seg.category)
-            guard behavior != .disabled else { return false }
-            return time >= seg.startTime && time < seg.endTime
-        }
-
-        if let seg = active {
-            if seg.uuid == activeSegmentUUID { return }  // already handled this entry
-            activeSegmentUUID = seg.uuid
-            let behavior = SponsorBlockService.skipBehavior(for: seg.category)
-            switch behavior {
-            case .autoSkip:
-                guard let player = videoPlayerView?.player else { return }
-                let target = CMTime(seconds: seg.endTime, preferredTimescale: 600)
-                player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero)
-                print("[SponsorBlock] auto-skipped \(seg.category.displayName) [\(seg.startTime)–\(seg.endTime)]")
-            case .showButton:
-                videoPlayerView?.showSkipButton(categoryName: seg.category.displayName)
-            case .disabled:
-                break
-            }
-        } else {
-            // Left all segments — reset state and hide button
-            if activeSegmentUUID != nil {
-                activeSegmentUUID = nil
-                videoPlayerView?.hideSkipButton()
-            }
-        }
-    }
-
-    private func skipCurrentSegment() {
-        guard let uuid = activeSegmentUUID,
-              let seg  = sponsorBlockSegments.first(where: { $0.uuid == uuid }),
-              let player = videoPlayerView?.player
-        else { return }
-        let target = CMTime(seconds: seg.endTime, preferredTimescale: 600)
-        player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero)
-        activeSegmentUUID = nil
-        videoPlayerView?.hideSkipButton()
-        print("[SponsorBlock] user skipped \(seg.category.displayName) [\(seg.startTime)–\(seg.endTime)]")
     }
 }
 
