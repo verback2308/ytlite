@@ -1,0 +1,201 @@
+included:
+  - YTVLite
+
+excluded:
+  - .build
+  - build
+  - DerivedData
+  - Pods
+  - Carthage
+  - fastlane
+  - vendor
+
+reporter: "xcode"
+strict: true
+
+analyzer_rules:
+  - unused_declaration
+  - unused_import
+
+disabled_rules:
+  - todo
+
+opt_in_rules:
+  - array_init
+  - attributes
+  - closure_end_indentation
+  - closure_spacing
+  - collection_alignment
+  - conditional_returns_on_newline
+  - contains_over_filter_count
+  - contains_over_filter_is_empty
+  - contains_over_first_not_nil
+  - contains_over_range_nil_comparison
+  - convenience_type
+  - discouraged_assert
+  - discouraged_direct_init
+  - discouraged_object_literal
+  - discouraged_optional_boolean
+  - empty_collection_literal
+  - empty_count
+  - empty_string
+  - empty_xctest_method
+  - enum_case_associated_values_count
+  - explicit_enum_raw_value
+  - explicit_init
+  - fallthrough
+  - fatal_error_message
+  - file_name
+  - first_where
+  - flatmap_over_map_reduce
+  - force_cast
+  - force_try
+  - force_unwrapping
+  - function_default_parameter_at_end
+  - identical_operands
+  - implicit_return
+  - implicitly_unwrapped_optional
+  - joined_default_parameter
+  - last_where
+  - legacy_multiple
+  - legacy_objc_type
+  - lower_acl_than_parent
+  - modifier_order
+  - multiline_arguments
+  - multiline_arguments_brackets
+  - multiline_function_chains
+  - multiline_literal_brackets
+  - multiline_parameters
+  - multiline_parameters_brackets
+  - number_separator
+  - operator_usage_whitespace
+  - optional_enum_case_matching
+  - overridden_super_call
+  - pattern_matching_keywords
+  - prefer_self_type_over_type_of_self
+  - private_action
+  - private_outlet
+  - private_over_fileprivate
+  - redundant_nil_coalescing
+  - redundant_objc_attribute
+  - implicit_optional_initialization
+  - redundant_set_access_control
+  - redundant_string_enum_value
+  - return_value_from_void_function
+  - self_binding
+  - shorthand_optional_binding
+  - sorted_first_last
+  - static_operator
+  - strict_fileprivate
+  - strong_iboutlet
+  - switch_case_on_newline
+  - toggle_bool
+  - trailing_closure
+  - type_contents_order
+  - unavailable_condition
+  - unavailable_function
+  - unneeded_parentheses_in_closure_argument
+  - unowned_variable_capture
+  - untyped_error_in_catch
+  - vertical_parameter_alignment_on_call
+  - vertical_whitespace_closing_braces
+  - vertical_whitespace_opening_braces
+  - void_function_in_ternary
+  - xct_specific_matcher
+  - yoda_condition
+
+line_length:
+  warning: 100
+  error: 120
+  ignores_comments: false
+  ignores_urls: true
+  ignores_function_declarations: false
+  ignores_interpolated_strings: false
+
+file_length:
+  warning: 300
+  error: 450
+
+type_body_length:
+  warning: 200
+  error: 300
+
+function_body_length:
+  warning: 30
+  error: 50
+
+function_parameter_count:
+  warning: 4
+  error: 6
+
+cyclomatic_complexity:
+  warning: 8
+  error: 12
+  ignores_case_statements: false
+
+nesting:
+  type_level:
+    warning: 1
+    error: 2
+  function_level:
+    warning: 2
+    error: 3
+
+large_tuple:
+  warning: 2
+  error: 3
+
+identifier_name:
+  min_length:
+    warning: 2
+    error: 2
+  max_length:
+    warning: 30
+    error: 40
+  excluded:
+    - id
+    - x
+    - y
+    - z
+    - i
+    - j
+
+type_name:
+  min_length: 3
+  max_length:
+    warning: 32
+    error: 40
+  excluded:
+    - ID
+    - URL
+
+generic_type_name:
+  min_length:
+    warning: 1
+    error: 1
+  max_length:
+    warning: 1
+    error: 2
+
+enum_case_associated_values_count:
+  warning: 2
+  error: 4
+
+custom_rules:
+  no_debug_print:
+    name: "No Print"
+    regex: "\\bprint\\s*\\("
+    message: "Use a structured logger instead of print."
+    severity: error
+
+  no_debug_nslog:
+    name: "No NSLog"
+    regex: "\\bNSLog\\s*\\("
+    message: "Use a structured logger instead of NSLog."
+    severity: error
+
+  todo_requires_ticket:
+    name: "TODO Requires Ticket"
+    regex: "(TODO|FIXME)(?!\\([A-Z]+-\\d+\\))"
+    message: "TODO and FIXME must reference a ticket, for example TODO(PROJ-123)."
+    severity: error

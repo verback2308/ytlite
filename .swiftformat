@@ -1,0 +1,15 @@
+--swiftversion 5.9
+--indent 4
+--maxwidth 100
+--linebreaks lf
+--trimwhitespace always
+--wraparguments before-first
+--wrapparameters before-first
+--wrapcollections before-first
+--wrapconditions preserve
+--wrapreturntype if-multiline
+--wraptypealiases before-first
+--closingparen balanced
+--commas inline
+--stripunusedargs closure-only
+--header ignore
