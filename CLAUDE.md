@@ -2,96 +2,72 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## Build
 
-YTVLite is a native iOS YouTube client for iPad mini 2 (iOS 12.5.7), written in Swift 5 with UIKit. It fetches data via YouTube Data API v3 + Innertube API and plays video through a local proxy server (yt-dlp backend) that serves merged mp4 files.
+This is an Xcode project (no SPM/CocoaPods). Build with:
+```bash
+xcodebuild -project YTVLite.xcodeproj -scheme YTVLite -sdk iphoneos build
+```
+Or open `YTVLite.xcodeproj` in Xcode and build (Cmd+B). Deployment target is **iOS 12.0**.
 
-## Build & Run
+There are no tests or linting configured.
 
-Build and run using Xcode only — no Makefile or CLI build scripts exist.
+## iOS 12 Constraints
 
-- Open `YTVLite.xcodeproj` in Xcode 14+
-- Target device: iPad mini 2 (iOS 12.0 deployment target)
-- Scheme: YTVLite
-- No tests exist yet
-
-## Key Constraints
-
-- **UIKit only** — no SwiftUI (requires iOS 13+)
-- **No third-party dependencies** — no CocoaPods, no SPM packages
-- **Async pattern**: completion handlers + `DispatchQueue.main.async` for UI updates (no async/await — requires iOS 13+)
-- **Architecture**: MVC
-- **No Storyboards** — build all UI programmatically; only LaunchScreen.storyboard is kept
-- **iOS 12 compatibility**: never use APIs marked `@available(iOS 13, *)` without availability checks; `@UIApplicationMain` is used (not `@main`)
-- No SceneDelegate (deleted for iOS 12 compatibility)
+The app targets iOS 12+. Do not use:
+- SF Symbols (iOS 13+) — use bundled image assets or UIKit built-ins
+- `UIColor.systemBackground` / dynamic system colors (iOS 13+) — use `ThemeManager` colors
+- `UIUserInterfaceStyle` / dark mode traits (iOS 13+) — theme is managed manually via `ThemeManager`
+- Any API marked iOS 13+ or later without an `@available` guard
 
 ## Architecture
 
-### Planned Folder Structure
+**Layered structure** under `YTVLite/`:
 
-```
-YTVLite/
-├── App/            AppDelegate.swift
-├── Config/         Config.swift — tokens, proxy URL constants
-├── API/            APIClient.swift, YouTubeAPIClient.swift, InnertubeClient.swift
-│   └── Models/     Video.swift, SearchResult.swift, Channel.swift
-├── Features/
-│   ├── Home/       HomeViewController + HomeCell (Innertube API)
-│   ├── Subscriptions/  SubscriptionsViewController + SubscriptionCell
-│   ├── Search/     SearchViewController + SearchCell
-│   └── Player/     PlayerViewController (AVPlayerViewController)
-└── Common/         VideoCell.swift, ThumbnailImageView.swift, MainTabBarController.swift
-```
+| Layer | Path | Purpose |
+|-------|------|---------|
+| **API** | `API/` | YouTube Innertube API client, request execution, JSON parsing |
+| **Services** | `Services/` | Business logic: caching, playback routing, SABR/Onesie streaming, SponsorBlock, RYD |
+| **Features** | `Features/` | View controllers organized by screen (Home, Search, Player, Channel, Library, Subscriptions, Profile) |
+| **Common** | `Common/` | Shared UI (VideoCell, ThemeManager, MainTabBarController, SettingsVC) and utilities |
+| **Auth** | `Auth/` | OAuth device-code flow, splash screen |
+| **Config** | `Config/` | URLs, UserDefaults keys, app constants |
+| **ThirdParty** | `ThirdParty/` | Vendored SZAVPlayer (AVPlayer wrapper with buffering/caching) |
 
-### Authentication
+### Key patterns
 
-Hardcoded OAuth 2.0 access token stored in `Config.swift` (expires ~1 hour). If API returns 401, manually refresh token at https://developers.google.com/oauthplayground using scope `https://www.googleapis.com/auth/youtube.readonly`.
+- **ServiceContainer** — singleton registry; `ServiceContainer.video` holds the `VideoService` (protocol implemented by `InnertubeClient`)
+- **CancellationToken** — passed into async operations to silence stale in-flight requests on navigation
+- **Manual JSON parsing** — Innertube responses are parsed with `JSONSerialization` + dictionary traversal (no Codable for API responses, no protobuf codegen)
+- **All UI is UIKit** — no SwiftUI, no storyboards (programmatic layout)
+- **Zero external dependencies** — networking via URLSession, images via custom `ThumbnailImageView`
 
-```swift
-enum Config {
-    static let accessToken = "YOUR_ACCESS_TOKEN_HERE"
-    static let proxyBaseURL = "http://192.168.1.100:3000"  // replace with actual LAN IP
-}
-```
+### InnertubeClient structure
 
-### API Layer
+The Innertube API client is split across files:
+- `InnertubeClient.swift` — main class, client contexts, method dispatch
+- `InnertubeClientExecute.swift` — network request execution (browse, search, watchNext, player, comments, subscribe)
+- `InnertubeClientParsing.swift` — shared parsing helpers (renderer extraction, video building)
+- `InnertubeClientBrowseParsing.swift` — feed/browse response parsing
+- `InnertubeClientSearchParsing.swift` — search result parsing
+- `InnertubeContexts.swift` — request context definitions for 5 client types (web, android, tv, androidVR, ios)
+- `DirectPlaybackClient.swift` — enum of client spoofing strategies for playback URLs
 
-- **APIClient.swift** — base `URLSession` wrapper; does NOT dispatch to main thread, callers are responsible
-- **YouTubeAPIClient.swift** — YouTube Data API v3 (`https://www.googleapis.com/youtube/v3`); auth via `Authorization: Bearer` header
-- **InnertubeClient.swift** — Innertube API (`https://www.youtube.com/youtubei/v1`); POST `/browse` with `browseId: "FEwhat_to_watch"` for home feed; response structure changes frequently — if parsing returns 0 videos, log raw JSON and inspect manually
+### Video playback pipeline
 
-### Video Playback (Proxy Server)
+Multiple playback strategies, selected by `WatchViewController`:
+1. **HLS** (preferred) — native AVPlayer with HLS manifest
+2. **DASH → HLS** — `HLSGenerator` converts SIDX segments into HLS playlists (`ytv-hls://` scheme)
+3. **FastStart** — `FastStartResourceLoader` reorders mp4 moov atom for instant playback (`faststart://` scheme)
+4. **ManifestWebPlayerView** — WebKit-based DASH-MPD fallback
+5. **SABR/Onesie** — YouTube proprietary adaptive streaming (probe → session → streaming)
 
-Video is never fetched directly from YouTube. All playback goes through a local yt-quality-helper proxy (`server.mjs` at `/Users/andrew/Projects/yt-quality/Archive/server.mjs`).
+`VideoPlayerView` (955 lines) provides the custom player UI with controls, SponsorBlock segment visualization, PiP, and gesture handling.
 
-**Session-based API** (implemented in `ProxyClient.swift`):
-1. `POST /api/session` body `{"url": "https://youtube.com/watch?v=VIDEO_ID"}` → `{id, ready, videoUrl, playerPageUrl}`
-2. Server downloads + merges the video in background via yt-dlp + ffmpeg (`-movflags +faststart`)
-3. `GET /session/{id}/video.mp4` → 202 while downloading, 200 + mp4 stream when ready
-4. `HEAD /session/{id}/video.mp4` → used for polling readiness
+### Auth flow
 
-**PlayerViewController flow**: create session → poll HEAD until 200 → play `videoUrl` with AVPlayer. Server deduplicates by videoId (reuses sessions up to 2h TTL).
+OAuth device-code flow (`OAuthClient`): request device code → user enters code at google.com/device → poll for tokens → store in Keychain. Supports anonymous mode.
 
-### Info.plist Requirements
+### Caching
 
-Must include `NSAppTransportSecurity` to allow HTTP to the LAN proxy IP:
-
-```xml
-<key>NSAppTransportSecurity</key>
-<dict>
-    <key>NSAllowsLocalNetworking</key>
-    <true/>
-    <key>NSExceptionDomains</key>
-    <dict>
-        <key>192.168.1.100</key>  <!-- replace with actual proxy IP -->
-        <dict>
-            <key>NSExceptionAllowsInsecureHTTPLoads</key>
-            <true/>
-        </dict>
-    </dict>
-</dict>
-```
-
-## Implementation Order
-
-1. `Config.swift` → 2. `APIClient.swift` → 3. Models → 4. `MainTabBarController` → 5. `PlayerViewController` (verify proxy playback first) → 6. `ThumbnailImageView` + `VideoCell` → 7. `SearchViewController` → 8. `SubscriptionsViewController` → 9. `HomeViewController` (Innertube, most complex) → 10. Wire navigation
+`AppCache` provides dual-layer caching (in-memory + disk at `~/Library/Caches/FeedCache/`) with 1-hour TTL for home, subscriptions, history, and watch pages.
