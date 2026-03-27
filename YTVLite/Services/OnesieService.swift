@@ -413,7 +413,7 @@ final class OnesieService {
     // MARK: - UMP Response Parsing
 
     private static func parseUMPResponse(_ data: Data) -> OnesiePlaybackBootstrap? {
-        let reader = SabrUMPReader()
+        let reader = UMPReader()
         reader.append(data)
         let parts = reader.readAvailableParts(limit: 64)
 
@@ -757,5 +757,77 @@ final class OnesieService {
         let remainder = normalized.count % 4
         if remainder != 0 { normalized.append(String(repeating: "=", count: 4 - remainder)) }
         return Data(base64Encoded: normalized)
+    }
+}
+
+// MARK: - UMP (Universal Media Protocol) Reader
+
+private struct UMPPart {
+    let type: Int
+    let size: Int
+    let payload: Data
+}
+
+private final class UMPReader {
+    private var buffer = Data()
+
+    func append(_ chunk: Data) {
+        buffer.append(chunk)
+    }
+
+    func readAvailableParts(limit: Int = .max) -> [UMPPart] {
+        var parts: [UMPPart] = []
+        var offset = 0
+
+        while parts.count < limit {
+            guard let (partType, typeOffset) = Self.readVarint(from: buffer, offset: offset),
+                  let (partSize, sizeOffset) = Self.readVarint(from: buffer, offset: typeOffset)
+            else { break }
+
+            guard partType >= 0, partSize >= 0, sizeOffset + partSize <= buffer.count else { break }
+
+            let payload = buffer.subdata(in: sizeOffset..<(sizeOffset + partSize))
+            parts.append(UMPPart(type: partType, size: partSize, payload: payload))
+            offset = sizeOffset + partSize
+        }
+
+        if offset > 0 {
+            buffer.removeSubrange(0..<offset)
+        }
+        return parts
+    }
+
+    static func readVarint(from data: Data, offset: Int) -> (Int, Int)? {
+        guard offset < data.count else { return nil }
+
+        let firstByte = Int(data[offset])
+        let byteLength: Int
+        switch firstByte {
+        case ..<128:  byteLength = 1
+        case ..<192:  byteLength = 2
+        case ..<224:  byteLength = 3
+        case ..<240:  byteLength = 4
+        default:      byteLength = 5
+        }
+
+        guard offset + byteLength <= data.count else { return nil }
+
+        switch byteLength {
+        case 1:
+            return (firstByte, offset + 1)
+        case 2:
+            let b2 = Int(data[offset + 1])
+            return ((firstByte & 0x3f) + 64 * b2, offset + 2)
+        case 3:
+            let b2 = Int(data[offset + 1]), b3 = Int(data[offset + 2])
+            return ((firstByte & 0x1f) + 32 * (b2 + 256 * b3), offset + 3)
+        case 4:
+            let b2 = Int(data[offset + 1]), b3 = Int(data[offset + 2]), b4 = Int(data[offset + 3])
+            return ((firstByte & 0x0f) + 16 * (b2 + 256 * (b3 + 256 * b4)), offset + 4)
+        default:
+            let b2 = Int(data[offset + 1]), b3 = Int(data[offset + 2])
+            let b4 = Int(data[offset + 3]), b5 = Int(data[offset + 4])
+            return (b2 + 256 * (b3 + 256 * (b4 + 256 * b5)), offset + 5)
+        }
     }
 }

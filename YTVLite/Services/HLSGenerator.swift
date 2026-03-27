@@ -210,3 +210,26 @@ final class HLSPlaylistLoader: NSObject, AVAssetResourceLoaderDelegate {
         return true
     }
 }
+
+// MARK: - Data Big-Endian Helpers
+
+extension Data {
+    func readBigUInt32(at offset: Int) -> UInt32 {
+        guard offset + 4 <= count else { return 0 }
+        var v: UInt32 = 0
+        _ = withUnsafeBytes { memcpy(&v, $0.baseAddress! + offset, 4) }
+        return UInt32(bigEndian: v)
+    }
+
+    func readBigUInt64(at offset: Int) -> UInt64 {
+        guard offset + 8 <= count else { return 0 }
+        var v: UInt64 = 0
+        _ = withUnsafeBytes { memcpy(&v, $0.baseAddress! + offset, 8) }
+        return UInt64(bigEndian: v)
+    }
+
+    func readFourCC(at offset: Int) -> String {
+        guard offset + 4 <= count else { return "" }
+        return String(bytes: self[offset..<offset + 4], encoding: .ascii) ?? ""
+    }
+}
