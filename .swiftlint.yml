@@ -104,6 +104,16 @@ opt_in_rules:
   - xct_specific_matcher
   - yoda_condition
 
+file_name:
+  excluded:
+    - InnertubeClientParsing.swift
+    - InnertubeClientPlayerParsing.swift
+    - InnertubeClientDebugLogging.swift
+    - InnertubeClientPageParsing.swift
+    - InnertubeClientSearchParsing.swift
+    - InnertubeClientExecute.swift
+    - ProgressiveWithUpgradePlaybackStrategy.swift
+
 line_length:
   warning: 100
   error: 120
