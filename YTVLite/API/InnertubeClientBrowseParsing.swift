@@ -24,7 +24,7 @@ extension InnertubeClient {
                 }
                 let cont = (gc["continuations"] as? [[String: Any]])?
                     .first.flatMap { ($0["nextContinuationData"] as? [String: Any])?["continuation"] as? String }
-                print("[Innertube] TV history gridContinuation: \(vids.count) more videos")
+                AppLog.innertube("TV history gridContinuation: \(vids.count) more videos")
                 return FeedPage(videos: vids, continuation: cont)
             }
             // Fallback: sectionListContinuation
@@ -54,7 +54,7 @@ extension InnertubeClient {
             // Continuation from gridRenderer.continuations
             let cont = (grid["continuations"] as? [[String: Any]])?
                 .first.flatMap { ($0["nextContinuationData"] as? [String: Any])?["continuation"] as? String }
-            print("[Innertube] TV history gridRenderer: \(videos.count) videos")
+            AppLog.innertube("TV history gridRenderer: \(videos.count) videos")
             return FeedPage(videos: videos, continuation: cont)
         }
 
@@ -107,8 +107,8 @@ extension InnertubeClient {
         }
 
         // Log unknown structure
-        print("[Innertube] parseTVHistoryPage: unknown structure. topKeys=\(json.keys.sorted())")
-        if let c = contents { print("[Innertube] contentsKeys=\(c.keys.sorted())") }
+        AppLog.innertube("parseTVHistoryPage: unknown structure. topKeys=\(json.keys.sorted())")
+        if let c = contents { AppLog.innertube("contentsKeys=\(c.keys.sorted())") }
         return FeedPage(videos: [], continuation: nil)
     }
 

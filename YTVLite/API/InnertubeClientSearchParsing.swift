@@ -261,7 +261,7 @@ extension InnertubeClient {
             let channelId = header["channelId"] as? String ?? fallbackChannelId
 
             if !title.isEmpty || avatarURL != nil {
-                //print("[Innertube] parseChannelInfo: heuristic header matched for \(fallbackChannelId)")
+                //AppLog.innertube("parseChannelInfo: heuristic header matched for \(fallbackChannelId)")
                 return ChannelInfo(id: channelId, title: title,
                                    avatarURL: avatarURL,
                                    subscriberCountText: subscriberCountText,
@@ -276,12 +276,12 @@ extension InnertubeClient {
             let contentKeys = (tvBrowse["content"] as? [String: Any])?.keys.sorted().joined(separator: ", ") ?? "nil"
             let rendererPaths = Array(collectRendererKeys(in: tvBrowse).prefix(30)).sorted().joined(separator: ", ")
             let thumbnailURLs = Array(collectThumbnailURLs(in: tvBrowse).prefix(10)).joined(separator: ", ")
-            print("[Innertube] parseChannelInfo failed for \(fallbackChannelId). tvBrowse keys: \(topKeys). header keys: \(headerKeys). content keys: \(contentKeys)")
-            print("[Innertube] channel renderers for \(fallbackChannelId): \(rendererPaths)")
-            print("[Innertube] channel thumbnails for \(fallbackChannelId): \(thumbnailURLs)")
+            AppLog.innertube("parseChannelInfo failed for \(fallbackChannelId). tvBrowse keys: \(topKeys). header keys: \(headerKeys). content keys: \(contentKeys)")
+            AppLog.innertube("channel renderers for \(fallbackChannelId): \(rendererPaths)")
+            AppLog.innertube("channel thumbnails for \(fallbackChannelId): \(thumbnailURLs)")
         } else {
             let topKeys = json.keys.sorted().joined(separator: ", ")
-            print("[Innertube] parseChannelInfo failed for \(fallbackChannelId). top-level keys: \(topKeys)")
+            AppLog.innertube("parseChannelInfo failed for \(fallbackChannelId). top-level keys: \(topKeys)")
         }
 
         return nil
@@ -294,10 +294,10 @@ extension InnertubeClient {
                 let isSubscribed = toggle["isToggled"] as? Bool ?? false
                 let text = simpleText(from: toggle["defaultText"]) ??
                     simpleText(from: toggle["toggledText"])
-                print("[Subscribe] toggleButtonRenderer found, isToggled=\(isSubscribed), text=\(text ?? "nil")")
+                AppLog.subscribe("toggleButtonRenderer found, isToggled=\(isSubscribed), text=\(text ?? "nil")")
                 return (text, isSubscribed)
             }
-            print("[Subscribe] no subscribeButtonRenderer or toggleButtonRenderer found")
+            AppLog.subscribe("no subscribeButtonRenderer or toggleButtonRenderer found")
             return (nil, false)
         }
 
@@ -310,7 +310,7 @@ extension InnertubeClient {
             text = simpleText(from: renderer["buttonText"]) ??
                 simpleText(from: renderer["unsubscribedButtonText"])
         }
-        print("[Subscribe] subscribeButtonRenderer: subscribed=\(isSubscribed), text=\(text ?? "nil"), keys=\(renderer.keys.sorted())")
+        AppLog.subscribe("subscribeButtonRenderer: subscribed=\(isSubscribed), text=\(text ?? "nil"), keys=\(renderer.keys.sorted())")
         return (text, isSubscribed)
     }
 

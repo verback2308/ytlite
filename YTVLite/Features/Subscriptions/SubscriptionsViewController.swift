@@ -149,7 +149,7 @@ class SubscriptionsViewController: UIViewController {
                     self?.appendPage(page)
                 case .failure(let error):
                     self?.finishLoadingMore()
-                    print("Subscriptions pagination error: \(error)")
+                    AppLog.subs("pagination error: \(error)")
                 }
             }
         }

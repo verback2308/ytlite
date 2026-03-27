@@ -23,7 +23,7 @@ final class UserProfileStore {
             guard let self = self else { return }
             switch result {
             case .failure(let err):
-                print("[UserProfileStore] fetchAccountInfo failed: \(err)")
+                AppLog.auth("fetchAccountInfo failed: \(err)")
                 self.isLoading = false
             case .success(let info):
                 self.displayName = info.name

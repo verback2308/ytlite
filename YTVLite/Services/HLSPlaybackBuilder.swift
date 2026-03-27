@@ -40,20 +40,20 @@ enum HLSPlaybackBuilder {
 
         group.notify(queue: .global(qos: .userInitiated)) {
             guard let vData = videoSidxData, let aData = audioSidxData else {
-                print("[HLSPlaybackBuilder] failed to fetch sidx data")
+                AppLog.hls("failed to fetch sidx data")
                 completion(nil)
                 return
             }
 
             guard let videoSegments = HLSGenerator.parseSidx(data: vData),
                   let audioSegments = HLSGenerator.parseSidx(data: aData) else {
-                print("[HLSPlaybackBuilder] failed to parse sidx (video=\(vData.count)B audio=\(aData.count)B)")
+                AppLog.hls("failed to parse sidx (video=\(vData.count)B audio=\(aData.count)B)")
                 completion(nil)
                 return
             }
 
             let fetchElapsed = CACurrentMediaTime() - startTime
-            print(String(format: "[HLSPlaybackBuilder] sidx parsed in %.1fs — video: %d segments, audio: %d segments",
+            AppLog.hls(String(format: "sidx parsed in %.1fs — video: %d segments, audio: %d segments",
                          fetchElapsed, videoSegments.count, audioSegments.count))
 
             let videoInitBytes = videoFormat.initRangeEnd + 1
@@ -90,7 +90,7 @@ enum HLSPlaybackBuilder {
             loader.register(path: "audio-master.m3u8", content: audioOnlyMaster)
 
             let totalElapsed = CACurrentMediaTime() - startTime
-            print(String(format: "[HLSPlaybackBuilder] playlists ready in %.1fs", totalElapsed))
+            AppLog.hls(String(format: "playlists ready in %.1fs", totalElapsed))
 
             let masterURL = URL(string: "\(HLSGenerator.scheme)://master.m3u8")!
             let assetOptions: [String: Any] = ["AVURLAssetHTTPHeaderFieldsKey": headers]
@@ -112,13 +112,13 @@ enum HLSPlaybackBuilder {
         request.setValue("bytes=\(start)-\(end)", forHTTPHeaderField: "Range")
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
-                print("[HLSPlaybackBuilder] range fetch failed: \(error.localizedDescription)")
+                AppLog.hls("range fetch failed: \(error.localizedDescription)")
                 completion(nil)
                 return
             }
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
             if status != 206 && status != 200 {
-                print("[HLSPlaybackBuilder] range fetch status \(status)")
+                AppLog.hls("range fetch status \(status)")
             }
             completion(data)
         }.resume()

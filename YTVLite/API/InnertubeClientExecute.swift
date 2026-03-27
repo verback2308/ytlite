@@ -20,12 +20,12 @@ extension InnertubeClient {
                     completion(.failure(APIError.decodingFailed)); return
                 }
                 if let info = InnertubeClient.parseAccountsListJSON(json) {
-                    print("[Innertube] accountsList: name=\(info.name), avatar=\(info.avatarURL ?? "nil")")
+                    AppLog.innertube("accountsList: name=\(info.name), avatar=\(info.avatarURL ?? "nil")")
                     completion(.success(info))
                 } else {
                     if let pretty = try? JSONSerialization.data(withJSONObject: json, options: .prettyPrinted),
                        let str = String(data: pretty, encoding: .utf8) {
-                        print("[Innertube] accountsList unknown structure:\n\(str.prefix(3000))")
+                        AppLog.innertube("accountsList unknown structure:\n\(str.prefix(3000))")
                     }
                     completion(.failure(APIError.decodingFailed))
                 }
@@ -149,7 +149,7 @@ extension InnertubeClient {
                     return Playlist(id: playlistId, title: title, description: "",
                                     thumbnailURL: nil, itemCount: nil)
                 }
-                print("[Innertube] playlists via FEmy_youtube: \(playlists.count)")
+                AppLog.innertube("playlists via FEmy_youtube: \(playlists.count)")
 
                 // Include Watch Later in thumbnail batch
                 let wl = Playlist(id: "WL", title: "Watch Later", description: "",
@@ -252,7 +252,7 @@ extension InnertubeClient {
                     else { return nil }
                     return InnertubeClient.parseTileRenderer(tile)
                 }
-                print("[Innertube] playlist \(playlistId): \(videos.count) videos via Innertube")
+                AppLog.innertube("playlist \(playlistId): \(videos.count) videos via Innertube")
                 if videos.isEmpty {
                     completion(.failure(APIError.decodingFailed))
                 } else {
@@ -267,7 +267,7 @@ extension InnertubeClient {
             guard let self = self else { return }
             switch result {
             case .failure(let e):
-                print("[Innertube] sendVote '\(endpoint)' token error: \(e)")
+                AppLog.innertube("sendVote '\(endpoint)' token error: \(e)")
                 completion(.failure(e))
             case .success(let token):
                 guard let url = URL(string: "\(self.baseURL)/\(endpoint)") else {
@@ -285,15 +285,15 @@ extension InnertubeClient {
                     "X-Youtube-Client-Name": "7",
                     "X-Youtube-Client-Version": "7.20260311.12.00",
                 ]
-                print("[Innertube] sendVote '\(endpoint)' videoId=\(videoId)")
+                AppLog.innertube("sendVote '\(endpoint)' videoId=\(videoId)")
                 self.api.post(url: url, headers: headers, body: bodyData) { result in
                     switch result {
                     case .failure(let e):
-                        print("[Innertube] sendVote '\(endpoint)' failed: \(e)")
+                        AppLog.innertube("sendVote '\(endpoint)' failed: \(e)")
                         completion(.failure(e))
                     case .success(let data):
                         let preview = String(data: data.prefix(200), encoding: .utf8) ?? "?"
-                        print("[Innertube] sendVote '\(endpoint)' success, response: \(preview)")
+                        AppLog.innertube("sendVote '\(endpoint)' success, response: \(preview)")
                         completion(.success(()))
                     }
                 }
@@ -350,9 +350,9 @@ extension InnertubeClient {
                 if page.videos.isEmpty {
                     let topKeys = json.keys.joined(separator: ", ")
                     let contentsKeys = (json["contents"] as? [String: Any])?.keys.joined(separator: ", ") ?? "nil"
-                    print("[Innertube] web browse '\(browseId ?? "continuation")': 0 videos. topKeys=[\(topKeys)] contentsKeys=[\(contentsKeys)]")
+                    AppLog.innertube("web browse '\(browseId ?? "continuation")': 0 videos. topKeys=[\(topKeys)] contentsKeys=[\(contentsKeys)]")
                 } else {
-                    print("[Innertube] web browse '\(browseId ?? "continuation")': \(page.videos.count) videos")
+                    AppLog.innertube("web browse '\(browseId ?? "continuation")': \(page.videos.count) videos")
                 }
                 completion(.success(page))
             }
@@ -389,15 +389,15 @@ extension InnertubeClient {
                     let docsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
                     if let file = docsDir?.appendingPathComponent("history_response.json") {
                         try? pretty.write(to: file)
-                        print("[Innertube] TV history JSON dumped to: \(file.path)")
+                        AppLog.innertube("TV history JSON dumped to: \(file.path)")
                     }
                     // Also log top-level and contents keys
                     let topKeys = json.keys.sorted().joined(separator: ", ")
                     let contentsKeys = (json["contents"] as? [String: Any])?.keys.sorted().joined(separator: ", ") ?? "nil (array or missing)"
-                    print("[Innertube] TVhistory topKeys=[\(topKeys)] contentsKeys=[\(contentsKeys)]")
+                    AppLog.innertube("TVhistory topKeys=[\(topKeys)] contentsKeys=[\(contentsKeys)]")
                 }
                 let page = InnertubeClient.parseTVHistoryPage(json)
-                print("[Innertube] TV history: \(page.videos.count) videos, cont=\(page.continuation != nil)")
+                AppLog.innertube("TV history: \(page.videos.count) videos, cont=\(page.continuation != nil)")
                 completion(.success(page))
             }
         }
@@ -424,7 +424,7 @@ extension InnertubeClient {
                 }
                 let page = InnertubeClient.parsePageJSON(json)
                 if page.videos.isEmpty {
-                    print("[Innertube] executeBrowseAnonymous: empty result for browseId=\(browseId)")
+                    AppLog.innertube("executeBrowseAnonymous: empty result for browseId=\(browseId)")
                     completion(.failure(APIError.decodingFailed))
                 } else {
                     completion(.success(page))
@@ -467,7 +467,6 @@ extension InnertubeClient {
 
     func executeChannelBrowse(channelId: String, token: String,
                                       completion: @escaping (Result<ChannelInfo, Error>) -> Void) {
-        //print("[Innertube] channel browse TV attempt: \(channelId)")
         executeChannelBrowse(channelId: channelId, token: token, context: tvContext, completion: completion)
     }
 
@@ -491,18 +490,17 @@ extension InnertubeClient {
             switch result {
             case .failure(let error):
                 let clientName = (((context["context"] as? [String: Any])?["client"] as? [String: Any])?["clientName"] as? String) ?? "unknown"
-                print("[Innertube] channel browse request failed (\(clientName)) \(channelId): \(error)")
+                AppLog.innertube("channel browse request failed (\(clientName)) \(channelId): \(error)")
                 completion(.failure(error))
             case .success(let data):
                 let clientName = (((context["context"] as? [String: Any])?["client"] as? [String: Any])?["clientName"] as? String) ?? "unknown"
                 guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                       let info = InnertubeClient.parseChannelInfo(json, fallbackChannelId: channelId)
                 else {
-                    print("[Innertube] channel browse parse failed (\(clientName)) for \(channelId)")
+                    AppLog.innertube("channel browse parse failed (\(clientName)) for \(channelId)")
                     completion(.failure(APIError.decodingFailed))
                     return
                 }
-                //print("[Innertube] parsed channel info (\(clientName)) \(channelId), avatar: \(info.avatarURL ?? "nil"), title: \(info.title)")
                 completion(.success(info))
             }
         }
@@ -549,7 +547,7 @@ extension InnertubeClient {
                   let tvJson = try? JSONSerialization.jsonObject(with: tvData) as? [String: Any],
                   let tvInfo = InnertubeClient.parseChannelInfo(tvJson, fallbackChannelId: channelId)
             else {
-                print("[Innertube] channel page parse failed for \(channelId)")
+                AppLog.innertube("channel page parse failed for \(channelId)")
                 if case .failure(let err) = result {
                     completion(.failure(err))
                 } else {
@@ -583,7 +581,7 @@ extension InnertubeClient {
                 )
             }
 
-            print("[Channel] parsed: title='\(finalInfo.title)' subs='\(finalInfo.subscriberCountText ?? "nil")' banner=\(finalInfo.bannerURL != nil ? "YES" : "NO") verified=\(finalInfo.isVerified)")
+            AppLog.channel("parsed: title='\(finalInfo.title)' subs='\(finalInfo.subscriberCountText ?? "nil")' banner=\(finalInfo.bannerURL != nil ? "YES" : "NO") verified=\(finalInfo.isVerified)")
             completion(.success(ChannelPage(info: finalInfo,
                                             videosPage: page,
                                             subscribeButtonText: subscribeState.text,
@@ -615,13 +613,13 @@ extension InnertubeClient {
         api.post(url: url, headers: headers, body: bodyData, cancellationToken: cancellationToken) { result in
             switch result {
             case .failure(let error):
-                print("[Innertube] watch next request failed \(video.id): \(error)")
+                AppLog.innertube("watch next request failed \(video.id): \(error)")
                 completion(.failure(error))
             case .success(let data):
                 guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                       let page = InnertubeClient.parseWatchPage(json, fallbackVideo: video)
                 else {
-                    print("[Innertube] watch next parse failed for \(video.id)")
+                    AppLog.innertube("watch next parse failed for \(video.id)")
                     completion(.failure(APIError.decodingFailed))
                     return
                 }
@@ -659,13 +657,13 @@ extension InnertubeClient {
         api.post(url: url, headers: headers, body: bodyData, cancellationToken: cancellationToken) { result in
             switch result {
             case .failure(let error):
-                print("[Innertube] comments request failed \(videoId): \(error)")
+                AppLog.innertube("comments request failed \(videoId): \(error)")
                 completion(.failure(error))
             case .success(let data):
                 guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                       let page = Self.parseCommentsPage(json)
                 else {
-                    print("[Innertube] comments parse failed for \(videoId)")
+                    AppLog.innertube("comments parse failed for \(videoId)")
                     completion(.failure(APIError.decodingFailed))
                     return
                 }
@@ -737,30 +735,30 @@ extension InnertubeClient {
 
         let requestHeaders = client.apiHeaders(token: token, visitorData: visitorData)
 
-        print("[Innertube] sending \(client) request to \(url.absoluteString), bodySize=\(bodyData.count), headers=\(requestHeaders.keys.sorted().joined(separator: ","))")
+        AppLog.innertube("sending \(client) request to \(url.absoluteString), bodySize=\(bodyData.count), headers=\(requestHeaders.keys.sorted().joined(separator: ","))")
 
         api.post(url: url, headers: requestHeaders, body: bodyData, cancellationToken: cancellationToken) { result in
             switch result {
             case .failure(let error):
-                print("[Innertube] direct playback request failed \(videoId), client: \(client): \(error)")
+                AppLog.innertube("direct playback request failed \(videoId), client: \(client): \(error)")
                 completion(.failure(error))
             case .success(let data):
                 guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                       let info = Self.parseDirectPlaybackInfo(json)
                 else {
-                    print("[Innertube] direct playback parse failed \(videoId), client: \(client), responseBytes=\(data.count)")
+                    AppLog.innertube("direct playback parse failed \(videoId), client: \(client), responseBytes=\(data.count)")
                     if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                        print("[Innertube] response topKeys (\(client)): \(json.keys.sorted().joined(separator: ", "))")
+                        AppLog.innertube("response topKeys (\(client)): \(json.keys.sorted().joined(separator: ", "))")
                         if let errorObj = json["error"] {
                             if let errorData = try? JSONSerialization.data(withJSONObject: errorObj, options: .prettyPrinted),
                                let errorStr = String(data: errorData, encoding: .utf8) {
-                                print("[Innertube] error body (\(client)): \(errorStr)")
+                                AppLog.innertube("error body (\(client)): \(errorStr)")
                             }
                         }
                         Self.logPlayerDebug(videoId: videoId, contextName: client.description, json: json)
                     } else {
                         let preview = String(data: data.prefix(500), encoding: .utf8) ?? "binary"
-                        print("[Innertube] response not JSON (\(client)): \(preview)")
+                        AppLog.innertube("response not JSON (\(client)): \(preview)")
                     }
                     completion(.failure(APIError.decodingFailed))
                     return
@@ -772,7 +770,7 @@ extension InnertubeClient {
                 let sabr = info.serverAbrStreamingURL?.absoluteString ?? "nil"
                 let videoUstreamerLength = info.videoPlaybackUstreamerConfig?.count ?? 0
                 let onesieUstreamerLength = info.onesieUstreamerConfig?.count ?? 0
-                print("[Innertube] direct playback selected \(videoId), client: \(client): progressive=\(progressive), video=\(video), audio=\(audio), sabr=\(sabr), ustreamer=\(info.hasVideoPlaybackUstreamerConfig), videoUstreamerLen=\(videoUstreamerLength), onesieUstreamerLen=\(onesieUstreamerLength)")
+                AppLog.innertube("direct playback selected \(videoId), client: \(client): progressive=\(progressive), video=\(video), audio=\(audio), sabr=\(sabr), ustreamer=\(info.hasVideoPlaybackUstreamerConfig), videoUstreamerLen=\(videoUstreamerLength), onesieUstreamerLen=\(onesieUstreamerLength)")
                 completion(.success(info))
             }
         }
@@ -814,11 +812,11 @@ extension InnertubeClient {
         api.post(url: url, headers: headers, body: bodyData) { result in
             switch result {
             case .failure(let error):
-                print("[Innertube] player debug request failed (\(contextName)) \(videoId): \(error)")
+                AppLog.innertube("player debug request failed (\(contextName)) \(videoId): \(error)")
                 completion(.failure(error))
             case .success(let data):
                 guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                    print("[Innertube] player debug decode failed (\(contextName)) \(videoId)")
+                    AppLog.innertube("player debug decode failed (\(contextName)) \(videoId)")
                     completion(.failure(APIError.decodingFailed))
                     return
                 }
@@ -843,15 +841,15 @@ extension InnertubeClient {
             "Content-Type": "application/json",
             "Authorization": "Bearer \(token)",
         ]
-        print("[Innertube] executeSubscribe channelId=\(channelId)")
+        AppLog.innertube("executeSubscribe channelId=\(channelId)")
         let task = api.post(url: url, headers: headers, body: bodyData) { result in
             switch result {
             case .failure(let e):
-                print("[Innertube] executeSubscribe failed: \(e)")
+                AppLog.innertube("executeSubscribe failed: \(e)")
                 completion(.failure(e))
             case .success(let data):
                 let preview = String(data: data.prefix(200), encoding: .utf8) ?? "?"
-                print("[Innertube] executeSubscribe success, response: \(preview)")
+                AppLog.innertube("executeSubscribe success, response: \(preview)")
                 completion(.success(()))
             }
         }
@@ -872,15 +870,15 @@ extension InnertubeClient {
             "Content-Type": "application/json",
             "Authorization": "Bearer \(token)",
         ]
-        print("[Innertube] executeUnsubscribe channelId=\(channelId)")
+        AppLog.innertube("executeUnsubscribe channelId=\(channelId)")
         let task = api.post(url: url, headers: headers, body: bodyData) { result in
             switch result {
             case .failure(let e):
-                print("[Innertube] executeUnsubscribe failed: \(e)")
+                AppLog.innertube("executeUnsubscribe failed: \(e)")
                 completion(.failure(e))
             case .success(let data):
                 let preview = String(data: data.prefix(200), encoding: .utf8) ?? "?"
-                print("[Innertube] executeUnsubscribe success, response: \(preview)")
+                AppLog.innertube("executeUnsubscribe success, response: \(preview)")
                 completion(.success(()))
             }
         }

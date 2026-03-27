@@ -65,7 +65,7 @@ final class WebPoTokenService: NSObject {
     func fetchSessionToken(identifier: String, completion: @escaping (Result<String, Error>) -> Void) {
         queue.async {
             if let cached = self.validCachedToken(for: identifier) {
-                print("[WebPoTokenService] cache hit for content token")
+                AppLog.poToken("cache hit for content token")
                 DispatchQueue.main.async {
                     completion(.success(cached.token))
                 }
@@ -76,7 +76,7 @@ final class WebPoTokenService: NSObject {
             self.pending[identifier, default: []].append(request)
 
             if self.pending[identifier]?.count ?? 0 > 1 {
-                print("[WebPoTokenService] joined pending mint for visitorData")
+                AppLog.poToken("joined pending mint for visitorData")
                 return
             }
 
@@ -88,7 +88,7 @@ final class WebPoTokenService: NSObject {
             self.queue.asyncAfter(deadline: .now() + self.mintTimeout, execute: timeoutWorkItem)
 
             DispatchQueue.main.async {
-                print("[WebPoTokenService] scheduling mint attempt=0")
+                AppLog.poToken("scheduling mint attempt=0")
                 self.ensureReady {
                     self.runMint(identifier: identifier)
                 }
@@ -137,7 +137,7 @@ final class WebPoTokenService: NSObject {
             self.activeAttemptIDs[identifier] = attemptID
         }
 
-        print("[WebPoTokenService] mint start")
+        AppLog.poToken("mint start")
 
         let script = """
         (() => {
@@ -335,7 +335,7 @@ final class WebPoTokenService: NSObject {
                     self.activeAttemptIDs[identifier] == attemptID
                 }
                 guard isCurrentAttempt else {
-                    print("[WebPoTokenService] ignoring stale mint evaluation error: \(error.localizedDescription)")
+                    AppLog.poToken("ignoring stale mint evaluation error: \(error.localizedDescription)")
                     return
                 }
                 self.resolve(identifier: identifier, result: .failure(error))
@@ -355,7 +355,7 @@ final class WebPoTokenService: NSObject {
                self.shouldRetryAfterFailure(error),
                let maxRetry = completions.map(\.retryCount).max(),
                maxRetry < self.maxRetryCount {
-                print("[WebPoTokenService] retrying mint after timeout")
+                AppLog.poToken("retrying mint after timeout")
                 self.resetWebViewState()
                 let retried = completions.map {
                     PendingRequest(identifier: $0.identifier, retryCount: $0.retryCount + 1, completion: $0.completion)
@@ -370,7 +370,7 @@ final class WebPoTokenService: NSObject {
                 self.queue.asyncAfter(deadline: .now() + self.mintTimeout, execute: timeoutWorkItem)
 
                 DispatchQueue.main.async {
-                    print("[WebPoTokenService] scheduling mint attempt=\(maxRetry + 1)")
+                    AppLog.poToken("scheduling mint attempt=\(maxRetry + 1)")
                     self.ensureReady {
                         self.runMint(identifier: identifier)
                     }
@@ -379,17 +379,17 @@ final class WebPoTokenService: NSObject {
             }
 
             if case .success(let token) = result {
-                print("[WebPoTokenService] mint success")
+                AppLog.poToken("mint success")
                 self.storeCachedToken(token, for: identifier)
             } else if case .failure(let error) = result {
                 if let cached = self.staleFallbackToken(for: identifier) {
-                    print("[WebPoTokenService] using stale cached content token after failure")
+                    AppLog.poToken("using stale cached content token after failure")
                     DispatchQueue.main.async {
                         completions.forEach { $0.completion(.success(cached.token)) }
                     }
                     return
                 }
-                print("[WebPoTokenService] mint failed: \(error)")
+                AppLog.poToken("mint failed: \(error)")
             }
 
             DispatchQueue.main.async {
@@ -500,7 +500,7 @@ final class WebPoTokenService: NSObject {
                         self.activeAttemptIDs[identifier] == attemptID
                     }
                     guard isCurrentAttempt else {
-                        print("[WebPoTokenService] ignoring stale continueMint evaluation error: \(error.localizedDescription)")
+                        AppLog.poToken("ignoring stale continueMint evaluation error: \(error.localizedDescription)")
                         return
                     }
                     self.resolve(identifier: identifier, result: .failure(error))
@@ -510,7 +510,7 @@ final class WebPoTokenService: NSObject {
     }
 
     private func startGenerateIT(identifier: String, attemptID: String?, botguardResponse: String) {
-        print("[WebPoTokenService] generate_it:native:start")
+        AppLog.poToken("generate_it:native:start")
 
         guard let url = URL(string: "https://jnn-pa.googleapis.com/$rpc/google.internal.waa.v1.Waa/GenerateIT") else {
             resolve(identifier: identifier, result: .failure(ServiceError.generateITFailed("Invalid URL")))
@@ -532,13 +532,13 @@ final class WebPoTokenService: NSObject {
 
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error {
-                print("[WebPoTokenService] generate_it:native:error \(error.localizedDescription)")
+                AppLog.poToken("generate_it:native:error \(error.localizedDescription)")
                 self.resolve(identifier: identifier, result: .failure(ServiceError.generateITFailed(error.localizedDescription)))
                 return
             }
 
             if let http = response as? HTTPURLResponse {
-                print("[WebPoTokenService] generate_it:native:status \(http.statusCode)")
+                AppLog.poToken("generate_it:native:status \(http.statusCode)")
             }
 
             guard let data else {
@@ -548,20 +548,20 @@ final class WebPoTokenService: NSObject {
 
             guard let json = try? JSONSerialization.jsonObject(with: data, options: []) else {
                 let text = String(data: data, encoding: .utf8) ?? "<binary>"
-                print("[WebPoTokenService] generate_it:native:raw \(text.prefix(300))")
+                AppLog.poToken("generate_it:native:raw \(text.prefix(300))")
                 self.resolve(identifier: identifier, result: .failure(ServiceError.generateITFailed("Invalid JSON")))
                 return
             }
 
             let integrityToken = self.extractIntegrityToken(from: json)
-            print("[WebPoTokenService] generate_it:native:shape \(String(describing: json).prefix(500))")
+            AppLog.poToken("generate_it:native:shape \(String(describing: json).prefix(500))")
 
             guard let integrityToken, !integrityToken.isEmpty else {
                 self.resolve(identifier: identifier, result: .failure(ServiceError.generateITFailed("Missing integrity token")))
                 return
             }
 
-            print("[WebPoTokenService] generate_it:native:ok")
+            AppLog.poToken("generate_it:native:ok")
             self.continueMint(identifier: identifier, attemptID: attemptID, integrityToken: integrityToken)
         }.resume()
     }
@@ -633,9 +633,9 @@ extension WebPoTokenService: WKScriptMessageHandler {
         }
         if !isCurrentAttempt {
             if let text = body["message"] as? String {
-                print("[WebPoTokenService] ignoring stale \(message.name): \(text)")
+                AppLog.poToken("ignoring stale \(message.name): \(text)")
             } else {
-                print("[WebPoTokenService] ignoring stale \(message.name)")
+                AppLog.poToken("ignoring stale \(message.name)")
             }
             return
         }
@@ -658,7 +658,7 @@ extension WebPoTokenService: WKScriptMessageHandler {
             }
         case "webPoLog":
             if let text = body["message"] as? String {
-                print("[WebPoTokenService] \(text)")
+                AppLog.poToken("\(text)")
             }
         default:
             break

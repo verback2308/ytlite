@@ -197,7 +197,7 @@ final class OnesieService {
                     let encryptedClientKey = Self.decodeWebSafeBase64(encKeyB64),
                     let onesieUstreamerConfig = Self.decodeWebSafeBase64(ustreamerB64)
                 else {
-                    print("[OnesieService] tv_config parse failed")
+                    AppLog.onesie("tv_config parse failed")
                     completion(.failure(OnesieError.parseError("tv_config structure"))); return
                 }
 
@@ -210,7 +210,7 @@ final class OnesieService {
                     keyExpiresInSeconds: keyExpires,
                     fetchedAt: Date()
                 )
-                print("[OnesieService] hot config OK: baseUrl=\(baseUrl) keyExpires=\(keyExpires)s")
+                AppLog.onesie("hot config OK: baseUrl=\(baseUrl) keyExpires=\(keyExpires)s")
                 self?.queue.async { self?.cachedConfig = config }
                 completion(.success(config))
             }.resume()
@@ -245,7 +245,7 @@ final class OnesieService {
 
                 // Strip /initplayback path to get just the host portion
                 let host = text.components(separatedBy: "/initplayback").first ?? text
-                print("[OnesieService] redirector host: \(host)")
+                AppLog.onesie("redirector host: \(host)")
                 self?.queue.async { self?.cachedRedirectorHost = host }
                 completion(.success(host))
             }.resume()
@@ -375,7 +375,7 @@ final class OnesieService {
             completion(.failure(OnesieError.invalidURL)); return
         }
 
-        print("[OnesieService] POST \(reqURL.absoluteString.prefix(120))...")
+        AppLog.onesie("POST \(reqURL.absoluteString.prefix(120))...")
 
         var urlReq = URLRequest(url: reqURL)
         urlReq.httpMethod = "POST"
@@ -394,13 +394,13 @@ final class OnesieService {
 
         URLSession.shared.dataTask(with: urlReq) { data, response, error in
             if let error = error {
-                print("[OnesieService] request failed: \(error.localizedDescription)")
+                AppLog.onesie("request failed: \(error.localizedDescription)")
                 completion(.failure(error)); return
             }
 
             let http = response as? HTTPURLResponse
             let body = data ?? Data()
-            print("[OnesieService] response status=\(http?.statusCode ?? -1) bytes=\(body.count)")
+            AppLog.onesie("response status=\(http?.statusCode ?? -1) bytes=\(body.count)")
 
             guard let bootstrap = Self.parseUMPResponse(body) else {
                 completion(.failure(OnesieError.parseError("UMP response"))); return
@@ -427,7 +427,7 @@ final class OnesieService {
                 if let header = parseOnesieHeader(part.payload) {
                     pendingHeaders.append(header)
                     let h = header
-                    print("[OnesieService] ONESIE_HEADER type=\(h.type) compression=\(h.compressionType)")
+                    AppLog.onesie("ONESIE_HEADER type=\(h.type) compression=\(h.compressionType)")
                 }
             case 11: // ONESIE_DATA
                 if !pendingHeaders.isEmpty {
@@ -440,19 +440,19 @@ final class OnesieService {
                     }
                 }
             case 44: // SABR_ERROR
-                print("[OnesieService] SABR_ERROR part in response")
+                AppLog.onesie("SABR_ERROR part in response")
             default:
-                print("[OnesieService] UMP part type=\(part.type) size=\(part.size)")
+                AppLog.onesie("UMP part type=\(part.type) size=\(part.size)")
             }
         }
 
         if !pendingHeaders.isEmpty {
             let droppedTypes = pendingHeaders.map(\.type)
-            print("[OnesieService] unpaired ONESIE_HEADER types: \(droppedTypes)")
+            AppLog.onesie("unpaired ONESIE_HEADER types: \(droppedTypes)")
         }
 
         guard let (compressionType, responseData) = playerResponseEntry else {
-            print("[OnesieService] no ONESIE_PLAYER_RESPONSE (type=0) found in UMP")
+            AppLog.onesie("no ONESIE_PLAYER_RESPONSE (type=0) found in UMP")
             return nil
         }
 
@@ -463,40 +463,40 @@ final class OnesieService {
             let httpStatus = extractVarintField(fieldNumber: 2, from: responseData),
             let rawBody = extractBytesField(fieldNumber: 4, from: responseData)
         else {
-            print("[OnesieService] OnesieInnertubeResponse parse failed")
+            AppLog.onesie("OnesieInnertubeResponse parse failed")
             return nil
         }
 
-        print("[OnesieService] proxy_status=\(proxyStatus) http_status=\(httpStatus) body=\(rawBody.count)B compression=\(compressionType)")
+        AppLog.onesie("proxy_status=\(proxyStatus) http_status=\(httpStatus) body=\(rawBody.count)B compression=\(compressionType)")
 
         guard proxyStatus == 1 /* OK */, httpStatus == 200 else {
-            print("[OnesieService] non-OK status: proxy=\(proxyStatus) http=\(httpStatus)")
+            AppLog.onesie("non-OK status: proxy=\(proxyStatus) http=\(httpStatus)")
             return nil
         }
 
-        print("[OnesieService] rawBody first bytes: \(rawBody.prefix(8).map { String(format: "%02x", $0) }.joined())")
+        AppLog.onesie("rawBody first bytes: \(rawBody.prefix(8).map { String(format: "%02x", $0) }.joined())")
 
         // Try JSON parse first (server may send uncompressed despite compression_type=1)
         let bodyBytes: Data
         if let _ = try? JSONSerialization.jsonObject(with: rawBody) {
             bodyBytes = rawBody
         } else if compressionType == 1, let decompressed = gunzip(rawBody) {
-            print("[OnesieService] gzip decompressed \(rawBody.count)B → \(decompressed.count)B")
+            AppLog.onesie("gzip decompressed \(rawBody.count)B → \(decompressed.count)B")
             bodyBytes = decompressed
         } else {
-            print("[OnesieService] body is neither JSON nor gzip (\(rawBody.count)B)")
+            AppLog.onesie("body is neither JSON nor gzip (\(rawBody.count)B)")
             return nil
         }
 
         guard let json = try? JSONSerialization.jsonObject(with: bodyBytes) as? [String: Any] else {
-            print("[OnesieService] player response JSON parse failed, first bytes: \(bodyBytes.prefix(16).map { String(format: "%02x", $0) }.joined())")
+            AppLog.onesie("player response JSON parse failed, first bytes: \(bodyBytes.prefix(16).map { String(format: "%02x", $0) }.joined())")
             return nil
         }
 
         let partSummary = responseParts
             .map { "\($0.type):\($0.payload.count)B/c\($0.compressionType)" }
             .joined(separator: ",")
-        print("[OnesieService] captured parts: [\(partSummary)]")
+        AppLog.onesie("captured parts: [\(partSummary)]")
 
         return OnesiePlaybackBootstrap(
             playerJSON: json,
@@ -628,7 +628,7 @@ final class OnesieService {
 
     private static func encryptAesCtrHmac(data: Data, clientKeyData: Data) -> EncryptedData? {
         guard clientKeyData.count == 32 else {
-            print("[OnesieService] clientKeyData wrong length: \(clientKeyData.count)")
+            AppLog.onesie("clientKeyData wrong length: \(clientKeyData.count)")
             return nil
         }
 
@@ -670,7 +670,7 @@ final class OnesieService {
             }
         }
         guard createStatus == kCCSuccess, let ref = cryptorRef else {
-            print("[OnesieService] CCCryptorCreateWithMode failed: \(createStatus)")
+            AppLog.onesie("CCCryptorCreateWithMode failed: \(createStatus)")
             return nil
         }
         defer { CCCryptorRelease(ref) }
@@ -684,7 +684,7 @@ final class OnesieService {
             }
         }
         guard updateStatus == kCCSuccess else {
-            print("[OnesieService] CCCryptorUpdate failed: \(updateStatus)")
+            AppLog.onesie("CCCryptorUpdate failed: \(updateStatus)")
             return nil
         }
         return output.prefix(moved)

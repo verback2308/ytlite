@@ -7,7 +7,7 @@ class ThumbnailImageView: UIImageView {
     private var currentURL: URL?
 
     static func clearCache() {
-        print("[ImageCache] clear all")
+        AppLog.img("clear all")
         cache.removeAllObjects()
         diskCache.clear()
     }
@@ -94,7 +94,7 @@ private final class ImageDiskCache {
         else { return nil }
 
         if Date().timeIntervalSince(modifiedAt) > ttl {
-            print("[ImageCache] disk expired \(url.absoluteString)")
+            AppLog.img("disk expired \(url.absoluteString)")
             try? fm.removeItem(at: fileURL)
             return nil
         }

@@ -105,13 +105,13 @@ extension InnertubeClient {
 
     static func parsePlayerJSON(_ json: [String: Any]) -> DirectPlaybackInfo? {
         let topKeys = json.keys.sorted().joined(separator: ", ")
-        print("[InnertubeClient] parsePlayerJSON topKeys: \(topKeys)")
+        AppLog.innertube("parsePlayerJSON topKeys: \(topKeys)")
         if let sd = json["streamingData"] as? [String: Any] {
             let formats = (sd["formats"] as? [[String: Any]])?.count ?? 0
             let adaptive = (sd["adaptiveFormats"] as? [[String: Any]])?.count ?? 0
-            print("[InnertubeClient] streamingData found: formats=\(formats) adaptive=\(adaptive)")
+            AppLog.innertube("streamingData found: formats=\(formats) adaptive=\(adaptive)")
         } else {
-            print("[InnertubeClient] streamingData MISSING — playabilityStatus: \((json["playabilityStatus"] as? [String: Any])?["status"] ?? "nil")")
+            AppLog.innertube("streamingData MISSING — playabilityStatus: \((json["playabilityStatus"] as? [String: Any])?["status"] ?? "nil")")
         }
         return parseDirectPlaybackInfo(json)
     }
@@ -236,10 +236,10 @@ extension InnertubeClient {
                 return lh > rh
             }
         if let dv = dashVideoFormat {
-            print("[Innertube] DASH video: itag=\(dv.itag) init=0-\(dv.initRangeEnd) index=\(dv.indexRangeStart)-\(dv.indexRangeEnd) clen=\(dv.contentLength) codecs=\(dv.codecs)")
+            AppLog.innertube("DASH video: itag=\(dv.itag) init=0-\(dv.initRangeEnd) index=\(dv.indexRangeStart)-\(dv.indexRangeEnd) clen=\(dv.contentLength) codecs=\(dv.codecs)")
         }
         if let da = dashAudioFormat {
-            print("[Innertube] DASH audio: itag=\(da.itag) init=0-\(da.initRangeEnd) index=\(da.indexRangeStart)-\(da.indexRangeEnd) clen=\(da.contentLength) codecs=\(da.codecs)")
+            AppLog.innertube("DASH audio: itag=\(da.itag) init=0-\(da.initRangeEnd) index=\(da.indexRangeStart)-\(da.indexRangeEnd) clen=\(da.contentLength) codecs=\(da.codecs)")
         }
 
         // Extract duration from format
@@ -308,10 +308,10 @@ extension InnertubeClient {
         let formatSummary = formats.prefix(3).map(summarize).joined(separator: " | ")
         let adaptiveSummary = adaptiveFormats.prefix(5).map(summarize).joined(separator: " | ")
 
-        print("[Innertube] player debug (\(contextName)) \(videoId): status=\(status), reason=\(reason)")
-        print("[Innertube] player debug (\(contextName)) manifests: hls=\(hlsManifestURL), dash=\(dashManifestURL), sabr=\(sabrURL)")
-        print("[Innertube] player debug (\(contextName)) formats=\(formats.count) [\(formatSummary)]")
-        print("[Innertube] player debug (\(contextName)) adaptive=\(adaptiveFormats.count) [\(adaptiveSummary)]")
+        AppLog.innertube("player debug (\(contextName)) \(videoId): status=\(status), reason=\(reason)")
+        AppLog.innertube("player debug (\(contextName)) manifests: hls=\(hlsManifestURL), dash=\(dashManifestURL), sabr=\(sabrURL)")
+        AppLog.innertube("player debug (\(contextName)) formats=\(formats.count) [\(formatSummary)]")
+        AppLog.innertube("player debug (\(contextName)) adaptive=\(adaptiveFormats.count) [\(adaptiveSummary)]")
 
         if contextName == "TVHTML5" {
             logDirectPlaybackCandidates(videoId: videoId, formats: formats, adaptiveFormats: adaptiveFormats)
@@ -365,9 +365,9 @@ extension InnertubeClient {
 
         if let bestProgressive = progressive.first, let url = directURL(bestProgressive) {
             let quality = stringValue(bestProgressive, key: "qualityLabel")
-            print("[Innertube] player direct (\(videoId)) progressive: itag=\(itag(bestProgressive)), quality=\(quality), mime=\(mimeType(bestProgressive)), bitrate=\(bitrate(bestProgressive)), url=\(url)")
+            AppLog.innertube("player direct (\(videoId)) progressive: itag=\(itag(bestProgressive)), quality=\(quality), mime=\(mimeType(bestProgressive)), bitrate=\(bitrate(bestProgressive)), url=\(url)")
         } else {
-            print("[Innertube] player direct (\(videoId)) progressive: none")
+            AppLog.innertube("player direct (\(videoId)) progressive: none")
         }
 
         let topVideoSummary = videoCandidates.prefix(3).map {
@@ -379,15 +379,15 @@ extension InnertubeClient {
             return "itag=\(itag($0)), audio=\(audioQuality), bitrate=\(bitrate($0)), mime=\(mimeType($0))"
         }.joined(separator: " | ")
 
-        print("[Innertube] player direct (\(videoId)) mp4 video candidates: \(videoCandidates.count) [\(topVideoSummary)]")
-        print("[Innertube] player direct (\(videoId)) mp4 audio candidates: \(audioCandidates.count) [\(topAudioSummary)]")
+        AppLog.innertube("player direct (\(videoId)) mp4 video candidates: \(videoCandidates.count) [\(topVideoSummary)]")
+        AppLog.innertube("player direct (\(videoId)) mp4 audio candidates: \(audioCandidates.count) [\(topAudioSummary)]")
 
         if let bestVideo = videoCandidates.first, let bestAudio = audioCandidates.first,
            let videoURL = directURL(bestVideo), let audioURL = directURL(bestAudio) {
             let videoQuality = stringValue(bestVideo, key: "qualityLabel")
             let audioQuality = stringValue(bestAudio, key: "audioQuality")
-            print("[Innertube] player direct (\(videoId)) selected video: itag=\(itag(bestVideo)), quality=\(videoQuality), url=\(videoURL)")
-            print("[Innertube] player direct (\(videoId)) selected audio: itag=\(itag(bestAudio)), quality=\(audioQuality), url=\(audioURL)")
+            AppLog.innertube("player direct (\(videoId)) selected video: itag=\(itag(bestVideo)), quality=\(videoQuality), url=\(videoURL)")
+            AppLog.innertube("player direct (\(videoId)) selected audio: itag=\(itag(bestAudio)), quality=\(audioQuality), url=\(audioURL)")
         }
     }
 
@@ -402,7 +402,7 @@ extension InnertubeClient {
             return parseSectionList(slr)
         }
         let contentsKeys = (json["contents"] as? [String: Any])?.keys.joined(separator: ", ") ?? "nil"
-        print("[Innertube] parsePageJSON: unrecognized structure. contents keys: \(contentsKeys)")
+        AppLog.innertube("parsePageJSON: unrecognized structure. contents keys: \(contentsKeys)")
         return FeedPage(videos: [], continuation: nil)
     }
 

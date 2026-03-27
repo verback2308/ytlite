@@ -215,13 +215,13 @@ final class SponsorBlockService {
             return
         }
 
-        print("[SponsorBlock] fetching segments for videoId=\(videoId) url=\(url)")
+        AppLog.sponsorBlock("fetching segments for videoId=\(videoId) url=\(url)")
         URLSession.shared.dataTask(with: url) { data, response, error in
             if let error = error { completion(.failure(error)); return }
 
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
             if status == 404 {
-                print("[SponsorBlock] no segments for \(videoId)")
+                AppLog.sponsorBlock("no segments for \(videoId)")
                 completion(.success([]))
                 return
             }
@@ -229,7 +229,7 @@ final class SponsorBlockService {
                   let arr = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]
             else {
                 let raw = data.flatMap { String(data: $0, encoding: .utf8) } ?? "?"
-                print("[SponsorBlock] parse failed status=\(status): \(raw.prefix(300))")
+                AppLog.sponsorBlock("parse failed status=\(status): \(raw.prefix(300))")
                 completion(.failure(NSError(domain: "SponsorBlock", code: 1,
                     userInfo: [NSLocalizedDescriptionKey: "Parse error (status \(status))"])))
                 return
@@ -251,7 +251,7 @@ final class SponsorBlockService {
                     actionType: actionType
                 ))
             }
-            print("[SponsorBlock] fetched \(segments.count) segments for \(videoId)")
+            AppLog.sponsorBlock("fetched \(segments.count) segments for \(videoId)")
             completion(.success(segments))
         }.resume()
     }

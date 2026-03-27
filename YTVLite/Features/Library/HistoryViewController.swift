@@ -135,7 +135,7 @@ final class HistoryViewController: UIViewController {
                     }
                     self.tableView.reloadData()
                 case .failure(let error):
-                    print("History error: \(error)")
+                    AppLog.log("History", "error: \(error)")
                     if self.videos.isEmpty {
                         self.emptyLabel.text = "Could not load history"
                         self.emptyLabel.isHidden = false

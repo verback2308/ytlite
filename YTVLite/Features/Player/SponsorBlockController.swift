@@ -34,7 +34,7 @@ final class SponsorBlockController {
                 guard let player = playerView?.player else { return }
                 let target = CMTime(seconds: seg.endTime, preferredTimescale: 600)
                 player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero)
-                print("[SponsorBlock] auto-skipped \(seg.category.displayName) [\(seg.startTime)–\(seg.endTime)]")
+                AppLog.sponsorBlock("auto-skipped \(seg.category.displayName) [\(seg.startTime)–\(seg.endTime)]")
             case .showButton:
                 playerView?.showSkipButton(categoryName: seg.category.displayName)
             case .disabled:
@@ -57,6 +57,6 @@ final class SponsorBlockController {
         player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero)
         activeSegmentUUID = nil
         playerView?.hideSkipButton()
-        print("[SponsorBlock] user skipped \(seg.category.displayName) [\(seg.startTime)–\(seg.endTime)]")
+        AppLog.sponsorBlock("user skipped \(seg.category.displayName) [\(seg.startTime)–\(seg.endTime)]")
     }
 }
