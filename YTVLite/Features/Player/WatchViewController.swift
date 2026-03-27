@@ -1,6 +1,5 @@
 import UIKit
 import AVKit
-import WebKit
 
 final class WatchViewController: UIViewController {
 
@@ -15,15 +14,12 @@ final class WatchViewController: UIViewController {
     private var commentsContinuation: String?
     private var playerViewController: AVPlayerViewController?
     private var videoPlayerView: VideoPlayerView?
-    private var directPlayerView: SZAVPlayer?
-    private var manifestPlayerView: ManifestWebPlayerView?
     private var playerItemContext = 0
     private var activeDirectPlaybackClient: DirectPlaybackClient = .tvHTML5
     private var retriedDirectPlaybackWithWeb = false
     private var descriptionExpanded = false
     private var relatedExpansionWorkItem: DispatchWorkItem?
     private var isLoadingComments = false
-    private var fastStartLoaders: [FastStartResourceLoader] = []
     private var hlsPlaylistLoader: HLSPlaylistLoader?
 
     // SponsorBlock
@@ -199,21 +195,16 @@ final class WatchViewController: UIViewController {
         super.viewWillDisappear(animated)
         if isMovingFromParent || isBeingDismissed {
             pageLoadToken.cancel()
-            // Only pause when actually leaving the screen, not on background transition
             playerViewController?.player?.pause()
             videoPlayerView?.player?.pause()
-            directPlayerView?.pause()
-            manifestPlayerView?.stop()
         }
     }
 
     @objc private func appDidEnterBackground() {
         let bgEnabled = BackgroundPlaybackService.isEnabled
         let hasVideoPlayer = videoPlayerView?.player != nil
-        let hasDirectPlayer = directPlayerView != nil
-        let hasManifestPlayer = manifestPlayerView != nil
         let hasPVCPlayer = playerViewController?.player != nil
-        print("[WatchVC] appDidEnterBackground: bgEnabled=\(bgEnabled) videoPlayer=\(hasVideoPlayer) directPlayer=\(hasDirectPlayer) manifestPlayer=\(hasManifestPlayer) pvcPlayer=\(hasPVCPlayer)")
+        print("[WatchVC] appDidEnterBackground: bgEnabled=\(bgEnabled) videoPlayer=\(hasVideoPlayer) pvcPlayer=\(hasPVCPlayer)")
         if let player = videoPlayerView?.player {
             print("[WatchVC] videoPlayer rate=\(player.rate) status=\(player.status.rawValue) timeControlStatus=\(player.timeControlStatus.rawValue)")
         }
@@ -221,8 +212,6 @@ final class WatchViewController: UIViewController {
         guard bgEnabled else {
             playerViewController?.player?.pause()
             videoPlayerView?.player?.pause()
-            directPlayerView?.pause()
-            manifestPlayerView?.stop()
             return
         }
 
@@ -278,14 +267,12 @@ final class WatchViewController: UIViewController {
 
     deinit {
         NotificationCenter.default.removeObserver(self)
-        manifestPlayerView?.stop()
         if let item = playerViewController?.player?.currentItem {
             stopObservingPlayerItem(item)
         }
         if let item = videoPlayerView?.player?.currentItem {
             stopObservingPlayerItem(item)
         }
-        directPlayerView?.reset(cleanAsset: true)
     }
 
     @objc private func applyTheme() {
@@ -761,7 +748,6 @@ final class WatchViewController: UIViewController {
         pageLoadToken = CancellationToken()
 
         resetPlaybackSurfaces()
-        fastStartLoaders = []
         hlsPlaylistLoader = nil
         activePlaybackInfo = nil
         activeVideoFormat = nil
@@ -1159,15 +1145,6 @@ final class WatchViewController: UIViewController {
             return
         }
 
-        if let dashManifestURL = info.dashManifestURL {
-            print("[WatchViewController] choosing DASH: \(dashManifestURL.absoluteString.prefix(120))...")
-            DispatchQueue.main.async {
-                self.playerStatusLabel.text = "Loading DASH stream..."
-                self.attachManifestPlayer(url: dashManifestURL)
-            }
-            return
-        }
-
         // Generated HLS from adaptive format info — instant 720p via native AVPlayer
         if let dashVideo = info.dashVideoFormat, let dashAudio = info.dashAudioFormat {
             activePlaybackInfo = info
@@ -1233,69 +1210,11 @@ final class WatchViewController: UIViewController {
             .map { "\($0.type)(c\($0.compressionType))" }
             .joined(separator: ",")
         print("[WatchViewController] onesie bootstrap ready proxy=\(bootstrap.proxyStatus) http=\(bootstrap.httpStatus) parts=[\(typeSummary)]")
-        if info.hlsManifestURL != nil || info.dashManifestURL != nil || info.progressiveURL != nil || (info.videoURL != nil && info.audioURL != nil) {
+        if info.hlsManifestURL != nil || info.progressiveURL != nil || (info.videoURL != nil && info.audioURL != nil) {
             playDirectStream(info, client: client)
             return
         }
-        startSabrSessionIfPossible(info: info,
-                                   bootstrap: bootstrap,
-                                   client: client,
-                                   contentPoToken: contentPoToken,
-                                   contentPlaybackNonce: contentPlaybackNonce)
-    }
-
-    private func startSabrSessionIfPossible(info: DirectPlaybackInfo,
-                                            bootstrap: OnesiePlaybackBootstrap,
-                                            client: DirectPlaybackClient,
-                                            contentPoToken: String,
-                                            contentPlaybackNonce: String) {
-        guard let streamingURL = info.serverAbrStreamingURL,
-              let videoPlaybackUstreamerConfig = info.videoPlaybackUstreamerConfig,
-              let videoPlaybackUstreamerConfigData = SabrProbeService.decodeWebSafeBase64(videoPlaybackUstreamerConfig),
-              let audioFormat = info.sabrAudioFormat,
-              let videoFormat = info.sabrVideoFormat
-        else {
-            showPlaybackError("Onesie succeeded, but SABR transport fields are missing.")
-            return
-        }
-
-        DispatchQueue.main.async {
-            self.playerStatusLabel.text = "Starting SABR session..."
-        }
-
-        let configuration = SabrSessionConfiguration(
-            videoId: initialVideo.id,
-            streamingURL: streamingURL,
-            videoPlaybackUstreamerConfig: videoPlaybackUstreamerConfigData,
-            contentPoToken: contentPoToken,
-            contentPlaybackNonce: contentPlaybackNonce,
-            client: client,
-            visitorData: info.visitorData,
-            audioFormat: audioFormat,
-            videoFormat: videoFormat,
-            bootstrapParts: bootstrap.responseParts
-        )
-
-        SabrSessionService.shared.startSession(configuration: configuration) { result in
-            switch result {
-            case .failure(let error):
-                print("[WatchViewController] SABR session start failed (\(client)): \(error.localizedDescription)")
-                DispatchQueue.main.async {
-                    self.showPlaybackError("SABR session start failed: \(error.localizedDescription)")
-                }
-            case .success(let (session, response)):
-                print("[WatchViewController] SABR session started (\(client)): id=\(session.id.uuidString) status=\(response.statusCode), contentType=\(response.contentType ?? "nil"), bytes=\(response.bodySize), parts=\(response.umpPartTypes)")
-                if response.statusCode >= 400 {
-                    DispatchQueue.main.async {
-                        self.showPlaybackError("SABR startup rejected with HTTP \(response.statusCode).")
-                    }
-                } else {
-                    DispatchQueue.main.async {
-                        self.playerStatusLabel.text = "SABR startup accepted. Media transport is next."
-                    }
-                }
-            }
-        }
+        showPlaybackError("Onesie returned no playable streams.")
     }
 
     private static func makeContentPlaybackNonce(length: Int = 16) -> String {
@@ -1760,58 +1679,6 @@ final class WatchViewController: UIViewController {
         attachPlayer(item: AVPlayerItem(url: url))
     }
 
-    private func attachManifestPlayer(url: URL) {
-        guard !pageLoadToken.isCancelled else { return }
-        resetPlaybackSurfaces()
-
-        let playerView = manifestPlayerView ?? {
-            let view = ManifestWebPlayerView()
-            view.translatesAutoresizingMaskIntoConstraints = false
-            playerContainer.addSubview(view)
-            NSLayoutConstraint.activate([
-                view.topAnchor.constraint(equalTo: playerContainer.topAnchor),
-                view.leadingAnchor.constraint(equalTo: playerContainer.leadingAnchor),
-                view.trailingAnchor.constraint(equalTo: playerContainer.trailingAnchor),
-                view.bottomAnchor.constraint(equalTo: playerContainer.bottomAnchor),
-            ])
-            manifestPlayerView = view
-            return view
-        }()
-
-        playerSpinner.stopAnimating()
-        playerStatusLabel.isHidden = true
-        playerContainer.bringSubviewToFront(playerView)
-        playerView.load(manifestURL: url) { [weak self] message in
-            self?.showPlaybackError(message)
-        }
-    }
-
-    private func attachManifestPlayerWithMPD(_ mpd: String) {
-        resetPlaybackSurfaces()
-
-        let playerView = manifestPlayerView ?? {
-            let view = ManifestWebPlayerView()
-            view.translatesAutoresizingMaskIntoConstraints = false
-            playerContainer.addSubview(view)
-            NSLayoutConstraint.activate([
-                view.topAnchor.constraint(equalTo: playerContainer.topAnchor),
-                view.leadingAnchor.constraint(equalTo: playerContainer.leadingAnchor),
-                view.trailingAnchor.constraint(equalTo: playerContainer.trailingAnchor),
-                view.bottomAnchor.constraint(equalTo: playerContainer.bottomAnchor),
-            ])
-            manifestPlayerView = view
-            return view
-        }()
-
-        playerSpinner.stopAnimating()
-        playerStatusLabel.isHidden = true
-        playerContainer.bringSubviewToFront(playerView)
-        playerView.loadMPDContent(mpd) { [weak self] message in
-            print("[WatchViewController] generated DASH playback error: \(message)")
-            self?.showPlaybackError(message)
-        }
-    }
-
     private func attachDirectPlayer(url: URL, visitorData: String?, client: DirectPlaybackClient) {
         resetPlaybackSurfaces()
 
@@ -1922,15 +1789,6 @@ final class WatchViewController: UIViewController {
     }
 
     private func resetPlaybackSurfaces() {
-        manifestPlayerView?.stop()
-        manifestPlayerView?.removeFromSuperview()
-        manifestPlayerView = nil
-
-        directPlayerView?.pause()
-        directPlayerView?.reset(cleanAsset: true)
-        directPlayerView?.removeFromSuperview()
-        directPlayerView = nil
-
         if let existingItem = playerViewController?.player?.currentItem {
             stopObservingPlayerItem(existingItem)
         }
@@ -2440,46 +2298,3 @@ extension WatchViewController: UIScrollViewDelegate {
     }
 }
 
-extension WatchViewController: SZAVPlayerDelegate {
-    func avplayer(_ avplayer: SZAVPlayer, refreshed currentTime: Float64, loadedTime: Float64, totalTime: Float64) {}
-
-    func avplayer(_ avplayer: SZAVPlayer, didChanged status: SZAVPlayerStatus) {
-        print("[WatchViewController] SZAVPlayer status: \(status)")
-        switch status {
-        case .readyToPlay:
-            retriedDirectPlaybackWithWeb = false
-            playerSpinner.stopAnimating()
-            playerStatusLabel.isHidden = true
-            avplayer.play()
-        case .loading:
-            playerSpinner.startAnimating()
-            playerStatusLabel.isHidden = false
-            playerStatusLabel.text = "Loading direct stream..."
-        case .loadingFailed:
-            if activeDirectPlaybackClient == .tvHTML5, !retriedDirectPlaybackWithWeb {
-                retriedDirectPlaybackWithWeb = true
-                playerStatusLabel.isHidden = false
-                playerStatusLabel.textColor = ThemeManager.shared.primaryText
-                playerStatusLabel.text = "TV playback blocked, retrying WEB client..."
-                avplayer.pause()
-                avplayer.reset(cleanAsset: true)
-                startPlayback(using: .web)
-                return
-            }
-            playerSpinner.stopAnimating()
-            playerStatusLabel.isHidden = false
-            playerStatusLabel.textColor = .systemRed
-            playerStatusLabel.text = "Direct playback failed"
-        case .bufferBegin:
-            playerSpinner.startAnimating()
-        case .bufferEnd:
-            playerSpinner.stopAnimating()
-        case .playEnd, .playbackStalled:
-            break
-        }
-    }
-
-    func avplayer(_ avplayer: SZAVPlayer, didReceived remoteCommand: SZAVPlayerRemoteCommand) -> Bool {
-        return false
-    }
-}
