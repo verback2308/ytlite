@@ -161,10 +161,10 @@ final class HLSPlaylistLoader: NSObject, AVAssetResourceLoaderDelegate {
                         shouldWaitForLoadingOfRequestedResource request: AVAssetResourceLoadingRequest) -> Bool {
         guard let url = request.request.url else { return false }
 
-        print("[HLSPlaylistLoader] request: \(url.absoluteString)")
+        AppLog.hls("request: \(url.absoluteString)")
 
         guard url.scheme == HLSGenerator.scheme else {
-            print("[HLSPlaylistLoader] non-custom scheme, declining: \(url.scheme ?? "nil")")
+            AppLog.hls("non-custom scheme, declining: \(url.scheme ?? "nil")")
             return false
         }
 
@@ -178,14 +178,14 @@ final class HLSPlaylistLoader: NSObject, AVAssetResourceLoaderDelegate {
             if playlists[trimmed] != nil {
                 key = trimmed
             } else {
-                print("[HLSPlaylistLoader] unknown path: host=\(url.host ?? "nil") path=\(url.path) keys=\(Array(playlists.keys))")
+                AppLog.hls("unknown path: host=\(url.host ?? "nil") path=\(url.path) keys=\(Array(playlists.keys))")
                 request.finishLoading(with: NSError(domain: "HLSPlaylistLoader", code: -1, userInfo: nil))
                 return true
             }
         }
 
         let data = playlists[key]!
-        print("[HLSPlaylistLoader] serving \(key) (\(data.count) bytes)")
+        AppLog.hls("serving \(key) (\(data.count) bytes)")
 
         if let info = request.contentInformationRequest {
             info.contentType = "public.m3u-playlist"

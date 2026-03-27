@@ -100,7 +100,7 @@ final class ChannelViewController: VideosViewController {
                 case .success(let page):
                     self?.appendPage(page)
                 case .failure(let error):
-                    print("[ChannelViewController] pagination failed \(self?.channelId ?? "nil"): \(error)")
+                    AppLog.channel("pagination failed \(self?.channelId ?? "nil"): \(error)")
                     self?.finishLoadingMore()
                 }
             }
@@ -328,7 +328,7 @@ final class ChannelViewController: VideosViewController {
                 case .success(let page):
                     self?.applyChannelPage(page)
                 case .failure(let error):
-                    print("[ChannelViewController] load failed \(self?.channelId ?? "nil"): \(error)")
+                    AppLog.channel("load failed \(self?.channelId ?? "nil"): \(error)")
                     self?.finishLoadingMore()
                     self?.errorLabel.isHidden = false
                 }
@@ -421,9 +421,9 @@ final class ChannelViewController: VideosViewController {
                 self.subscribeButton.isEnabled = true
                 switch result {
                 case .success:
-                    print("[Subscribe] \(wasSubscribed ? "unsubscribed" : "subscribed") channelId=\(self.channelId)")
+                    AppLog.subscribe("\(wasSubscribed ? "unsubscribed" : "subscribed") channelId=\(self.channelId)")
                 case .failure(let e):
-                    print("[Subscribe] \(wasSubscribed ? "unsubscribe" : "subscribe") failed channelId=\(self.channelId): \(e)")
+                    AppLog.subscribe("\(wasSubscribed ? "unsubscribe" : "subscribe") failed channelId=\(self.channelId): \(e)")
                     self.isSubscribed = wasSubscribed
                     self.subscribeButton.setTitle(wasSubscribed ? "Subscribed" : "Subscribe", for: .normal)
                     self.applyHeaderTheme()

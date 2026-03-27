@@ -18,7 +18,7 @@ enum BackgroundPlaybackService {
             }
             try session.setActive(true)
         } catch {
-            print("[BackgroundPlayback] AVAudioSession error: \(error)")
+            AppLog.player("AVAudioSession error: \(error)")
         }
     }
 }

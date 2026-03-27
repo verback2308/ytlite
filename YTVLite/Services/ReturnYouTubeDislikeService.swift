@@ -32,7 +32,7 @@ final class ReturnYouTubeDislikeService {
         guard !registrationConfirmed else { return }
         let uid = userId
         register(userId: uid) { success in
-            print("[RYD] pre-registration \(success ? "succeeded" : "failed")")
+            AppLog.ryd("pre-registration \(success ? "succeeded" : "failed")")
         }
     }
 
@@ -77,7 +77,7 @@ final class ReturnYouTubeDislikeService {
 
     func reportVote(videoId: String, value: Int) {
         let uid = userId
-        print("[RYD] reportVote videoId=\(videoId) value=\(value) userId=\(uid.prefix(8))...")
+        AppLog.ryd("reportVote videoId=\(videoId) value=\(value) userId=\(uid.prefix(8))...")
 
         if registrationConfirmed {
             sendVoteRequest(userId: uid, videoId: videoId, value: value)
@@ -86,7 +86,7 @@ final class ReturnYouTubeDislikeService {
                 if success {
                     self?.sendVoteRequest(userId: uid, videoId: videoId, value: value)
                 } else {
-                    print("[RYD] registration failed, skipping vote")
+                    AppLog.ryd("registration failed, skipping vote")
                 }
             }
         }
@@ -95,27 +95,27 @@ final class ReturnYouTubeDislikeService {
     // MARK: - Registration flow
 
     private func register(userId: String, completion: @escaping (Bool) -> Void) {
-        print("[RYD] registering userId=\(userId.prefix(8))...")
+        AppLog.ryd("registering userId=\(userId.prefix(8))...")
         guard let url = URL(string: "\(baseURL)/puzzle/registration?userId=\(userId)") else {
             completion(false); return
         }
         URLSession.shared.dataTask(with: url) { [weak self] data, _, error in
-            if let error = error { print("[RYD] reg GET error: \(error)"); completion(false); return }
+            if let error = error { AppLog.ryd("reg GET error: \(error)"); completion(false); return }
             guard let data = data,
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let challengeB64 = json["challenge"] as? String,
                   let challengeData = Self.decodeBase64(challengeB64),
                   let difficulty = json["difficulty"] as? Int else {
                 let raw = String(data: data ?? Data(), encoding: .utf8) ?? "?"
-                print("[RYD] reg GET parse failed: \(raw)"); completion(false); return
+                AppLog.ryd("reg GET parse failed: \(raw)"); completion(false); return
             }
-            print("[RYD] reg puzzle difficulty=\(difficulty)")
+            AppLog.ryd("reg puzzle difficulty=\(difficulty)")
             DispatchQueue.global(qos: .userInitiated).async {
                 guard let self = self,
                       let (solution, fullBuffer) = self.solvePuzzle(challenge: challengeData, difficulty: difficulty) else {
-                    print("[RYD] reg puzzle solve failed"); completion(false); return
+                    AppLog.ryd("reg puzzle solve failed"); completion(false); return
                 }
-                print("[RYD] reg puzzle solved, posting...")
+                AppLog.ryd("reg puzzle solved, posting...")
                 self.postRegistration(userId: userId,
                                       challengeB64: challengeB64,
                                       difficulty: difficulty,
@@ -144,7 +144,7 @@ final class ReturnYouTubeDislikeService {
         URLSession.shared.dataTask(with: req) { [weak self] data, response, error in
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
             let raw = data.flatMap { String(data: $0, encoding: .utf8) } ?? "?"
-            print("[RYD] reg POST status=\(status) response=\(raw)")
+            AppLog.ryd("reg POST status=\(status) response=\(raw)")
             if status == 200 {
                 self?.registrationConfirmed = true
                 completion(true)
@@ -167,10 +167,10 @@ final class ReturnYouTubeDislikeService {
 
         URLSession.shared.dataTask(with: req) { [weak self] data, response, error in
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-            if let error = error { print("[RYD] vote step1 error: \(error)"); return }
+            if let error = error { AppLog.ryd("vote step1 error: \(error)"); return }
             if status == 401 && retryCount > 0 {
                 // Re-register and retry once
-                print("[RYD] vote got 401, re-registering...")
+                AppLog.ryd("vote got 401, re-registering...")
                 self?.registrationConfirmed = false
                 self?.register(userId: userId) { success in
                     if success { self?.sendVoteRequest(userId: userId, videoId: videoId, value: value, retryCount: 0) }
@@ -183,15 +183,15 @@ final class ReturnYouTubeDislikeService {
                   let challengeData = Self.decodeBase64(challengeB64),
                   let difficulty = json["difficulty"] as? Int else {
                 let raw = data.flatMap { String(data: $0, encoding: .utf8) } ?? "?"
-                print("[RYD] vote step1 status=\(status) response=\(raw)"); return
+                AppLog.ryd("vote step1 status=\(status) response=\(raw)"); return
             }
-            print("[RYD] vote puzzle difficulty=\(difficulty)")
+            AppLog.ryd("vote puzzle difficulty=\(difficulty)")
             DispatchQueue.global(qos: .userInitiated).async {
                 guard let self = self,
                       let (solution, _) = self.solvePuzzle(challenge: challengeData, difficulty: difficulty) else {
-                    print("[RYD] vote puzzle solve failed"); return
+                    AppLog.ryd("vote puzzle solve failed"); return
                 }
-                print("[RYD] vote puzzle solved, confirming...")
+                AppLog.ryd("vote puzzle solved, confirming...")
                 self.confirmVote(userId: userId, videoId: videoId,
                                  challengeB64: challengeB64, difficulty: difficulty, solution: solution)
             }
@@ -218,9 +218,9 @@ final class ReturnYouTubeDislikeService {
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
             let raw = data.flatMap { String(data: $0.prefix(200), encoding: .utf8) } ?? "?"
             if let error = error {
-                print("[RYD] confirmVote error: \(error)")
+                AppLog.ryd("confirmVote error: \(error)")
             } else {
-                print("[RYD] confirmVote status=\(status) response=\(raw)")
+                AppLog.ryd("confirmVote status=\(status) response=\(raw)")
             }
         }.resume()
     }

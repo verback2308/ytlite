@@ -203,9 +203,9 @@ final class WatchViewController: UIViewController {
         let bgEnabled = BackgroundPlaybackService.isEnabled
         let hasVideoPlayer = videoPlayerView?.player != nil
         let hasPVCPlayer = playerViewController?.player != nil
-        print("[WatchVC] appDidEnterBackground: bgEnabled=\(bgEnabled) videoPlayer=\(hasVideoPlayer) pvcPlayer=\(hasPVCPlayer)")
+        AppLog.player("appDidEnterBackground: bgEnabled=\(bgEnabled) videoPlayer=\(hasVideoPlayer) pvcPlayer=\(hasPVCPlayer)")
         if let player = videoPlayerView?.player {
-            print("[WatchVC] videoPlayer rate=\(player.rate) status=\(player.status.rawValue) timeControlStatus=\(player.timeControlStatus.rawValue)")
+            AppLog.player("videoPlayer rate=\(player.rate) status=\(player.status.rawValue) timeControlStatus=\(player.timeControlStatus.rawValue)")
         }
 
         guard bgEnabled else {
@@ -231,12 +231,12 @@ final class WatchViewController: UIViewController {
             player.replaceCurrentItem(with: audioItem)
             player.seek(to: backgroundRestoreTime, toleranceBefore: CMTime(seconds: 1, preferredTimescale: 1000), toleranceAfter: CMTime(seconds: 1, preferredTimescale: 1000))
             player.play()
-            print("[WatchVC] switched to audio-only HLS at \(CMTimeGetSeconds(backgroundRestoreTime))s")
+            AppLog.player("switched to audio-only HLS at \(CMTimeGetSeconds(backgroundRestoreTime))s")
         }
     }
 
     @objc private func appWillEnterForeground() {
-        print("[WatchVC] appWillEnterForeground")
+        AppLog.player("appWillEnterForeground")
 
         guard BackgroundPlaybackService.isEnabled,
               let player = videoPlayerView?.player,
@@ -261,7 +261,7 @@ final class WatchViewController: UIViewController {
         player.seek(to: restoreTime, toleranceBefore: CMTime(seconds: 0.5, preferredTimescale: 1000), toleranceAfter: CMTime(seconds: 0.5, preferredTimescale: 1000)) { [weak player] _ in
             player?.play()
         }
-        print("[WatchVC] restored video+audio HLS at \(restoreSeconds)s (base=\(CMTimeGetSeconds(backgroundRestoreTime))s + elapsed=\(String(format: "%.1f", elapsed))s)")
+        AppLog.player("restored video+audio HLS at \(restoreSeconds)s (base=\(CMTimeGetSeconds(backgroundRestoreTime))s + elapsed=\(String(format: "%.1f", elapsed))s)")
     }
 
     deinit {
@@ -721,7 +721,7 @@ final class WatchViewController: UIViewController {
                 case .success(let page):
                     self?.applyWatchPage(page)
                 case .failure(let error):
-                    print("[WatchViewController] watch page load failed \(self?.initialVideo.id ?? "nil"): \(error)")
+                    AppLog.player("watch page load failed \(self?.initialVideo.id ?? "nil"): \(error)")
                 }
             }
         }
@@ -886,7 +886,7 @@ final class WatchViewController: UIViewController {
                 self.isLoadingComments = false
                 switch result {
                 case .failure(let error):
-                    print("[WatchViewController] comments load failed \(self.initialVideo.id): \(error)")
+                    AppLog.player("comments load failed \(self.initialVideo.id): \(error)")
                     if self.comments.isEmpty {
                         self.commentsLabel.text = "Comments unavailable"
                     }
@@ -962,7 +962,7 @@ final class WatchViewController: UIViewController {
             switch tokenResult {
             case .success(let token): poToken = token
             case .failure(let error):
-                print("[WatchViewController] PoToken mint failed: \(error), proceeding without")
+                AppLog.player("PoToken mint failed: \(error), proceeding without")
                 poToken = nil
             }
 
@@ -982,11 +982,11 @@ final class WatchViewController: UIViewController {
     }
 
     private func startDirectPlayback(_ info: DirectPlaybackInfo, client: DirectPlaybackClient) {
-        print("[WatchViewController] startDirectPlayback (\(client)): progressive=\(info.progressiveURL?.absoluteString.prefix(80) ?? "nil") hls=\(info.hlsManifestURL != nil) dash=\(info.dashManifestURL != nil) video=\(info.videoURL != nil) audio=\(info.audioURL != nil) sabr=\(info.serverAbrStreamingURL != nil) quality=\(info.qualityLabel ?? "nil") visitorData=\(info.visitorData?.prefix(20) ?? "nil")")
+        AppLog.player("startDirectPlayback (\(client)): progressive=\(info.progressiveURL?.absoluteString.prefix(80) ?? "nil") hls=\(info.hlsManifestURL != nil) dash=\(info.dashManifestURL != nil) video=\(info.videoURL != nil) audio=\(info.audioURL != nil) sabr=\(info.serverAbrStreamingURL != nil) quality=\(info.qualityLabel ?? "nil") visitorData=\(info.visitorData?.prefix(20) ?? "nil")")
 
         // For clients that don't require JS player (Android), try direct playback first
         if info.progressiveURL != nil || info.hlsManifestURL != nil || info.dashManifestURL != nil || (info.videoURL != nil && info.audioURL != nil) {
-            print("[WatchViewController] trying direct playback (skip onesie) for \(client)")
+            AppLog.player("trying direct playback (skip onesie) for \(client)")
             playDirectStream(info, client: client)
             return
         }
@@ -994,7 +994,7 @@ final class WatchViewController: UIViewController {
         if let sabrURL = info.serverAbrStreamingURL {
             let videoUstreamerLength = info.videoPlaybackUstreamerConfig?.count ?? 0
             let onesieUstreamerLength = info.onesieUstreamerConfig?.count ?? 0
-            print("[WatchViewController] SABR candidate available (\(client)): \(sabrURL.absoluteString.prefix(80)), ustreamer=\(info.hasVideoPlaybackUstreamerConfig), videoUstreamerLen=\(videoUstreamerLength), onesieUstreamerLen=\(onesieUstreamerLength)")
+            AppLog.player("SABR candidate available (\(client)): \(sabrURL.absoluteString.prefix(80)), ustreamer=\(info.hasVideoPlaybackUstreamerConfig), videoUstreamerLen=\(videoUstreamerLength), onesieUstreamerLen=\(onesieUstreamerLength)")
         }
         guard let visitorData = info.visitorData, !visitorData.isEmpty else {
             showPlaybackError("Missing visitor data for onesie playback.")
@@ -1037,7 +1037,7 @@ final class WatchViewController: UIViewController {
                 switch onesieResult {
                     case .success(let bootstrap):
                         guard let refreshedInfo = InnertubeClient.parsePlayerJSON(bootstrap.playerJSON) else {
-                            print("[WatchViewController] onesie player JSON parse failed")
+                            AppLog.player("onesie player JSON parse failed")
                             self.showPlaybackError("Onesie returned an unusable player response.")
                             return
                         }
@@ -1069,7 +1069,7 @@ final class WatchViewController: UIViewController {
                                                 contentPlaybackNonce: contentPlaybackNonce)
 
                 case .failure(let error):
-                    print("[WatchViewController] onesie failed (\(error))")
+                    AppLog.player("onesie failed (\(error))")
                     self.showPlaybackError("Onesie bootstrap failed: \(error.localizedDescription)")
                 }
             }
@@ -1078,10 +1078,10 @@ final class WatchViewController: UIViewController {
 
     private func playDirectStream(_ info: DirectPlaybackInfo, client: DirectPlaybackClient) {
         let mediaVisitorData = info.visitorData
-        print("[WatchViewController] playDirectStream: hls=\(info.hlsManifestURL != nil) dash=\(info.dashManifestURL != nil) progressive=\(info.progressiveURL != nil) video+audio=\(info.videoURL != nil && info.audioURL != nil) sabr=\(info.serverAbrStreamingURL != nil)")
+        AppLog.player("playDirectStream: hls=\(info.hlsManifestURL != nil) dash=\(info.dashManifestURL != nil) progressive=\(info.progressiveURL != nil) video+audio=\(info.videoURL != nil && info.audioURL != nil) sabr=\(info.serverAbrStreamingURL != nil)")
 
         if let hlsManifestURL = info.hlsManifestURL {
-            print("[WatchViewController] choosing HLS: \(hlsManifestURL.absoluteString.prefix(120))...")
+            AppLog.player("choosing HLS: \(hlsManifestURL.absoluteString.prefix(120))...")
             DispatchQueue.main.async {
                 self.playerStatusLabel.text = "Loading HLS stream..."
                 self.attachPlayer(url: hlsManifestURL)
@@ -1097,7 +1097,7 @@ final class WatchViewController: UIViewController {
             let audioURL = prepareDirectPlaybackURL(baseURL: dashAudio.url, client: client, poToken: nil)
             let quality = info.qualityLabel ?? "720p"
             let headers = makeDirectRequestHeaders(visitorData: mediaVisitorData, client: client)
-            print("[WatchViewController] choosing generated HLS (\(quality)): video itag=\(dashVideo.itag) audio itag=\(dashAudio.itag)")
+            AppLog.player("choosing generated HLS (\(quality)): video itag=\(dashVideo.itag) audio itag=\(dashAudio.itag)")
             DispatchQueue.main.async {
                 self.playerStatusLabel.text = "Loading \(quality) stream..."
             }
@@ -1109,7 +1109,7 @@ final class WatchViewController: UIViewController {
 
         if let progressiveURL = info.progressiveURL {
             let preparedURL = prepareDirectPlaybackURL(baseURL: progressiveURL, client: client, poToken: nil)
-            print("[WatchViewController] starting progressive (360p) immediately")
+            AppLog.player("starting progressive (360p) immediately")
 
             DispatchQueue.main.async {
                 self.playerStatusLabel.text = "Loading stream..."
@@ -1122,7 +1122,7 @@ final class WatchViewController: UIViewController {
                 let preparedAudioURL = prepareDirectPlaybackURL(baseURL: audioURL, client: client, poToken: nil)
                 let headers = makeDirectRequestHeaders(visitorData: mediaVisitorData, client: client)
                 let quality = info.qualityLabel ?? "720p"
-                print("[WatchViewController] background: preparing \(quality) adaptive...")
+                AppLog.player("background: preparing \(quality) adaptive...")
                 prepareAdaptiveUpgrade(videoURL: preparedVideoURL, audioURL: preparedAudioURL, headers: headers, quality: quality)
             }
             return
@@ -1134,7 +1134,7 @@ final class WatchViewController: UIViewController {
             let preparedAudioURL = prepareDirectPlaybackURL(baseURL: audioURL, client: client, poToken: nil)
             let headers = makeDirectRequestHeaders(visitorData: mediaVisitorData, client: client)
             let quality = info.qualityLabel ?? "?"
-            print("[WatchViewController] choosing adaptive (no progressive fallback): quality=\(quality)")
+            AppLog.player("choosing adaptive (no progressive fallback): quality=\(quality)")
             DispatchQueue.main.async {
                 self.playerStatusLabel.text = "Loading \(quality) stream..."
                 self.attachComposedPlayer(videoURL: preparedVideoURL, audioURL: preparedAudioURL, headers: headers) { _ in }
@@ -1153,7 +1153,7 @@ final class WatchViewController: UIViewController {
         let typeSummary = bootstrap.responseParts
             .map { "\($0.type)(c\($0.compressionType))" }
             .joined(separator: ",")
-        print("[WatchViewController] onesie bootstrap ready proxy=\(bootstrap.proxyStatus) http=\(bootstrap.httpStatus) parts=[\(typeSummary)]")
+        AppLog.player("onesie bootstrap ready proxy=\(bootstrap.proxyStatus) http=\(bootstrap.httpStatus) parts=[\(typeSummary)]")
         if info.hlsManifestURL != nil || info.progressiveURL != nil || (info.videoURL != nil && info.audioURL != nil) {
             playDirectStream(info, client: client)
             return
@@ -1179,7 +1179,7 @@ final class WatchViewController: UIViewController {
         items.append(URLQueryItem(name: "cver", value: client.clientVersion))
         components.queryItems = items
         let finalURL = components.url ?? baseURL
-        print("[WatchViewController] direct URL prepared with pot/cver for \(client)")
+        AppLog.player("direct URL prepared with pot/cver for \(client)")
         return finalURL
     }
 
@@ -1258,7 +1258,7 @@ final class WatchViewController: UIViewController {
             player.replaceCurrentItem(with: item)
             player.seek(to: currentTime, toleranceBefore: .zero, toleranceAfter: .zero)
             if wasPlaying { player.play() }
-            print("[WatchViewController] adaptive upgrade: switched to \(quality)")
+            AppLog.player("adaptive upgrade: switched to \(quality)")
         }
     }
 
@@ -1279,13 +1279,13 @@ final class WatchViewController: UIViewController {
             DispatchQueue.main.async {
                 self.hlsPlaylistLoader = result.loader
                 self.attachPlayer(item: result.playerItem)
-                print("[WatchViewController] HLS: player attached for \(quality)")
+                AppLog.player("HLS: player attached for \(quality)")
             }
         }
     }
 
     private func fallbackToProgressivePlayback() {
-        print("[WatchViewController] HLS: falling back to progressive + adaptive upgrade")
+        AppLog.player("HLS: falling back to progressive + adaptive upgrade")
         // Re-trigger playback without DASH format info to hit progressive path
         // For now just show error since we'd need stored playback info
         DispatchQueue.main.async {
@@ -1301,8 +1301,8 @@ final class WatchViewController: UIViewController {
         resetPlaybackSurfaces()
 
         let headers = makeDirectRequestHeaders(visitorData: visitorData, client: client)
-        print("[WatchViewController] attachDirectPlayer (\(client)): url=\(url.absoluteString.prefix(120))...")
-        print("[WatchViewController] attachDirectPlayer headers: \(headers)")
+        AppLog.player("attachDirectPlayer (\(client)): url=\(url.absoluteString.prefix(120))...")
+        AppLog.player("attachDirectPlayer headers: \(headers)")
         let assetOptions = ["AVURLAssetHTTPHeaderFieldsKey": headers]
         let asset = AVURLAsset(url: url, options: assetOptions)
         let item = AVPlayerItem(asset: asset)
@@ -1407,23 +1407,23 @@ final class WatchViewController: UIViewController {
         case .readyToPlay:
             let duration = CMTimeGetSeconds(item.duration)
             let tracks = item.tracks.map { "\($0.assetTrack?.mediaType.rawValue ?? "?")" }.joined(separator: ",")
-            print("[WatchViewController] player item ready: duration=\(duration)s tracks=[\(tracks)]")
+            AppLog.player("player item ready: duration=\(duration)s tracks=[\(tracks)]")
         case .failed:
             let nsError = item.error as NSError?
-            print("[WatchViewController] player item FAILED: \(item.error?.localizedDescription ?? "unknown") domain=\(nsError?.domain ?? "nil") code=\(nsError?.code ?? 0)")
+            AppLog.player("player item FAILED: \(item.error?.localizedDescription ?? "unknown") domain=\(nsError?.domain ?? "nil") code=\(nsError?.code ?? 0)")
             if let underlyingError = nsError?.userInfo[NSUnderlyingErrorKey] as? NSError {
-                print("[WatchViewController] underlying error: \(underlyingError.domain) code=\(underlyingError.code) \(underlyingError.localizedDescription)")
+                AppLog.player("underlying error: \(underlyingError.domain) code=\(underlyingError.code) \(underlyingError.localizedDescription)")
             }
         case .unknown:
-            print("[WatchViewController] player item status unknown")
+            AppLog.player("player item status unknown")
         @unknown default:
-            print("[WatchViewController] player item status unexpected")
+            AppLog.player("player item status unexpected")
         }
     }
 
     @objc private func playerItemDidFailToPlayToEnd(_ note: Notification) {
         let error = (note.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error)?.localizedDescription ?? "unknown"
-        print("[WatchViewController] player item failed to end: \(error)")
+        AppLog.player("player item failed to end: \(error)")
     }
 
     @objc private func playerItemDidPlayToEnd(_ notification: Notification) {
@@ -1466,11 +1466,11 @@ final class WatchViewController: UIViewController {
         guard let item = note.object as? AVPlayerItem,
               let events = item.errorLog()?.events,
               let last = events.last else {
-            print("[WatchViewController] player item new error log entry")
+            AppLog.player("player item new error log entry")
             return
         }
 
-        print("[WatchViewController] player error log: domain=\(last.errorDomain ?? "nil"), code=\(last.errorStatusCode), comment=\(last.errorComment ?? "nil"), uri=\(last.uri ?? "nil")")
+        AppLog.player("player error log: domain=\(last.errorDomain ?? "nil"), code=\(last.errorStatusCode), comment=\(last.errorComment ?? "nil"), uri=\(last.uri ?? "nil")")
     }
 
     private func showPlaybackError(_ message: String) {
@@ -1520,9 +1520,9 @@ final class WatchViewController: UIViewController {
                 self.subscribeButton.isEnabled = true
                 switch result {
                 case .success:
-                    print("[Subscribe] \(wasSubscribed ? "unsubscribed" : "subscribed") channelId=\(channelId)")
+                    AppLog.subscribe("\(wasSubscribed ? "unsubscribed" : "subscribed") channelId=\(channelId)")
                 case .failure(let e):
-                    print("[Subscribe] \(wasSubscribed ? "unsubscribe" : "subscribe") failed channelId=\(channelId): \(e)")
+                    AppLog.subscribe("\(wasSubscribed ? "unsubscribe" : "subscribe") failed channelId=\(channelId): \(e)")
                     self.isSubscribed = wasSubscribed
                     self.subscribeButton.setTitle(wasSubscribed ? "Subscribed" : "Subscribe", for: .normal)
                     self.applyTheme()
@@ -1541,7 +1541,7 @@ final class WatchViewController: UIViewController {
         guard let videoId = watchPage?.video.id else { return }
         let wasLiked = currentLikeStatus == .like
         let newStatus: LikeStatus = wasLiked ? .indifferent : .like
-        print("[Like] tapped: \(wasLiked ? "removing like" : "sending like") for \(videoId)")
+        AppLog.player("like tapped: \(wasLiked ? "removing like" : "sending like") for \(videoId)")
         currentLikeStatus = newStatus
         updateLikeDislikeUI()
         if wasLiked {
@@ -1549,12 +1549,12 @@ final class WatchViewController: UIViewController {
                 DispatchQueue.main.async {
                     switch result {
                     case .success:
-                        print("[Like] removeLike success for \(videoId)")
+                        AppLog.player("removeLike success for \(videoId)")
                         if ReturnYouTubeDislikeService.enabled {
                             ReturnYouTubeDislikeService.shared.reportVote(videoId: videoId, value: 0)
                         }
                     case .failure(let e):
-                        print("[Like] removeLike failed for \(videoId): \(e)")
+                        AppLog.player("removeLike failed for \(videoId): \(e)")
                         self?.currentLikeStatus = .like
                         self?.updateLikeDislikeUI()
                     }
@@ -1565,12 +1565,12 @@ final class WatchViewController: UIViewController {
                 DispatchQueue.main.async {
                     switch result {
                     case .success:
-                        print("[Like] sendLike success for \(videoId)")
+                        AppLog.player("sendLike success for \(videoId)")
                         if ReturnYouTubeDislikeService.enabled {
                             ReturnYouTubeDislikeService.shared.reportVote(videoId: videoId, value: 1)
                         }
                     case .failure(let e):
-                        print("[Like] sendLike failed for \(videoId): \(e)")
+                        AppLog.player("sendLike failed for \(videoId): \(e)")
                         self?.currentLikeStatus = .indifferent
                         self?.updateLikeDislikeUI()
                     }
@@ -1583,7 +1583,7 @@ final class WatchViewController: UIViewController {
         guard let videoId = watchPage?.video.id else { return }
         let wasDisliked = currentLikeStatus == .dislike
         let newStatus: LikeStatus = wasDisliked ? .indifferent : .dislike
-        print("[Like] tapped: \(wasDisliked ? "removing dislike" : "sending dislike") for \(videoId)")
+        AppLog.player("like tapped: \(wasDisliked ? "removing dislike" : "sending dislike") for \(videoId)")
         currentLikeStatus = newStatus
         updateLikeDislikeUI()
         if wasDisliked {
@@ -1591,12 +1591,12 @@ final class WatchViewController: UIViewController {
                 DispatchQueue.main.async {
                     switch result {
                     case .success:
-                        print("[Like] removeDislike success for \(videoId)")
+                        AppLog.player("removeDislike success for \(videoId)")
                         if ReturnYouTubeDislikeService.enabled {
                             ReturnYouTubeDislikeService.shared.reportVote(videoId: videoId, value: 0)
                         }
                     case .failure(let e):
-                        print("[Like] removeDislike failed for \(videoId): \(e)")
+                        AppLog.player("removeDislike failed for \(videoId): \(e)")
                     }
                 }
             }
@@ -1605,12 +1605,12 @@ final class WatchViewController: UIViewController {
                 DispatchQueue.main.async {
                     switch result {
                     case .success:
-                        print("[Like] sendDislike success for \(videoId)")
+                        AppLog.player("sendDislike success for \(videoId)")
                         if ReturnYouTubeDislikeService.enabled {
                             ReturnYouTubeDislikeService.shared.reportVote(videoId: videoId, value: -1)
                         }
                     case .failure(let e):
-                        print("[Like] sendDislike failed for \(videoId): \(e)")
+                        AppLog.player("sendDislike failed for \(videoId): \(e)")
                     }
                 }
             }

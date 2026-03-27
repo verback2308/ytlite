@@ -18,7 +18,7 @@ enum AdaptiveCompositionBuilder {
         videoAsset.loadValuesAsynchronously(forKeys: ["tracks"]) {
             var error: NSError?
             if videoAsset.statusOfValue(forKey: "tracks", error: &error) != .loaded {
-                print("[AdaptiveComposition] video tracks failed: \(error?.localizedDescription ?? "unknown")")
+                AppLog.player("video tracks failed: \(error?.localizedDescription ?? "unknown")")
                 loadError = true
             }
             group.leave()
@@ -28,7 +28,7 @@ enum AdaptiveCompositionBuilder {
         audioAsset.loadValuesAsynchronously(forKeys: ["tracks"]) {
             var error: NSError?
             if audioAsset.statusOfValue(forKey: "tracks", error: &error) != .loaded {
-                print("[AdaptiveComposition] audio tracks failed: \(error?.localizedDescription ?? "unknown")")
+                AppLog.player("audio tracks failed: \(error?.localizedDescription ?? "unknown")")
                 loadError = true
             }
             group.leave()
@@ -37,7 +37,7 @@ enum AdaptiveCompositionBuilder {
         group.notify(queue: .main) {
             let elapsed = CACurrentMediaTime() - startTime
             guard !loadError else {
-                print(String(format: "[AdaptiveComposition] metadata failed (%.1fs)", elapsed))
+                AppLog.player(String(format: "metadata failed (%.1fs)", elapsed))
                 completion(nil)
                 return
             }
@@ -45,7 +45,7 @@ enum AdaptiveCompositionBuilder {
             guard let sourceVideoTrack = videoAsset.tracks(withMediaType: .video).first,
                   let sourceAudioTrack = audioAsset.tracks(withMediaType: .audio).first
             else {
-                print("[AdaptiveComposition] no video/audio tracks found")
+                AppLog.player("no video/audio tracks found")
                 completion(nil)
                 return
             }
@@ -64,14 +64,14 @@ enum AdaptiveCompositionBuilder {
                 try audioTrack.insertTimeRange(CMTimeRange(start: .zero, duration: duration), of: sourceAudioTrack, at: .zero)
                 videoTrack.preferredTransform = sourceVideoTrack.preferredTransform
             } catch {
-                print("[AdaptiveComposition] composition failed: \(error)")
+                AppLog.player("composition failed: \(error)")
                 completion(nil)
                 return
             }
 
             let item = AVPlayerItem(asset: composition)
             item.preferredForwardBufferDuration = 2.0
-            print(String(format: "[AdaptiveComposition] ready (%.1fs)", elapsed))
+            AppLog.player(String(format: "ready (%.1fs)", elapsed))
             completion(item)
         }
     }

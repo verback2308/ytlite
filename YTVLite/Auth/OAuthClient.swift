@@ -75,7 +75,7 @@ final class OAuthClient {
                   let interval = json["interval"] as? Int
             else {
                 let raw = data.flatMap { String(data: $0, encoding: .utf8) } ?? "nil"
-                print("[OAuth] requestDeviceCode failed: \(raw)")
+                AppLog.auth("requestDeviceCode failed: \(raw)")
                 completion(.failure(APIError.decodingFailed)); return
             }
             completion(.success(DeviceCodeResponse(deviceCode: deviceCode, userCode: userCode,
@@ -128,7 +128,7 @@ final class OAuthClient {
                                    interval: interval + 5, completion: completion)
             } else {
                 let raw = String(data: data, encoding: .utf8) ?? "nil"
-                print("[OAuth] exchangeToken failed: \(raw)")
+                AppLog.auth("exchangeToken failed: \(raw)")
                 completion(.failure(APIError.decodingFailed))
             }
         }.resume()
@@ -203,7 +203,7 @@ final class OAuthClient {
             guard let scriptURL = OAuthClient.match(pattern: #"<script\s+id="base-js"\s+src="([^"]+)""#,
                                                      in: html, group: 1)
             else {
-                print("[OAuth] Could not find base-js script URL")
+                AppLog.auth("Could not find base-js script URL")
                 completion(.failure(APIError.decodingFailed)); return
             }
             let fullScriptURL = scriptURL.hasPrefix("http") ? scriptURL : "https://www.youtube.com\(scriptURL)"
@@ -218,10 +218,10 @@ final class OAuthClient {
                 guard let clientId = OAuthClient.match(pattern: #"clientId:"([^"]+)""#, in: js, group: 1),
                       let clientSecret = OAuthClient.match(pattern: #"clientId:"[^"]+",\s*\w+:"([^"]+)""#, in: js, group: 1)
                 else {
-                    print("[OAuth] Could not extract client credentials from TV script")
+                    AppLog.auth("Could not extract client credentials from TV script")
                     completion(.failure(APIError.decodingFailed)); return
                 }
-                print("[OAuth] Got client credentials (id=\(clientId.prefix(20))...)")
+                AppLog.auth("Got client credentials (id=\(clientId.prefix(20))...)")
                 completion(.success((clientId, clientSecret)))
             }.resume()
         }.resume()

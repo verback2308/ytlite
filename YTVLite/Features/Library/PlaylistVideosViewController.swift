@@ -110,7 +110,7 @@ final class PlaylistVideosViewController: UIViewController {
                     }
                     self.tableView.reloadData()
                 case .failure(let error):
-                    print("[PlaylistVideos] load error: \(error)")
+                    AppLog.log("Playlist", "load error: \(error)")
                     self.emptyLabel.text = "Could not load playlist"
                     self.emptyLabel.isHidden = false
                     self.tableView.reloadData()
