@@ -3,22 +3,24 @@ import Foundation
 final class InnertubeClient: VideoService {
 
     let api = APIClient()
-    let baseURL = "https://www.youtube.com/youtubei/v1"
-    var webContext: [String: Any] { InnertubeContexts.web }
-    var tvContext: [String: Any] { InnertubeContexts.tv }
+    let session = InnertubeSession()
+
+    var baseURL: String { session.baseURL }
+    var webContext: [String: Any] { session.webContext }
+    var tvContext: [String: Any] { session.tvContext }
 
     // MARK: - VideoService
 
     func fetchHomeFeed(completion: @escaping (Result<FeedPage, Error>) -> Void) {
         if OAuthClient.shared.isAnonymous {
-            executeBrowseAnonymous(browseId: "FEwhat_to_watch", completion: completion)
+            executeBrowseAnonymous(browseId: BrowseID.home, completion: completion)
         } else {
-            authenticatedBrowse(browseId: "FEwhat_to_watch", completion: completion)
+            authenticatedBrowse(browseId: BrowseID.home, completion: completion)
         }
     }
 
     func fetchSubscriptionFeed(completion: @escaping (Result<FeedPage, Error>) -> Void) {
-        authenticatedBrowse(browseId: "FEsubscriptions", completion: completion)
+        authenticatedBrowse(browseId: BrowseID.subscriptions, completion: completion)
     }
 
     func fetchHistory(completion: @escaping (Result<FeedPage, Error>) -> Void) {
@@ -87,7 +89,7 @@ final class InnertubeClient: VideoService {
         guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
             completion(.failure(APIError.decodingFailed)); return
         }
-        api.post(url: url, headers: ["Content-Type": "application/json"], body: bodyData) { result in
+        api.post(url: url, headers: [HTTPHeader.contentType: HTTPHeaderValue.contentTypeJSON], body: bodyData) { result in
             switch result {
             case .failure(let e): completion(.failure(e))
             case .success(let data): completion(.success(InnertubeClient.parseSearchFeed(data)))
@@ -202,8 +204,18 @@ final class InnertubeClient: VideoService {
         AppLog.innertube("fetchDirectPlayback start: \(videoId), client: \(client)")
 
         if client.usesCookieAuth {
+            // Re-use cached visitorData — skip preflight if already available
+            if let cached = session.visitorData {
+                AppLog.innertube("visitorData cache hit for \(videoId)")
+                executeDirectPlayback(videoId: videoId, client: client, token: "", poToken: poToken,
+                                      visitorData: cached, cancellationToken: cancellationToken,
+                                      completion: completion)
+                return
+            }
             fetchVisitorData(videoId: videoId, cancellationToken: cancellationToken) { [weak self] visitorData in
                 guard cancellationToken?.isCancelled != true else { return }
+                // Cache for future playback requests in this session
+                if let vd = visitorData { self?.session.visitorData = vd }
                 self?.executeDirectPlayback(videoId: videoId, client: client, token: "", poToken: poToken,
                                             visitorData: visitorData, cancellationToken: cancellationToken,
                                             completion: completion)
@@ -234,9 +246,9 @@ final class InnertubeClient: VideoService {
         }
         AppLog.innertube("fetching visitor data for \(videoId)...")
         var request = URLRequest(url: url)
-        request.setValue("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36", forHTTPHeaderField: "User-Agent")
-        request.setValue("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", forHTTPHeaderField: "Accept")
-        request.setValue("en-us,en;q=0.5", forHTTPHeaderField: "Accept-Language")
+        request.setValue(UserAgent.chromeDesktopPlayback, forHTTPHeaderField: HTTPHeader.userAgent)
+        request.setValue("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", forHTTPHeaderField: HTTPHeader.accept)
+        request.setValue("en-us,en;q=0.5", forHTTPHeaderField: HTTPHeader.acceptLanguage)
 
         // Set initial cookies like yt-dlp does
         let cookieProps1: [HTTPCookiePropertyKey: Any] = [
@@ -264,7 +276,7 @@ final class InnertubeClient: VideoService {
             }
 
             // Log cookies received
-            if let cookies = HTTPCookieStorage.shared.cookies(for: URL(string: "https://www.youtube.com")!) {
+            if let cookies = HTTPCookieStorage.shared.cookies(for: URL(string: AppURLs.YouTube.base)!) {
                 let names = cookies.map { $0.name }.joined(separator: ", ")
                 AppLog.innertube("cookies after preflight: \(names)")
             }
@@ -279,7 +291,7 @@ final class InnertubeClient: VideoService {
             }
 
             if visitorData == nil {
-                if let cookies = HTTPCookieStorage.shared.cookies(for: URL(string: "https://www.youtube.com")!),
+                if let cookies = HTTPCookieStorage.shared.cookies(for: URL(string: AppURLs.YouTube.base)!),
                    let visitorCookie = cookies.first(where: { $0.name == "VISITOR_INFO1_LIVE" }),
                    let privacyCookie = cookies.first(where: { $0.name == "VISITOR_PRIVACY_METADATA" }) {
                     AppLog.innertube("VISITOR_INFO1_LIVE=\(visitorCookie.value.prefix(20))..., VISITOR_PRIVACY_METADATA=\(privacyCookie.value.prefix(20))...")

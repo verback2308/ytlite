@@ -13,15 +13,7 @@ extension InnertubeClient {
         if let cc = json["continuationContents"] as? [String: Any] {
             if let gc = cc["gridContinuation"] as? [String: Any],
                let items = gc["items"] as? [[String: Any]] {
-                var vids: [Video] = []
-                for item in items {
-                    if let tile = item["tileRenderer"] as? [String: Any],
-                       let v = parseTileRenderer(tile) { vids.append(v) }
-                    if let vr = item["videoRenderer"] as? [String: Any],
-                       let v = parseWebVideoRenderer(vr) { vids.append(v) }
-                    if let vr = item["compactVideoRenderer"] as? [String: Any],
-                       let v = parseWebVideoRenderer(vr) { vids.append(v) }
-                }
+                let vids = VideoRendererParserChain.videos(from: items)
                 let cont = (gc["continuations"] as? [[String: Any]])?
                     .first.flatMap { ($0["nextContinuationData"] as? [String: Any])?["continuation"] as? String }
                 AppLog.innertube("TV history gridContinuation: \(vids.count) more videos")
@@ -35,23 +27,13 @@ extension InnertubeClient {
 
         // TV FEhistory structure:
         // contents.tvBrowseRenderer.content.tvSurfaceContentRenderer.content.gridRenderer.items[]
-        if let tvBrowse = (json["contents"] as? [String: Any])?["tvBrowseRenderer"] as? [String: Any],
-           let tvContent = tvBrowse["content"] as? [String: Any],
-           let tvSurface = tvContent["tvSurfaceContentRenderer"] as? [String: Any],
-           let innerContent = tvSurface["content"] as? [String: Any],
-           let grid = innerContent["gridRenderer"] as? [String: Any],
-           let items = grid["items"] as? [[String: Any]] {
-            var videos: [Video] = []
-            for item in items {
-                if let tile = item["tileRenderer"] as? [String: Any],
-                   let video = parseTileRenderer(tile) { videos.append(video) }
-                // gridRenderer may also have videoRenderer items
-                if let vr = item["videoRenderer"] as? [String: Any],
-                   let video = parseWebVideoRenderer(vr) { videos.append(video) }
-                if let vr = item["compactVideoRenderer"] as? [String: Any],
-                   let video = parseWebVideoRenderer(vr) { videos.append(video) }
-            }
-            // Continuation from gridRenderer.continuations
+        if let tvBrowse = (json[JSONKey.contents] as? [String: Any])?[RendererKey.tvBrowse] as? [String: Any],
+           let tvContent = tvBrowse[JSONKey.content] as? [String: Any],
+           let tvSurface = tvContent[RendererKey.tvSurfaceContent] as? [String: Any],
+           let innerContent = tvSurface[JSONKey.content] as? [String: Any],
+           let grid = innerContent[RendererKey.grid] as? [String: Any],
+           let items = grid[JSONKey.items] as? [[String: Any]] {
+            let videos = VideoRendererParserChain.videos(from: items)
             let cont = (grid["continuations"] as? [[String: Any]])?
                 .first.flatMap { ($0["nextContinuationData"] as? [String: Any])?["continuation"] as? String }
             AppLog.innertube("TV history gridRenderer: \(videos.count) videos")
@@ -65,13 +47,13 @@ extension InnertubeClient {
         }
 
         // Path 2: twoColumnBrowseResultsRenderer (web-style even in TV response)
-        let contents = json["contents"] as? [String: Any]
-        if let tcbr = contents?["twoColumnBrowseResultsRenderer"] as? [String: Any] {
-            let tabList = tcbr["tabs"] as? [[String: Any]] ?? []
+        let contents = json[JSONKey.contents] as? [String: Any]
+        if let tcbr = contents?[RendererKey.twoColumnBrowse] as? [String: Any] {
+            let tabList = tcbr[JSONKey.tabs] as? [[String: Any]] ?? []
             for tab in tabList {
-                guard let tabRenderer = tab["tabRenderer"] as? [String: Any],
-                      let content = tabRenderer["content"] as? [String: Any],
-                      let slr = content["sectionListRenderer"] as? [String: Any]
+                guard let tabRenderer = tab[RendererKey.tab] as? [String: Any],
+                      let content = tabRenderer[JSONKey.content] as? [String: Any],
+                      let slr = content[RendererKey.sectionList] as? [String: Any]
                 else { continue }
                 let page = parseWebSectionList(slr)
                 videos.append(contentsOf: page.videos)
@@ -81,28 +63,17 @@ extension InnertubeClient {
         }
 
         // Path 3: sectionListRenderer directly under contents
-        if let slr = contents?["sectionListRenderer"] as? [String: Any] {
+        if let slr = contents?[RendererKey.sectionList] as? [String: Any] {
             let page = parseWebSectionList(slr)
             if !page.videos.isEmpty { return page }
         }
 
         // Path 4: richGridRenderer
-        if let richGrid = contents?["richGridRenderer"] as? [String: Any],
-           let items = richGrid["contents"] as? [[String: Any]] {
-            for item in items {
-                if let richItem = (item["richItemRenderer"] as? [String: Any])?["content"] as? [String: Any] {
-                    if let vr = richItem["videoRenderer"] as? [String: Any],
-                       let video = parseWebVideoRenderer(vr) { videos.append(video) }
-                    if let rr = richItem["radioRenderer"] as? [String: Any],
-                       let video = parseRadioRenderer(rr) { videos.append(video) }
-                    if let pr = richItem["playlistRenderer"] as? [String: Any],
-                       let video = parsePlaylistRenderer(pr) { videos.append(video) }
-                }
-                if let ct = (item["continuationItemRenderer"] as? [String: Any])?["continuationEndpoint"] as? [String: Any],
-                   let token = (ct["continuationCommand"] as? [String: Any])?["token"] as? String {
-                    continuation = token
-                }
-            }
+        if let richGrid = contents?[RendererKey.richGrid] as? [String: Any],
+           let items = richGrid[JSONKey.contents] as? [[String: Any]] {
+            let (parsed, cont) = VideoRendererParserChain.parse(items: items)
+            videos.append(contentsOf: parsed)
+            if cont != nil { continuation = cont }
             if !videos.isEmpty { return FeedPage(videos: videos, continuation: continuation) }
         }
 
@@ -121,124 +92,61 @@ extension InnertubeClient {
         var videos: [Video] = []
         var continuation: String?
 
-        // Continuation response
-        if let cc = json["continuationContents"] as? [String: Any],
-           let slr = cc["sectionListContinuation"] as? [String: Any] {
-            return parseWebSectionList(slr)
+        if let cc = json["continuationContents"] as? [String: Any] {
+            if let slr = cc["sectionListContinuation"] as? [String: Any] {
+                return parseWebSectionList(slr)
+            }
+            if let rgc = cc["richGridContinuation"] as? [String: Any] {
+                let items = rgc[JSONKey.contents] as? [[String: Any]] ?? []
+                let (videos, cont) = VideoRendererParserChain.parse(items: items)
+                return FeedPage(videos: videos, continuation: cont)
+            }
         }
 
-        // Initial response via twoColumnBrowseResultsRenderer
-        let tabs = (json["contents"] as? [String: Any])?["twoColumnBrowseResultsRenderer"] as? [String: Any]
-        let tabList = tabs?["tabs"] as? [[String: Any]] ?? []
+        let tabs = json.digDict(JSONKey.contents, RendererKey.twoColumnBrowse)
+        let tabList = tabs?[JSONKey.tabs] as? [[String: Any]] ?? []
         for tab in tabList {
-            guard let tabRenderer = tab["tabRenderer"] as? [String: Any],
-                  let content = tabRenderer["content"] as? [String: Any],
-                  let slr = content["sectionListRenderer"] as? [String: Any]
+            guard let slr = tab.digDict(RendererKey.tab, JSONKey.content, RendererKey.sectionList)
             else { continue }
             let page = parseWebSectionList(slr)
             videos.append(contentsOf: page.videos)
             if continuation == nil { continuation = page.continuation }
         }
 
-        // Fallback: richGridRenderer (used by some web browse endpoints)
         if videos.isEmpty,
-           let richGrid = (json["contents"] as? [String: Any])?["richGridRenderer"] as? [String: Any],
-           let contents = richGrid["contents"] as? [[String: Any]] {
-            for item in contents {
-                if let richItem = (item["richItemRenderer"] as? [String: Any])?["content"] as? [String: Any] {
-                    if let vr = richItem["videoRenderer"] as? [String: Any],
-                       let video = parseWebVideoRenderer(vr) { videos.append(video) }
-                    if let rr = richItem["radioRenderer"] as? [String: Any],
-                       let video = parseRadioRenderer(rr) { videos.append(video) }
-                    if let pr = richItem["playlistRenderer"] as? [String: Any],
-                       let video = parsePlaylistRenderer(pr) { videos.append(video) }
-                }
-                if let ct = (item["continuationItemRenderer"] as? [String: Any])?["continuationEndpoint"] as? [String: Any],
-                   let token = (ct["continuationCommand"] as? [String: Any])?["token"] as? String {
-                    continuation = token
-                }
-            }
+           let richGrid = json.digDict(JSONKey.contents, RendererKey.richGrid),
+           let contents = richGrid[JSONKey.contents] as? [[String: Any]] {
+            let (parsed, cont) = VideoRendererParserChain.parse(items: contents)
+            videos.append(contentsOf: parsed)
+            if cont != nil { continuation = cont }
         }
 
         return FeedPage(videos: videos, continuation: continuation)
     }
 
     static func parseWebSectionList(_ slr: [String: Any]) -> FeedPage {
-        let sections = slr["contents"] as? [[String: Any]] ?? []
+        let sections = slr[JSONKey.contents] as? [[String: Any]] ?? []
         var videos: [Video] = []
         var continuation: String?
 
         for section in sections {
-            // itemSectionRenderer — groups of videos (e.g. "Today", "Yesterday")
-            if let isr = section["itemSectionRenderer"] as? [String: Any],
-               let contents = isr["contents"] as? [[String: Any]] {
-                for item in contents {
-                    if let vr = item["videoRenderer"] as? [String: Any],
-                       let video = parseWebVideoRenderer(vr) {
-                        videos.append(video)
+            if let isr = section[RendererKey.itemSection] as? [String: Any],
+               let contents = isr[JSONKey.contents] as? [[String: Any]] {
+                videos.append(contentsOf: VideoRendererParserChain.videos(from: contents))
+            }
+            if let shelf = section[RendererKey.shelf] as? [String: Any],
+               let content = shelf[JSONKey.content] as? [String: Any] {
+                for listKey in [RendererKey.verticalList, RendererKey.horizontalList] {
+                    if let items = (content[listKey] as? [String: Any])?[JSONKey.items] as? [[String: Any]] {
+                        videos.append(contentsOf: VideoRendererParserChain.videos(from: items))
                     }
-                    // compactVideoRenderer (sometimes used)
-                    if let cvr = item["compactVideoRenderer"] as? [String: Any],
-                       let video = parseWebVideoRenderer(cvr) {
-                        videos.append(video)
-                    }
-                    if let rr = item["radioRenderer"] as? [String: Any],
-                       let video = parseRadioRenderer(rr) {
-                        videos.append(video)
-                    }
-                    if let pr = item["playlistRenderer"] as? [String: Any],
-                       let video = parsePlaylistRenderer(pr) {
-                        videos.append(video)
-                    }
+                }
+                if let items = content[JSONKey.contents] as? [[String: Any]] {
+                    videos.append(contentsOf: VideoRendererParserChain.videos(from: items))
                 }
             }
-            // shelfRenderer — also used by history (sections titled "Today", "This week", etc.)
-            if let shelf = section["shelfRenderer"] as? [String: Any],
-               let content = shelf["content"] as? [String: Any] {
-                // Vertical list
-                if let vertList = content["verticalListRenderer"] as? [String: Any],
-                   let items = vertList["items"] as? [[String: Any]] {
-                    for item in items {
-                        if let vr = item["videoRenderer"] as? [String: Any],
-                           let video = parseWebVideoRenderer(vr) { videos.append(video) }
-                        if let cvr = item["compactVideoRenderer"] as? [String: Any],
-                           let video = parseWebVideoRenderer(cvr) { videos.append(video) }
-                        if let rr = item["radioRenderer"] as? [String: Any],
-                           let video = parseRadioRenderer(rr) { videos.append(video) }
-                        if let pr = item["playlistRenderer"] as? [String: Any],
-                           let video = parsePlaylistRenderer(pr) { videos.append(video) }
-                    }
-                }
-                // Horizontal list
-                if let horizList = content["horizontalListRenderer"] as? [String: Any],
-                   let items = horizList["items"] as? [[String: Any]] {
-                    for item in items {
-                        if let vr = item["videoRenderer"] as? [String: Any],
-                           let video = parseWebVideoRenderer(vr) { videos.append(video) }
-                        if let tile = item["tileRenderer"] as? [String: Any],
-                           let video = parseTileRenderer(tile) { videos.append(video) }
-                        if let rr = item["radioRenderer"] as? [String: Any],
-                           let video = parseRadioRenderer(rr) { videos.append(video) }
-                        if let pr = item["playlistRenderer"] as? [String: Any],
-                           let video = parsePlaylistRenderer(pr) { videos.append(video) }
-                    }
-                }
-                // Expanded shelf with contents directly
-                if let items = content["contents"] as? [[String: Any]] {
-                    for item in items {
-                        if let vr = item["videoRenderer"] as? [String: Any],
-                           let video = parseWebVideoRenderer(vr) { videos.append(video) }
-                        if let rr = item["radioRenderer"] as? [String: Any],
-                           let video = parseRadioRenderer(rr) { videos.append(video) }
-                        if let pr = item["playlistRenderer"] as? [String: Any],
-                           let video = parsePlaylistRenderer(pr) { videos.append(video) }
-                    }
-                }
-            }
-            // Continuation token
-            if let ct = section["continuationItemRenderer"] as? [String: Any],
-               let ep = ct["continuationEndpoint"] as? [String: Any],
-               let token = (ep["continuationCommand"] as? [String: Any])?["token"] as? String {
+            if let ct = section[RendererKey.continuationItem] as? [String: Any],
+               let token = ct.digString("continuationEndpoint", "continuationCommand", JSONKey.token) {
                 continuation = token
             }
         }
@@ -248,62 +156,29 @@ extension InnertubeClient {
 
     /// Parse a web-client videoRenderer into a Video model.
     static func parseWebVideoRenderer(_ vr: [String: Any]) -> Video? {
-        guard let videoId = vr["videoId"] as? String else { return nil }
+        guard let videoId = vr[JSONKey.videoId] as? String else { return nil }
 
-        let title = simpleText(from: vr["title"])
-            ?? ((vr["title"] as? [String: Any])?["runs"] as? [[String: Any]])?
-                .compactMap { $0["text"] as? String }.joined()
+        let title = simpleText(from: vr[JSONKey.title]) ?? ""
+        guard !title.isEmpty else { return nil }
 
-        guard let title = title, !title.isEmpty else { return nil }
+        let rawThumbURL = vr.thumbnailURL() ?? ""
+        let thumbURL = preferredThumbnailURL(videoId: videoId, fallbackURL: rawThumbURL)
 
-        // Thumbnail — pick highest quality
-        let thumbs = (vr["thumbnail"] as? [String: Any])?["thumbnails"] as? [[String: Any]] ?? []
-        let thumbURL = thumbs.last?["url"] as? String
-            ?? "https://i.ytimg.com/vi/\(videoId)/hqdefault.jpg"
+        let channelName = vr.digString("ownerText", JSONKey.runs, 0, JSONKey.text) ?? ""
+        let channelId = vr.digString("ownerText", JSONKey.runs, 0, "navigationEndpoint", "browseEndpoint", JSONKey.browseId)
 
-        // Channel info
-        let channelName: String
-        let channelId: String?
-        if let ownerText = vr["ownerText"] as? [String: Any],
-           let runs = ownerText["runs"] as? [[String: Any]],
-           let first = runs.first {
-            channelName = first["text"] as? String ?? ""
-            let nav = first["navigationEndpoint"] as? [String: Any]
-            let browse = nav?["browseEndpoint"] as? [String: Any]
-            channelId = browse?["browseId"] as? String
-        } else {
-            channelName = ""
-            channelId = nil
-        }
-
-        // View count
-        let viewCount: String?
-        if let vcObj = vr["viewCountText"] as? [String: Any] {
-            viewCount = vcObj["simpleText"] as? String
-                ?? (vcObj["runs"] as? [[String: Any]])?.compactMap { $0["text"] as? String }.joined()
-        } else {
-            viewCount = nil
-        }
-
-        // Published date
+        let viewCount = simpleText(from: vr["viewCountText"])
         let publishedAt = simpleText(from: vr["publishedTimeText"])
 
-        // Duration + isLive
-        let duration: String?
-        var isLive = false
         let overlays = vr["thumbnailOverlays"] as? [[String: Any]] ?? []
-        if overlays.contains(where: { ($0["thumbnailOverlayTimeStatusRenderer"] as? [String: Any])?["style"] as? String == "LIVE" }) {
-            duration = nil
-            isLive = true
-        } else if let d = simpleText(from: vr["lengthText"]) {
-            duration = d
-        } else if let acc = (vr["lengthText"] as? [String: Any])?["accessibility"] as? [String: Any],
-                  let data = acc["accessibilityData"] as? [String: Any] {
-            duration = data["label"] as? String
-        } else {
-            duration = nil
+        let isLive = overlays.contains {
+            ($0[RendererKey.thumbnailOverlayTimeStatus] as? [String: Any])?["style"] as? String == "LIVE"
         }
+        let duration: String? = isLive ? nil :
+            simpleText(from: vr["lengthText"])
+            ?? vr.digString("lengthText", "accessibility", "accessibilityData", "label")
 
+        logThumbnailChoice(videoId: videoId, chosenURL: thumbURL, fallbackURL: rawThumbURL)
         return Video(id: videoId, title: title, channelId: channelId,
                      channelName: channelName, channelAvatarURL: nil,
                      thumbnailURL: thumbURL, viewCount: viewCount,
@@ -382,42 +257,38 @@ extension InnertubeClient {
     }
 
     static func parseTileRenderer(_ tile: [String: Any]) -> Video? {
-        guard let videoId = ((tile["onSelectCommand"] as? [String: Any])?["watchEndpoint"] as? [String: Any])?["videoId"] as? String
+        guard let videoId = tile.digString("onSelectCommand", "watchEndpoint", JSONKey.videoId)
         else { return nil }
 
-        let meta = (tile["metadata"] as? [String: Any])?["tileMetadataRenderer"] as? [String: Any]
-        let title = (meta?["title"] as? [String: Any])?["simpleText"] as? String ?? ""
+        let meta = tile.digDict("metadata", RendererKey.tileMetadata)
+        let title = simpleText(from: meta?[JSONKey.title]) ?? ""
 
         let lines = meta?["lines"] as? [[String: Any]] ?? []
-        let firstLineItems = (lines.first?["lineRenderer"] as? [String: Any])?["items"] as? [[String: Any]] ?? []
-        let channel = ((firstLineItems.first?["lineItemRenderer"] as? [String: Any])?["text"] as? [String: Any])
-            .flatMap { ($0["runs"] as? [[String: Any]])?.first?["text"] as? String } ?? ""
+        let firstLineItems = (lines.first?[RendererKey.line] as? [String: Any])?[JSONKey.items] as? [[String: Any]] ?? []
+        let channel = firstLineItems.first.flatMap { li in
+            simpleText(from: (li[RendererKey.lineItem] as? [String: Any])?[JSONKey.text])
+        } ?? ""
         let channelId = extractChannelId(from: tile, firstLineItems: firstLineItems)
         let channelAvatarURL = extractChannelAvatarURL(from: tile)
 
-        let tileHeader = (tile["header"] as? [String: Any])?["tileHeaderRenderer"] as? [String: Any]
-        let thumbs = (tileHeader?["thumbnail"] as? [String: Any])?["thumbnails"] as? [[String: Any]] ?? []
-        let rawThumbURL = thumbs.last?["url"] as? String ?? ""
+        let tileHeader = tile.digDict(JSONKey.header, RendererKey.tileHeader)
+        let rawThumbURL = tileHeader?.thumbnailURL() ?? ""
         let thumbURL = preferredThumbnailURL(videoId: videoId, fallbackURL: rawThumbURL)
 
         let overlays = tileHeader?["thumbnailOverlays"] as? [[String: Any]] ?? []
         let isLive = overlays.contains {
-            ($0["thumbnailOverlayTimeStatusRenderer"] as? [String: Any])?["style"] as? String == "LIVE"
+            ($0[RendererKey.thumbnailOverlayTimeStatus] as? [String: Any])?["style"] as? String == "LIVE"
         }
-        let duration = isLive ? nil : overlays.compactMap {
-            ((($0["thumbnailOverlayTimeStatusRenderer"] as? [String: Any])?["text"] as? [String: Any])?["simpleText"] as? String)
+        let duration = isLive ? nil : overlays.compactMap { overlay -> String? in
+            simpleText(from: (overlay[RendererKey.thumbnailOverlayTimeStatus] as? [String: Any])?[JSONKey.text])
         }.first
 
         var viewCount: String? = nil
         var publishedAt: String? = nil
         if lines.count > 1 {
-            let items = (lines[1]["lineRenderer"] as? [String: Any])?["items"] as? [[String: Any]] ?? []
+            let items = (lines[1][RendererKey.line] as? [String: Any])?[JSONKey.items] as? [[String: Any]] ?? []
             for li in items {
-                let textObj = (li["lineItemRenderer"] as? [String: Any])?["text"] as? [String: Any]
-                // Support both simpleText and runs formats
-                let text = textObj?["simpleText"] as? String
-                    ?? (textObj?["runs"] as? [[String: Any]])?.compactMap { $0["text"] as? String }.joined()
-                    ?? ""
+                let text = simpleText(from: (li[RendererKey.lineItem] as? [String: Any])?[JSONKey.text]) ?? ""
                 if text == "•" || text == "·" || text.isEmpty { continue }
                 if text.contains("view") || text.contains("просмотр")
                     || text.contains("watching") || text.contains("смотр") {
@@ -433,7 +304,6 @@ extension InnertubeClient {
         }
 
         logThumbnailChoice(videoId: videoId, chosenURL: thumbURL, fallbackURL: rawThumbURL)
-
         return Video(id: videoId, title: title, channelId: channelId,
                      channelName: channel, channelAvatarURL: channelAvatarURL,
                      thumbnailURL: thumbURL, viewCount: viewCount,
@@ -446,7 +316,7 @@ extension InnertubeClient {
         let title = simpleText(from: rr["title"]) ?? "YouTube Mix"
         let thumbs = (rr["thumbnail"] as? [String: Any])?["thumbnails"] as? [[String: Any]] ?? []
         let thumbURL = thumbs.last?["url"] as? String
-            ?? "https://i.ytimg.com/vi/\(videoId)/hqdefault.jpg"
+            ?? AppURLs.YouTube.thumbnailURL(videoId: videoId)
         let videoCount = (rr["videoCountText"] as? [String: Any]).flatMap { obj -> String? in
             if let simple = obj["simpleText"] as? String { return simple }
             return (obj["runs"] as? [[String: Any]])?.compactMap { $0["text"] as? String }.joined()
@@ -471,7 +341,7 @@ extension InnertubeClient {
         let title = simpleText(from: pr["title"]) ?? "Playlist"
         let thumbs = (pr["thumbnail"] as? [String: Any])?["thumbnails"] as? [[String: Any]] ?? []
         let thumbURL = thumbs.last?["url"] as? String
-            ?? "https://i.ytimg.com/vi/\(videoId)/hqdefault.jpg"
+            ?? AppURLs.YouTube.thumbnailURL(videoId: videoId)
         let videoCount = pr["videoCount"] as? String
         return Video(id: videoId, title: title, channelId: nil,
                      channelName: "Playlist", channelAvatarURL: nil,

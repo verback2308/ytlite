@@ -30,7 +30,7 @@ enum DirectPlaybackClient: Equatable, CustomStringConvertible {
         case .androidVR:
             return "com.google.android.apps.youtube.vr.oculus/1.71.26 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip"
         case .web:
-            return "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+            return UserAgent.chromeMac
         }
     }
 
@@ -64,42 +64,42 @@ enum DirectPlaybackClient: Equatable, CustomStringConvertible {
     /// Build HTTP headers for stream requests (AVPlayer asset loading, direct URL fetches)
     func streamHeaders(visitorData: String?) -> [String: String] {
         var headers: [String: String] = [
-            "Accept": "*/*",
-            "Accept-Language": "*",
-            "User-Agent": userAgent,
-            "X-Youtube-Client-Name": clientHeaderName,
-            "X-Youtube-Client-Version": clientVersion
+            HTTPHeader.accept: "*/*",
+            HTTPHeader.acceptLanguage: "*",
+            HTTPHeader.userAgent: userAgent,
+            HTTPHeader.xYoutubeClientName: clientHeaderName,
+            HTTPHeader.xYoutubeClientVersion: clientVersion
         ]
         switch self {
         case .web:
-            headers["Referer"] = "https://www.youtube.com/"
-            headers["Origin"] = "https://www.youtube.com"
-            headers["X-Origin"] = "https://www.youtube.com"
+            headers[HTTPHeader.referer] = AppURLs.YouTube.base + "/"
+            headers[HTTPHeader.origin] = AppURLs.YouTube.base
+            headers[HTTPHeader.xOrigin] = AppURLs.YouTube.base
         case .androidVR:
             break
         }
         if let visitorData, !visitorData.isEmpty {
-            headers["X-Goog-Visitor-Id"] = visitorData
+            headers[HTTPHeader.xGoogVisitorId] = visitorData
         }
         return headers
     }
 
     /// Build HTTP headers for /player API requests
     func apiHeaders(token: String, visitorData: String?) -> [String: String] {
-        var headers: [String: String] = ["Content-Type": "application/json"]
+        var headers: [String: String] = [HTTPHeader.contentType: HTTPHeaderValue.contentTypeJSON]
         if !usesCookieAuth {
-            headers["Authorization"] = "Bearer \(token)"
+            headers[HTTPHeader.authorization] = "Bearer \(token)"
         }
-        headers["X-Youtube-Client-Name"] = clientHeaderName
-        headers["X-Youtube-Client-Version"] = clientVersion
-        headers["User-Agent"] = userAgent
+        headers[HTTPHeader.xYoutubeClientName] = clientHeaderName
+        headers[HTTPHeader.xYoutubeClientVersion] = clientVersion
+        headers[HTTPHeader.userAgent] = userAgent
         switch self {
         case .web:
             break
         case .androidVR:
-            headers["Origin"] = "https://www.youtube.com"
+            headers[HTTPHeader.origin] = AppURLs.YouTube.base
             if let visitorData, !visitorData.isEmpty {
-                headers["X-Goog-Visitor-Id"] = visitorData
+                headers[HTTPHeader.xGoogVisitorId] = visitorData
             }
         }
         return headers

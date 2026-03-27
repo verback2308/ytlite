@@ -2,7 +2,9 @@ import UIKit
 
 final class ChannelViewController: VideosViewController {
 
-    private let client: VideoService = ServiceContainer.video
+    private let client: ChannelService = ServiceContainer.channel
+    private let feedClient: FeedService = ServiceContainer.feed
+    private let engagementClient: EngagementService = ServiceContainer.engagement
     private let cache = AppCache.shared
     private let channelId: String
     private let initialChannelName: String
@@ -94,7 +96,7 @@ final class ChannelViewController: VideosViewController {
             return
         }
 
-        client.fetchNextPage(continuation: continuation) { [weak self] result in
+        feedClient.fetchNextPage(continuation: continuation) { [weak self] result in
             DispatchQueue.main.async {
                 switch result {
                 case .success(let page):
@@ -432,9 +434,9 @@ final class ChannelViewController: VideosViewController {
         }
 
         if wasSubscribed {
-            client.unsubscribeFromChannel(channelId: channelId, completion: completion)
+            engagementClient.unsubscribeFromChannel(channelId: channelId, completion: completion)
         } else {
-            client.subscribeToChannel(channelId: channelId, completion: completion)
+            engagementClient.subscribeToChannel(channelId: channelId, completion: completion)
         }
     }
 }

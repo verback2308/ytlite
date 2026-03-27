@@ -138,7 +138,7 @@ final class ReturnYouTubeDislikeService {
         ]
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue(HTTPHeaderValue.contentTypeJSON, forHTTPHeaderField: HTTPHeader.contentType)
         req.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
         URLSession.shared.dataTask(with: req) { [weak self] data, response, error in
@@ -162,7 +162,7 @@ final class ReturnYouTubeDislikeService {
         let body: [String: Any] = ["userId": userId, "videoId": videoId, "value": value]
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue(HTTPHeaderValue.contentTypeJSON, forHTTPHeaderField: HTTPHeader.contentType)
         req.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
         URLSession.shared.dataTask(with: req) { [weak self] data, response, error in
@@ -211,7 +211,7 @@ final class ReturnYouTubeDislikeService {
         ]
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue(HTTPHeaderValue.contentTypeJSON, forHTTPHeaderField: HTTPHeader.contentType)
         req.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
         URLSession.shared.dataTask(with: req) { data, response, error in

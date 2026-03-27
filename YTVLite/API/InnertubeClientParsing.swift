@@ -45,7 +45,7 @@ extension InnertubeClient {
             let channel = (ar["byline"] as? [String: Any])?["simpleText"] as? String ?? ""
             let thumbs = (ar["background"] as? [String: Any])?["thumbnails"] as? [[String: Any]]
             let thumbURL = thumbs?.last?["url"] as? String ?? thumbs?.first?["url"] as? String
-                ?? "https://i.ytimg.com/vi/\(videoId)/hqdefault.jpg"
+                ?? AppURLs.YouTube.thumbnailURL(videoId: videoId)
             return Video(id: videoId, title: title, channelId: nil, channelName: channel,
                          channelAvatarURL: nil, thumbnailURL: thumbURL,
                          viewCount: nil, publishedAt: nil, duration: nil)
@@ -392,10 +392,24 @@ extension InnertubeClient {
     }
 
     static func parsePageJSON(_ json: [String: Any]) -> FeedPage {
-        // Continuation response
-        if let cc = json["continuationContents"] as? [String: Any],
-           let slr = cc["sectionListContinuation"] as? [String: Any] {
-            return parseSectionList(slr)
+        // Continuation response — try all known continuationContents variants
+        if let cc = json["continuationContents"] as? [String: Any] {
+            if let slr = cc["sectionListContinuation"] as? [String: Any] {
+                return parseSectionList(slr)
+            }
+            if let gc = cc["gridContinuation"] as? [String: Any] {
+                let videos = VideoRendererParserChain.videos(from: gc[JSONKey.items] as? [[String: Any]] ?? [])
+                let cont = (gc[JSONKey.continuations] as? [[String: Any]])?
+                    .first.flatMap { ($0["nextContinuationData"] as? [String: Any])?[JSONKey.continuation] as? String }
+                return FeedPage(videos: videos, continuation: cont)
+            }
+            if let rgc = cc["richGridContinuation"] as? [String: Any] {
+                let items = rgc[JSONKey.contents] as? [[String: Any]] ?? []
+                let (videos, cont) = VideoRendererParserChain.parse(items: items)
+                return FeedPage(videos: videos, continuation: cont)
+            }
+            // Unknown continuation key — log first key for diagnostics
+            AppLog.innertube("parsePageJSON: unknown continuationContents keys: \(cc.keys.sorted())")
         }
         // Initial browse response
         if let slr = extractSectionList(from: json) {
@@ -437,29 +451,10 @@ extension InnertubeClient {
                   let shelfContent = shelf["content"] as? [String: Any]
             else { continue }
 
-            // Horizontal shelf (main format for home/subscriptions)
-            if let items = (shelfContent["horizontalListRenderer"] as? [String: Any])?["items"] as? [[String: Any]] {
-                for item in items {
-                    if let tile = item["tileRenderer"] as? [String: Any],
-                       let video = parseTileRenderer(tile) { videos.append(video) }
-                }
-            }
-
-            // Vertical list shelf (used for some content types)
-            if let items = (shelfContent["verticalListRenderer"] as? [String: Any])?["items"] as? [[String: Any]] {
-                for item in items {
-                    if let tile = item["tileRenderer"] as? [String: Any],
-                       let video = parseTileRenderer(tile) { videos.append(video) }
-                    if let vr = item["videoRenderer"] as? [String: Any],
-                       let video = parseWebVideoRenderer(vr) { videos.append(video) }
-                }
-            }
-
-            // Grid inside shelf
-            if let items = (shelfContent["gridRenderer"] as? [String: Any])?["items"] as? [[String: Any]] {
-                for item in items {
-                    if let tile = item["tileRenderer"] as? [String: Any],
-                       let video = parseTileRenderer(tile) { videos.append(video) }
+            let listKeys = ["horizontalListRenderer", "verticalListRenderer", "gridRenderer"]
+            for key in listKeys {
+                if let items = (shelfContent[key] as? [String: Any])?["items"] as? [[String: Any]] {
+                    videos.append(contentsOf: VideoRendererParserChain.videos(from: items))
                 }
             }
         }

@@ -310,7 +310,7 @@ extension InnertubeClient {
             text = simpleText(from: renderer["buttonText"]) ??
                 simpleText(from: renderer["unsubscribedButtonText"])
         }
-        AppLog.subscribe("subscribeButtonRenderer: subscribed=\(isSubscribed), text=\(text ?? "nil"), keys=\(renderer.keys.sorted())")
+        AppLog.subscribe("subscribeButtonRenderer: subscribed=\(isSubscribed), text=\(text ?? "nil")")
         return (text, isSubscribed)
     }
 
@@ -527,7 +527,7 @@ extension InnertubeClient {
 
     static func preferredThumbnailURL(videoId: String, fallbackURL: String) -> String {
         guard !videoId.isEmpty else { return normalizeThumbnailURL(fallbackURL) }
-        return "https://i.ytimg.com/vi/\(videoId)/hqdefault.jpg"
+        return AppURLs.YouTube.thumbnailURL(videoId: videoId)
     }
 
     static func logThumbnailChoice(videoId: String, chosenURL: String, fallbackURL: String) {

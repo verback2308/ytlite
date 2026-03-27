@@ -2,7 +2,7 @@ import UIKit
 
 class SubscriptionsViewController: UIViewController {
 
-    private let service = ServiceContainer.video
+    private let service: FeedService = ServiceContainer.video
     private let cache = AppCache.shared
     private var videos: [Video] = []
     private var continuationToken: String?

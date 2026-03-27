@@ -4,36 +4,32 @@ import AVKit
 final class WatchViewController: UIViewController {
 
     private var initialVideo: Video
-    private let client: VideoService = ServiceContainer.video
+    private let client: WatchService = ServiceContainer.watch
+    private let engagementClient: EngagementService = ServiceContainer.engagement
     private let cache = AppCache.shared
 
     private var watchPage: WatchPage?
     private var isSubscribed: Bool = false
+    private var allRelatedVideos: [Video] = []
     private var visibleRelatedVideos: [Video] = []
+    private let relatedBatchSize = 5
     private var comments: [Comment] = []
     private var commentsContinuation: String?
+    private var visibleCommentsCount = 10
+    private let commentsPageSize = 10
     private var playerViewController: AVPlayerViewController?
     private var videoPlayerView: VideoPlayerView?
     private var playerItemContext = 0
-    private var activeDirectPlaybackClient: DirectPlaybackClient = .androidVR
-    private var retriedDirectPlaybackWithWeb = false
     private var descriptionExpanded = false
-    private var relatedExpansionWorkItem: DispatchWorkItem?
     private var isLoadingComments = false
-    private var hlsPlaylistLoader: HLSPlaylistLoader?
 
     // SponsorBlock
     private let sponsorBlock = SponsorBlockController()
 
-    // Quality switching context — set when HLS playback starts
-    private var activePlaybackInfo: DirectPlaybackInfo?
-    private var activePlaybackClient: DirectPlaybackClient = .androidVR
-    private var activePlaybackHeaders: [String: String] = [:]
-    private var activeVideoFormat: DashFormatInfo?
-    private var backgroundRestoreTime: CMTime = .zero
-    private var backgroundEnteredAt: Date?
-
     private var autoplayOverlay: AutoplayOverlayView?
+
+    /// Owns the full playback pipeline: PoToken → fetch → onesie → strategy selection.
+    private let playbackFacade = PlaybackFacade()
 
     /// Token cancelled when the VC disappears — silences all in-flight network callbacks.
     private var pageLoadToken = CancellationToken()
@@ -111,6 +107,7 @@ final class WatchViewController: UIViewController {
         self.relatedCollectionView = UICollectionView(frame: .zero, collectionViewLayout: portraitLayout)
         self.initialVideo = video
         super.init(nibName: nil, bundle: nil)
+        playbackFacade.context = self
     }
 
     required init?(coder: NSCoder) { fatalError() }
@@ -214,54 +211,20 @@ final class WatchViewController: UIViewController {
             return
         }
 
-        // For generated HLS (video+audio): iOS suspends video segment downloads in background
-        // causing -12889 timeouts that stall the player. Replace with audio-only HLS item
-        // so only audio segments are fetched. Call play() synchronously so it fires before
-        // the app fully suspends.
-        if let player = videoPlayerView?.player,
-           let loader = hlsPlaylistLoader {
-            backgroundRestoreTime = player.currentTime()
-            backgroundEnteredAt = Date()
-            let audioMasterURL = URL(string: "\(HLSGenerator.scheme)://audio-master.m3u8")!
-            let assetOptions: [String: Any] = ["AVURLAssetHTTPHeaderFieldsKey": activePlaybackHeaders]
-            let audioAsset = AVURLAsset(url: audioMasterURL, options: assetOptions)
-            audioAsset.resourceLoader.setDelegate(loader, queue: loader.loaderQueue)
-            let audioItem = AVPlayerItem(asset: audioAsset)
-            audioItem.preferredForwardBufferDuration = 10.0
-            player.replaceCurrentItem(with: audioItem)
-            player.seek(to: backgroundRestoreTime, toleranceBefore: CMTime(seconds: 1, preferredTimescale: 1000), toleranceAfter: CMTime(seconds: 1, preferredTimescale: 1000))
-            player.play()
-            AppLog.player("switched to audio-only HLS at \(CMTimeGetSeconds(backgroundRestoreTime))s")
+        if let player = videoPlayerView?.player {
+            playbackFacade.handleAppDidEnterBackground(player: player)
         }
     }
 
     @objc private func appWillEnterForeground() {
         AppLog.player("appWillEnterForeground")
 
-        guard BackgroundPlaybackService.isEnabled,
-              let player = videoPlayerView?.player,
-              let loader = hlsPlaylistLoader else {
-            backgroundEnteredAt = nil
+        guard BackgroundPlaybackService.isEnabled, let player = videoPlayerView?.player else {
+            playbackFacade.backgroundEnteredAt = nil
             return
         }
 
-        // Restore video+audio HLS using wall-clock elapsed time for accurate position
-        let elapsed = backgroundEnteredAt.map { Date().timeIntervalSince($0) } ?? 0
-        let restoreSeconds = CMTimeGetSeconds(backgroundRestoreTime) + elapsed
-        let restoreTime = CMTime(seconds: restoreSeconds, preferredTimescale: 1000)
-        backgroundEnteredAt = nil
-
-        let masterURL = URL(string: "\(HLSGenerator.scheme)://master.m3u8")!
-        let assetOptions: [String: Any] = ["AVURLAssetHTTPHeaderFieldsKey": activePlaybackHeaders]
-        let asset = AVURLAsset(url: masterURL, options: assetOptions)
-        asset.resourceLoader.setDelegate(loader, queue: loader.loaderQueue)
-        let item = AVPlayerItem(asset: asset)
-        item.preferredForwardBufferDuration = 5.0
-        player.replaceCurrentItem(with: item)
-        player.seek(to: restoreTime, toleranceBefore: CMTime(seconds: 0.5, preferredTimescale: 1000), toleranceAfter: CMTime(seconds: 0.5, preferredTimescale: 1000)) { [weak player] _ in
-            player?.play()
-        }
-        AppLog.player("restored video+audio HLS at \(restoreSeconds)s (base=\(CMTimeGetSeconds(backgroundRestoreTime))s + elapsed=\(String(format: "%.1f", elapsed))s)")
+        playbackFacade.handleAppWillEnterForeground(player: player)
     }
 
     deinit {
@@ -740,22 +703,18 @@ final class WatchViewController: UIViewController {
     func loadVideo(_ video: Video) {
         dismissAutoplayOverlay()
 
-        relatedExpansionWorkItem?.cancel()
-        relatedExpansionWorkItem = nil
-
         pageLoadToken.cancel()
         pageLoadToken = CancellationToken()
 
         resetPlaybackSurfaces()
-        hlsPlaylistLoader = nil
-        activePlaybackInfo = nil
-        activeVideoFormat = nil
-        retriedDirectPlaybackWithWeb = false
+        playbackFacade.reset()
 
         watchPage = nil
+        allRelatedVideos = []
         visibleRelatedVideos = []
         comments = []
         commentsContinuation = nil
+        visibleCommentsCount = commentsPageSize
         isLoadingComments = false
         descriptionExpanded = false
         likeCountLabel.text = "—"
@@ -777,7 +736,6 @@ final class WatchViewController: UIViewController {
     }
 
     private func applyWatchPage(_ page: WatchPage) {
-        relatedExpansionWorkItem?.cancel()
         watchPage = page
         cache.setWatchPage(page, videoId: initialVideo.id)
         title = page.video.title
@@ -852,9 +810,9 @@ final class WatchViewController: UIViewController {
             }
         }
         applyTheme()
-        visibleRelatedVideos = Array(page.relatedVideos.prefix(3))
+        allRelatedVideos = page.relatedVideos
+        visibleRelatedVideos = Array(page.relatedVideos.prefix(relatedBatchSize))
         relatedCollectionView.reloadData()
-        scheduleRelatedExpansion(for: page)
         ChannelInfoStore.shared.preload(channelIds: page.relatedVideos.compactMap(\.channelId))
         resetComments()
         loadComments()
@@ -864,6 +822,7 @@ final class WatchViewController: UIViewController {
     private func resetComments() {
         comments = []
         commentsContinuation = nil
+        visibleCommentsCount = commentsPageSize
         isLoadingComments = false
         commentsLabel.text = "Comments"
         renderComments()
@@ -899,7 +858,7 @@ final class WatchViewController: UIViewController {
                         let existingIds = Set(self.comments.map(\.id))
                         self.comments.append(contentsOf: page.comments.filter { !existingIds.contains($0.id) })
                     }
-                    self.commentsLabel.text = page.title ?? "Comments"
+                    self.commentsLabel.text = page.title ?? "Comments (\(self.comments.count))"
                     self.renderComments()
                 }
             }
@@ -920,14 +879,21 @@ final class WatchViewController: UIViewController {
             emptyLabel.text = isLoadingComments ? "Loading comments..." : "Comments are unavailable yet."
             commentsStackView.addArrangedSubview(emptyLabel)
         } else {
-            for comment in comments {
+            for comment in comments.prefix(visibleCommentsCount) {
                 commentsStackView.addArrangedSubview(makeCommentView(comment))
             }
         }
 
-        loadMoreCommentsButton.setTitle(isLoadingComments ? "Loading comments..." : "Load more comments", for: .normal)
-        loadMoreCommentsButton.isEnabled = !isLoadingComments
-        loadMoreCommentsButton.isHidden = commentsContinuation == nil
+        let hasMoreLoaded = visibleCommentsCount < comments.count
+        let hasContinuation = commentsContinuation != nil
+        loadMoreCommentsButton.isHidden = !hasMoreLoaded && !hasContinuation
+        if isLoadingComments {
+            loadMoreCommentsButton.setTitle("Loading comments...", for: .normal)
+            loadMoreCommentsButton.isEnabled = false
+        } else {
+            loadMoreCommentsButton.setTitle("Load more comments", for: .normal)
+            loadMoreCommentsButton.isEnabled = true
+        }
         view.setNeedsLayout()
     }
 
@@ -935,238 +901,30 @@ final class WatchViewController: UIViewController {
         CommentViewBuilder.makeCommentView(comment)
     }
 
-    private func scheduleRelatedExpansion(for page: WatchPage) {
-        guard page.relatedVideos.count > visibleRelatedVideos.count else { return }
+    private func expandRelatedIfNeeded() {
+        guard visibleRelatedVideos.count < allRelatedVideos.count else { return }
+        let nextCount = min(visibleRelatedVideos.count + relatedBatchSize, allRelatedVideos.count)
+        visibleRelatedVideos = Array(allRelatedVideos.prefix(nextCount))
+        relatedCollectionView.reloadData()
+        view.setNeedsLayout()
+    }
 
-        let workItem = DispatchWorkItem { [weak self] in
-            guard let self = self, self.watchPage?.video.id == page.video.id else { return }
-            self.visibleRelatedVideos = page.relatedVideos
-            self.relatedCollectionView.reloadData()
-            self.view.setNeedsLayout()
+    private func expandCommentsIfNeeded() {
+        if visibleCommentsCount < comments.count {
+            visibleCommentsCount += commentsPageSize
+            renderComments()
+        } else if commentsContinuation != nil && !isLoadingComments {
+            loadComments(continuation: commentsContinuation)
         }
-        relatedExpansionWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: workItem)
     }
 
     private func startPlayback() {
-        startPlayback(using: .androidVR)
+        playbackFacade.start(videoId: initialVideo.id,
+                             apiClient: client,
+                             cancellationToken: pageLoadToken)
     }
 
-    private func startPlayback(using client: DirectPlaybackClient) {
-        activeDirectPlaybackClient = client
-        playerStatusLabel.text = "Minting PoToken..."
-
-        WebPoTokenService.shared.fetchSessionToken(identifier: initialVideo.id) { [weak self] tokenResult in
-            guard let self, !self.pageLoadToken.isCancelled else { return }
-            let poToken: String?
-            switch tokenResult {
-            case .success(let token): poToken = token
-            case .failure(let error):
-                AppLog.player("PoToken mint failed: \(error), proceeding without")
-                poToken = nil
-            }
-
-            DispatchQueue.main.async {
-                self.playerStatusLabel.text = "Resolving direct stream..."
-            }
-            self.client.fetchDirectPlayback(videoId: self.initialVideo.id, client: client, poToken: poToken,
-                                            cancellationToken: self.pageLoadToken) { [weak self] result in
-                switch result {
-                case .failure(let error):
-                    self?.showPlaybackError(error.localizedDescription)
-                case .success(let info):
-                    self?.startDirectPlayback(info, client: client)
-                }
-            }
-        }
-    }
-
-    private func startDirectPlayback(_ info: DirectPlaybackInfo, client: DirectPlaybackClient) {
-        AppLog.player("startDirectPlayback (\(client)): progressive=\(info.progressiveURL?.absoluteString.prefix(80) ?? "nil") hls=\(info.hlsManifestURL != nil) dash=\(info.dashManifestURL != nil) video=\(info.videoURL != nil) audio=\(info.audioURL != nil) sabr=\(info.serverAbrStreamingURL != nil) quality=\(info.qualityLabel ?? "nil") visitorData=\(info.visitorData?.prefix(20) ?? "nil")")
-
-        // For clients that don't require JS player (Android), try direct playback first
-        if info.progressiveURL != nil || info.hlsManifestURL != nil || info.dashManifestURL != nil || (info.videoURL != nil && info.audioURL != nil) {
-            AppLog.player("trying direct playback (skip onesie) for \(client)")
-            playDirectStream(info, client: client)
-            return
-        }
-
-        if let sabrURL = info.serverAbrStreamingURL {
-            let videoUstreamerLength = info.videoPlaybackUstreamerConfig?.count ?? 0
-            let onesieUstreamerLength = info.onesieUstreamerConfig?.count ?? 0
-            AppLog.player("SABR candidate available (\(client)): \(sabrURL.absoluteString.prefix(80)), ustreamer=\(info.hasVideoPlaybackUstreamerConfig), videoUstreamerLen=\(videoUstreamerLength), onesieUstreamerLen=\(onesieUstreamerLength)")
-        }
-        guard let visitorData = info.visitorData, !visitorData.isEmpty else {
-            showPlaybackError("Missing visitor data for onesie playback.")
-            return
-        }
-
-        DispatchQueue.main.async {
-            self.playerStatusLabel.text = "Minting WebPO tokens..."
-        }
-
-        let group = DispatchGroup()
-        var contentToken: String?
-
-        group.enter()
-        WebPoTokenService.shared.fetchSessionToken(identifier: self.initialVideo.id) { result in
-            if case .success(let token) = result {
-                contentToken = token
-            }
-            group.leave()
-        }
-
-        group.notify(queue: .main) { [weak self] in
-            guard let self else { return }
-            let contentPlaybackNonce = Self.makeContentPlaybackNonce()
-
-            guard let contentPoToken = contentToken, !contentPoToken.isEmpty else {
-                self.showPlaybackError("Failed to mint content WebPO token")
-                return
-            }
-
-            self.playerStatusLabel.text = "Fetching stream via onesie..."
-            OnesieService.shared.fetchPlaybackBootstrap(
-                videoId: self.initialVideo.id,
-                visitorData: visitorData,
-                poToken: contentPoToken,
-                contentPlaybackNonce: contentPlaybackNonce
-            ) { [weak self] onesieResult in
-                guard let self else { return }
-
-                switch onesieResult {
-                    case .success(let bootstrap):
-                        guard let refreshedInfo = InnertubeClient.parsePlayerJSON(bootstrap.playerJSON) else {
-                            AppLog.player("onesie player JSON parse failed")
-                            self.showPlaybackError("Onesie returned an unusable player response.")
-                            return
-                        }
-                        let effectiveInfo = DirectPlaybackInfo(
-                            hlsManifestURL: refreshedInfo.hlsManifestURL,
-                            dashManifestURL: refreshedInfo.dashManifestURL,
-                            progressiveURL: refreshedInfo.progressiveURL,
-                            videoURL: refreshedInfo.videoURL,
-                            audioURL: refreshedInfo.audioURL,
-                            serverAbrStreamingURL: refreshedInfo.serverAbrStreamingURL,
-                            videoPlaybackUstreamerConfig: refreshedInfo.videoPlaybackUstreamerConfig ?? info.videoPlaybackUstreamerConfig,
-                            onesieUstreamerConfig: refreshedInfo.onesieUstreamerConfig ?? info.onesieUstreamerConfig,
-                            sabrVideoFormat: refreshedInfo.sabrVideoFormat,
-                            sabrAudioFormat: refreshedInfo.sabrAudioFormat,
-                            videoItag: refreshedInfo.videoItag,
-                            audioItag: refreshedInfo.audioItag,
-                            qualityLabel: refreshedInfo.qualityLabel,
-                            visitorData: refreshedInfo.visitorData ?? info.visitorData,
-                            hasVideoPlaybackUstreamerConfig: refreshedInfo.hasVideoPlaybackUstreamerConfig || info.hasVideoPlaybackUstreamerConfig,
-                            dashVideoFormat: refreshedInfo.dashVideoFormat,
-                            dashAudioFormat: refreshedInfo.dashAudioFormat,
-                            allDashVideoFormats: refreshedInfo.allDashVideoFormats,
-                            duration: refreshedInfo.duration
-                        )
-                        self.startOnesiePlayback(effectiveInfo,
-                                                bootstrap: bootstrap,
-                                                client: client,
-                                                contentPoToken: contentPoToken,
-                                                contentPlaybackNonce: contentPlaybackNonce)
-
-                case .failure(let error):
-                    AppLog.player("onesie failed (\(error))")
-                    self.showPlaybackError("Onesie bootstrap failed: \(error.localizedDescription)")
-                }
-            }
-        }
-    }
-
-    private func playDirectStream(_ info: DirectPlaybackInfo, client: DirectPlaybackClient) {
-        let mediaVisitorData = info.visitorData
-        AppLog.player("playDirectStream: hls=\(info.hlsManifestURL != nil) dash=\(info.dashManifestURL != nil) progressive=\(info.progressiveURL != nil) video+audio=\(info.videoURL != nil && info.audioURL != nil) sabr=\(info.serverAbrStreamingURL != nil)")
-
-        if let hlsManifestURL = info.hlsManifestURL {
-            AppLog.player("choosing HLS: \(hlsManifestURL.absoluteString.prefix(120))...")
-            DispatchQueue.main.async {
-                self.playerStatusLabel.text = "Loading HLS stream..."
-                self.attachPlayer(url: hlsManifestURL)
-            }
-            return
-        }
-
-        // Generated HLS from adaptive format info — instant 720p via native AVPlayer
-        if let dashVideo = info.dashVideoFormat, let dashAudio = info.dashAudioFormat {
-            activePlaybackInfo = info
-            activePlaybackClient = client
-            let videoURL = prepareDirectPlaybackURL(baseURL: dashVideo.url, client: client, poToken: nil)
-            let audioURL = prepareDirectPlaybackURL(baseURL: dashAudio.url, client: client, poToken: nil)
-            let quality = info.qualityLabel ?? "720p"
-            let headers = makeDirectRequestHeaders(visitorData: mediaVisitorData, client: client)
-            AppLog.player("choosing generated HLS (\(quality)): video itag=\(dashVideo.itag) audio itag=\(dashAudio.itag)")
-            DispatchQueue.main.async {
-                self.playerStatusLabel.text = "Loading \(quality) stream..."
-            }
-            buildHLSAndPlay(videoURL: videoURL, audioURL: audioURL,
-                            videoFormat: dashVideo, audioFormat: dashAudio,
-                            headers: headers, quality: quality)
-            return
-        }
-
-        if let progressiveURL = info.progressiveURL {
-            let preparedURL = prepareDirectPlaybackURL(baseURL: progressiveURL, client: client, poToken: nil)
-            AppLog.player("starting progressive (360p) immediately")
-
-            DispatchQueue.main.async {
-                self.playerStatusLabel.text = "Loading stream..."
-                self.attachDirectPlayer(url: preparedURL, visitorData: mediaVisitorData, client: client)
-            }
-
-            // Background: prepare adaptive (720p) composition, then upgrade
-            if let videoURL = info.videoURL, let audioURL = info.audioURL {
-                let preparedVideoURL = prepareDirectPlaybackURL(baseURL: videoURL, client: client, poToken: nil)
-                let preparedAudioURL = prepareDirectPlaybackURL(baseURL: audioURL, client: client, poToken: nil)
-                let headers = makeDirectRequestHeaders(visitorData: mediaVisitorData, client: client)
-                let quality = info.qualityLabel ?? "720p"
-                AppLog.player("background: preparing \(quality) adaptive...")
-                prepareAdaptiveUpgrade(videoURL: preparedVideoURL, audioURL: preparedAudioURL, headers: headers, quality: quality)
-            }
-            return
-        }
-
-        // No progressive — try adaptive directly (will be slow but works)
-        if let videoURL = info.videoURL, let audioURL = info.audioURL {
-            let preparedVideoURL = prepareDirectPlaybackURL(baseURL: videoURL, client: client, poToken: nil)
-            let preparedAudioURL = prepareDirectPlaybackURL(baseURL: audioURL, client: client, poToken: nil)
-            let headers = makeDirectRequestHeaders(visitorData: mediaVisitorData, client: client)
-            let quality = info.qualityLabel ?? "?"
-            AppLog.player("choosing adaptive (no progressive fallback): quality=\(quality)")
-            DispatchQueue.main.async {
-                self.playerStatusLabel.text = "Loading \(quality) stream..."
-                self.attachComposedPlayer(videoURL: preparedVideoURL, audioURL: preparedAudioURL, headers: headers) { _ in }
-            }
-            return
-        }
-
-        showPlaybackError("No playable direct stream available.")
-    }
-
-    private func startOnesiePlayback(_ info: DirectPlaybackInfo,
-                                     bootstrap: OnesiePlaybackBootstrap,
-                                     client: DirectPlaybackClient,
-                                     contentPoToken: String,
-                                     contentPlaybackNonce: String) {
-        let typeSummary = bootstrap.responseParts
-            .map { "\($0.type)(c\($0.compressionType))" }
-            .joined(separator: ",")
-        AppLog.player("onesie bootstrap ready proxy=\(bootstrap.proxyStatus) http=\(bootstrap.httpStatus) parts=[\(typeSummary)]")
-        if info.hlsManifestURL != nil || info.progressiveURL != nil || (info.videoURL != nil && info.audioURL != nil) {
-            playDirectStream(info, client: client)
-            return
-        }
-        showPlaybackError("Onesie returned no playable streams.")
-    }
-
-    private static func makeContentPlaybackNonce(length: Int = 16) -> String {
-        let alphabet = Array("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_")
-        return String((0..<length).compactMap { _ in alphabet.randomElement() })
-    }
-
-    private func prepareDirectPlaybackURL(baseURL: URL, client: DirectPlaybackClient, poToken: String?) -> URL {
+    func prepareDirectPlaybackURL(baseURL: URL, client: DirectPlaybackClient, poToken: String?) -> URL {
         guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {
             return baseURL
         }
@@ -1179,57 +937,10 @@ final class WatchViewController: UIViewController {
         items.append(URLQueryItem(name: "cver", value: client.clientVersion))
         components.queryItems = items
         let finalURL = components.url ?? baseURL
-        AppLog.player("direct URL prepared with pot/cver for \(client)")
         return finalURL
     }
 
-    private func generateColdStartToken(identifier: String, clientState: UInt8 = 1) -> String? {
-        guard let identifierData = identifier.data(using: .utf8), identifierData.count <= 118 else {
-            return nil
-        }
-
-        let timestamp = UInt32(Date().timeIntervalSince1970)
-        let key0 = UInt8.random(in: 0...255)
-        let key1 = UInt8.random(in: 0...255)
-        let header: [UInt8] = [
-            key0,
-            key1,
-            0,
-            clientState,
-            UInt8((timestamp >> 24) & 0xFF),
-            UInt8((timestamp >> 16) & 0xFF),
-            UInt8((timestamp >> 8) & 0xFF),
-            UInt8(timestamp & 0xFF)
-        ]
-
-        let payloadLength = header.count + identifierData.count
-        guard payloadLength <= 255 else {
-            return nil
-        }
-
-        var packet = Data([34, UInt8(payloadLength)])
-        packet.append(contentsOf: header)
-        packet.append(identifierData)
-
-        var bytes = [UInt8](packet)
-        let payloadStart = 2
-        let keyLength = 2
-        guard bytes.count > payloadStart + keyLength else {
-            return nil
-        }
-
-        for index in (payloadStart + keyLength)..<bytes.count {
-            bytes[index] ^= bytes[payloadStart + ((index - payloadStart) % keyLength)]
-        }
-
-        return Data(bytes)
-            .base64EncodedString()
-            .replacingOccurrences(of: "+", with: "-")
-            .replacingOccurrences(of: "/", with: "_")
-            .replacingOccurrences(of: "=", with: "")
-    }
-
-    private func attachComposedPlayer(videoURL: URL, audioURL: URL,
+    func attachComposedPlayer(videoURL: URL, audioURL: URL,
                                       headers: [String: String],
                                       completion: @escaping (Bool) -> Void) {
         AdaptiveCompositionBuilder.build(videoURL: videoURL, audioURL: audioURL, headers: headers) { [weak self] item in
@@ -1242,7 +953,7 @@ final class WatchViewController: UIViewController {
         }
     }
 
-    private func prepareAdaptiveUpgrade(videoURL: URL, audioURL: URL, headers: [String: String], quality: String) {
+    func prepareAdaptiveUpgrade(videoURL: URL, audioURL: URL, headers: [String: String], quality: String) {
         AdaptiveCompositionBuilder.build(videoURL: videoURL, audioURL: audioURL, headers: headers) { [weak self] item in
             guard let self = self, let item = item else { return }
 
@@ -1262,11 +973,11 @@ final class WatchViewController: UIViewController {
         }
     }
 
-    private func buildHLSAndPlay(videoURL: URL, audioURL: URL,
+    func buildHLSAndPlay(videoURL: URL, audioURL: URL,
                                  videoFormat: DashFormatInfo, audioFormat: DashFormatInfo,
                                  headers: [String: String], quality: String) {
-        activeVideoFormat = videoFormat
-        activePlaybackHeaders = headers
+        playbackFacade.activeVideoFormat = videoFormat
+        playbackFacade.activePlaybackHeaders = headers
 
         HLSPlaybackBuilder.build(videoURL: videoURL, audioURL: audioURL,
                                  videoFormat: videoFormat, audioFormat: audioFormat,
@@ -1277,7 +988,7 @@ final class WatchViewController: UIViewController {
                 return
             }
             DispatchQueue.main.async {
-                self.hlsPlaylistLoader = result.loader
+                self.playbackFacade.hlsPlaylistLoader = result.loader
                 self.attachPlayer(item: result.playerItem)
                 AppLog.player("HLS: player attached for \(quality)")
             }
@@ -1293,11 +1004,11 @@ final class WatchViewController: UIViewController {
         }
     }
 
-    private func attachPlayer(url: URL) {
+    func attachPlayer(url: URL) {
         attachPlayer(item: AVPlayerItem(url: url))
     }
 
-    private func attachDirectPlayer(url: URL, visitorData: String?, client: DirectPlaybackClient) {
+    func attachDirectPlayer(url: URL, visitorData: String?, client: DirectPlaybackClient) {
         resetPlaybackSurfaces()
 
         let headers = makeDirectRequestHeaders(visitorData: visitorData, client: client)
@@ -1309,7 +1020,7 @@ final class WatchViewController: UIViewController {
         attachPlayer(item: item)
     }
 
-    private func makeDirectRequestHeaders(visitorData: String?, client: DirectPlaybackClient) -> [String: String] {
+    func makeDirectRequestHeaders(visitorData: String?, client: DirectPlaybackClient) -> [String: String] {
         client.streamHeaders(visitorData: visitorData)
     }
 
@@ -1473,7 +1184,7 @@ final class WatchViewController: UIViewController {
         AppLog.player("player error log: domain=\(last.errorDomain ?? "nil"), code=\(last.errorStatusCode), comment=\(last.errorComment ?? "nil"), uri=\(last.uri ?? "nil")")
     }
 
-    private func showPlaybackError(_ message: String) {
+    func showPlaybackError(_ message: String) {
         DispatchQueue.main.async { [weak self] in
             self?.playerSpinner.stopAnimating()
             self?.playerStatusLabel.text = "Playback error: \(message)"
@@ -1531,9 +1242,9 @@ final class WatchViewController: UIViewController {
         }
 
         if wasSubscribed {
-            client.unsubscribeFromChannel(channelId: channelId, completion: completion)
+            engagementClient.unsubscribeFromChannel(channelId: channelId, completion: completion)
         } else {
-            client.subscribeToChannel(channelId: channelId, completion: completion)
+            engagementClient.subscribeToChannel(channelId: channelId, completion: completion)
         }
     }
 
@@ -1545,7 +1256,7 @@ final class WatchViewController: UIViewController {
         currentLikeStatus = newStatus
         updateLikeDislikeUI()
         if wasLiked {
-            client.removeLike(videoId: videoId) { [weak self] result in
+            engagementClient.removeLike(videoId: videoId) { [weak self] result in
                 DispatchQueue.main.async {
                     switch result {
                     case .success:
@@ -1561,7 +1272,7 @@ final class WatchViewController: UIViewController {
                 }
             }
         } else {
-            client.sendLike(videoId: videoId) { [weak self] result in
+            engagementClient.sendLike(videoId: videoId) { [weak self] result in
                 DispatchQueue.main.async {
                     switch result {
                     case .success:
@@ -1587,7 +1298,7 @@ final class WatchViewController: UIViewController {
         currentLikeStatus = newStatus
         updateLikeDislikeUI()
         if wasDisliked {
-            client.removeLike(videoId: videoId) { result in
+            engagementClient.removeLike(videoId: videoId) { result in
                 DispatchQueue.main.async {
                     switch result {
                     case .success:
@@ -1601,7 +1312,7 @@ final class WatchViewController: UIViewController {
                 }
             }
         } else {
-            client.sendDislike(videoId: videoId) { result in
+            engagementClient.sendDislike(videoId: videoId) { result in
                 DispatchQueue.main.async {
                     switch result {
                     case .success:
@@ -1637,8 +1348,12 @@ final class WatchViewController: UIViewController {
     }
 
     @objc private func loadMoreCommentsTapped() {
-        guard let continuation = commentsContinuation else { return }
-        loadComments(continuation: continuation)
+        if visibleCommentsCount < comments.count {
+            visibleCommentsCount += commentsPageSize
+            renderComments()
+        } else if let continuation = commentsContinuation {
+            loadComments(continuation: continuation)
+        }
     }
 
     @objc private func handlePlayerTap() {
@@ -1714,7 +1429,7 @@ extension WatchViewController: VideoPlayerViewDelegate {
     }
 
     private func showQualityPicker() {
-        guard let info = activePlaybackInfo,
+        guard let info = playbackFacade.activePlaybackInfo,
               let audioFormat = info.dashAudioFormat else { return }
 
         let formats = info.allDashVideoFormats
@@ -1724,11 +1439,11 @@ extension WatchViewController: VideoPlayerViewDelegate {
 
         for format in formats {
             let label = qualityLabel(for: format)
-            let isCurrent = format.itag == activeVideoFormat?.itag
+            let isCurrent = format.itag == playbackFacade.activeVideoFormat?.itag
             let title = isCurrent ? "✓ \(label)" : label
             alert.addAction(UIAlertAction(title: title, style: .default) { [weak self] _ in
-                guard let self = self, format.itag != self.activeVideoFormat?.itag else { return }
-                let client = self.activePlaybackClient
+                guard let self = self, format.itag != self.playbackFacade.activeVideoFormat?.itag else { return }
+                let client = self.playbackFacade.activePlaybackClient
                 let videoURL = self.prepareDirectPlaybackURL(baseURL: format.url, client: client, poToken: nil)
                 let audioURL = self.prepareDirectPlaybackURL(baseURL: audioFormat.url, client: client, poToken: nil)
                 DispatchQueue.main.async {
@@ -1737,7 +1452,7 @@ extension WatchViewController: VideoPlayerViewDelegate {
                 }
                 self.buildHLSAndPlay(videoURL: videoURL, audioURL: audioURL,
                                      videoFormat: format, audioFormat: audioFormat,
-                                     headers: self.activePlaybackHeaders, quality: label)
+                                     headers: self.playbackFacade.activePlaybackHeaders, quality: label)
             })
         }
 
@@ -1810,6 +1525,24 @@ extension WatchViewController: UIScrollViewDelegate {
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
         guard scrollView === self.scrollView else { return }
         isOuterScrollViewDragging = false
+    }
+
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        guard scrollView === self.scrollView else { return }
+        let threshold: CGFloat = 400
+        let offset = scrollView.contentOffset.y + scrollView.bounds.height
+        let contentHeight = scrollView.contentSize.height
+        guard contentHeight > 0, offset >= contentHeight - threshold else { return }
+        expandRelatedIfNeeded()
+    }
+}
+
+// MARK: - PlaybackContext
+
+extension WatchViewController: PlaybackContext {
+
+    func updateStatusLabel(_ text: String) {
+        playerStatusLabel.text = text
     }
 }
 

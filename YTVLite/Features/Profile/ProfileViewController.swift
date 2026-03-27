@@ -147,7 +147,7 @@ class ProfileViewController: UIViewController {
         OAuthClient.shared.validToken { [weak self] result in
             guard case .success(let token) = result else { return }
             guard let url = URL(string: "https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true") else { return }
-            let headers = ["Authorization": "Bearer \(token)"]
+            let headers = [HTTPHeader.authorization: "Bearer \(token)"]
             APIClient().get(url: url, headers: headers) { [weak self] result in
             guard case .success(let data) = result,
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],

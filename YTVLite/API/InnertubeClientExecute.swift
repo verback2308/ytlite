@@ -2,176 +2,141 @@ import Foundation
 
 extension InnertubeClient {
 
+    // MARK: - Account
+
     func executeAccountsList(token: String,
-                                     completion: @escaping (Result<(name: String, avatarURL: String?), Error>) -> Void) {
-        guard let url = URL(string: "\(baseURL)/account/accounts_list") else {
-            completion(.failure(APIError.invalidURL)); return
-        }
-        var body = tvContext
-        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
-            completion(.failure(APIError.decodingFailed)); return
-        }
-        let headers = ["Content-Type": "application/json", "Authorization": "Bearer \(token)"]
-        api.post(url: url, headers: headers, body: bodyData) { result in
-            switch result {
-            case .failure(let e): completion(.failure(e))
-            case .success(let data):
-                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                    completion(.failure(APIError.decodingFailed)); return
+                             completion: @escaping (Result<(name: String, avatarURL: String?), Error>) -> Void) {
+        execute(
+            urlString: "\(baseURL)\(InnertubeEndpoint.accountList)",
+            body: tvContext,
+            headers: authHeaders(token: token),
+            logTag: "accountsList"
+        ) { json -> (name: String, avatarURL: String?)? in
+            guard let info = InnertubeClient.parseAccountsListJSON(json) else {
+                if let pretty = try? JSONSerialization.data(withJSONObject: json, options: .prettyPrinted),
+                   let str = String(data: pretty, encoding: .utf8) {
+                    AppLog.innertube("accountsList unknown structure:\n\(str.prefix(3000))")
                 }
-                if let info = InnertubeClient.parseAccountsListJSON(json) {
-                    AppLog.innertube("accountsList: name=\(info.name), avatar=\(info.avatarURL ?? "nil")")
-                    completion(.success(info))
-                } else {
-                    if let pretty = try? JSONSerialization.data(withJSONObject: json, options: .prettyPrinted),
-                       let str = String(data: pretty, encoding: .utf8) {
-                        AppLog.innertube("accountsList unknown structure:\n\(str.prefix(3000))")
-                    }
-                    completion(.failure(APIError.decodingFailed))
-                }
+                return nil
             }
-        }
+            AppLog.innertube("accountsList: name=\(info.name), avatar=\(info.avatarURL ?? "nil")")
+            return info
+        } completion: { completion($0) }
     }
 
-    /// Recursively searches for account name + photo in accounts_list / similar responses.
     static func parseAccountsListJSON(_ json: [String: Any]) -> (name: String, avatarURL: String?)? {
-        // Try known explicit paths first
-        // Path 1: header.activeAccountHeaderRenderer
+        // Format 1: header.activeAccountHeaderRenderer (old TV response)
         if let r = (json["header"] as? [String: Any])?["activeAccountHeaderRenderer"] as? [String: Any],
-           let info = extractAccountNameAndPhoto(from: r) { return info }
-
-        // Path 2: contents dict → accountSectionListRenderer
-        if let contents = json["contents"] as? [String: Any] {
-            if let asl = contents["accountSectionListRenderer"] as? [String: Any],
-               let info = parseAccountSectionList(asl) { return info }
-            if let info = extractAccountNameAndPhoto(from: contents) { return info }
+           let name = (r["accountName"] as? [String: Any])?["simpleText"] as? String {
+            let thumb = ((r["accountPhoto"] as? [String: Any])?["thumbnails"] as? [[String: Any]])?.last?["url"] as? String
+            return (name, thumb)
         }
 
-        // Path 3: contents array
-        if let arr = json["contents"] as? [[String: Any]] {
-            for item in arr {
-                if let asl = item["accountSectionListRenderer"] as? [String: Any],
-                   let info = parseAccountSectionList(asl) { return info }
-                if let r = item["activeAccountHeaderRenderer"] as? [String: Any],
-                   let info = extractAccountNameAndPhoto(from: r) { return info }
+        // Format 2: contents[].accountSectionListRenderer.contents[].accountItemSectionRenderer
+        //           .contents[].accountItem  (newer TV response observed in production)
+        if let sections = json["contents"] as? [[String: Any]] {
+            for section in sections {
+                if let aslr = section["accountSectionListRenderer"] as? [String: Any],
+                   let innerSections = aslr["contents"] as? [[String: Any]] {
+                    for inner in innerSections {
+                        if let aisr = inner["accountItemSectionRenderer"] as? [String: Any],
+                           let items = aisr["contents"] as? [[String: Any]] {
+                            for item in items {
+                                if let ai = item["accountItem"] as? [String: Any] {
+                                    let name = (ai["accountName"] as? [String: Any])?["simpleText"] as? String
+                                        ?? (ai["accountByline"] as? [String: Any])?["simpleText"] as? String
+                                        ?? ""
+                                    let thumb = (ai["accountPhoto"] as? [String: Any]).flatMap {
+                                        ($0["thumbnails"] as? [[String: Any]])?.last?["url"] as? String
+                                    }
+                                    if !name.isEmpty { return (name, thumb) }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
-        // Path 4: top-level activeAccountHeaderRenderer
-        if let r = json["activeAccountHeaderRenderer"] as? [String: Any],
-           let info = extractAccountNameAndPhoto(from: r) { return info }
-
-        // Fallback: deep recursive search for any node that has accountName
         return deepSearchAccountInfo(in: json)
     }
 
-    /// Recursively walk the entire JSON tree looking for a node with accountName + accountPhoto.
     static func deepSearchAccountInfo(in value: Any) -> (name: String, avatarURL: String?)? {
-        guard let dict = value as? [String: Any] else {
-            if let arr = value as? [Any] {
-                for item in arr {
-                    if let result = deepSearchAccountInfo(in: item) { return result }
-                }
+        if let dict = value as? [String: Any] {
+            if let result = extractAccountNameAndPhoto(from: dict) { return result }
+            for v in dict.values {
+                if let result = deepSearchAccountInfo(in: v) { return result }
             }
-            return nil
-        }
-        // Check if this node has accountName
-        if let info = extractAccountNameAndPhoto(from: dict) { return info }
-        // Recurse into values
-        for (key, val) in dict {
-            // Skip responseContext (noisy, no useful data)
-            if key == "responseContext" { continue }
-            if let result = deepSearchAccountInfo(in: val) { return result }
+        } else if let arr = value as? [Any] {
+            for item in arr {
+                if let result = deepSearchAccountInfo(in: item) { return result }
+            }
         }
         return nil
     }
 
     static func parseAccountSectionList(_ asl: [String: Any]) -> (name: String, avatarURL: String?)? {
-        let sections = asl["contents"] as? [[String: Any]] ?? []
-        for section in sections {
-            let ais = section["accountItemSectionRenderer"] as? [String: Any]
-            let items = ais?["contents"] as? [[String: Any]] ?? []
-            for item in items {
-                if let account = item["accountItem"] as? [String: Any],
-                   let info = extractAccountNameAndPhoto(from: account) { return info }
-            }
+        guard let items = asl["items"] as? [[String: Any]] else { return nil }
+        for item in items {
+            if let result = extractAccountNameAndPhoto(from: item) { return result }
         }
         return nil
     }
 
     static func extractAccountNameAndPhoto(from node: [String: Any]) -> (name: String, avatarURL: String?)? {
-        // Try to get name from accountName or similar
-        let nameNode = node["accountName"] as? [String: Any]
-        let name = nameNode?["simpleText"] as? String
-            ?? (nameNode?["runs"] as? [[String: Any]])?.first?["text"] as? String
-            ?? node["title"] as? String
-        guard let name = name, !name.isEmpty else { return nil }
-        // Avatar from accountPhoto or thumbnail
-        let photoNode = (node["accountPhoto"] ?? node["thumbnail"]) as? [String: Any]
-        let thumbs = photoNode?["thumbnails"] as? [[String: Any]] ?? []
-        let avatarURL = thumbs.last?["url"] as? String ?? thumbs.first?["url"] as? String
-        return (name: name, avatarURL: avatarURL)
+        guard let r = node["activeAccountHeaderRenderer"] as? [String: Any] else { return nil }
+        guard let name = (r["accountName"] as? [String: Any])?["simpleText"] as? String else { return nil }
+        let thumb = ((r["accountPhoto"] as? [String: Any])?["thumbnails"] as? [[String: Any]])?.last?["url"] as? String
+        return (name, thumb)
     }
 
+    // MARK: - Playlists
+
     func executePlaylistsFetch(token: String,
-                                       completion: @escaping (Result<[Playlist], Error>) -> Void) {
-        guard let url = URL(string: "\(baseURL)/browse") else {
-            completion(.failure(APIError.invalidURL)); return
-        }
+                               completion: @escaping (Result<[Playlist], Error>) -> Void) {
         var body = tvContext
-        body["browseId"] = "FEmy_youtube"
-        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
-            completion(.failure(APIError.decodingFailed)); return
-        }
-        let headers = ["Content-Type": "application/json", "Authorization": "Bearer \(token)"]
-        api.post(url: url, headers: headers, body: bodyData) { result in
+        body[JSONKey.browseId] = BrowseID.library
+        execute(
+            urlString: "\(baseURL)\(InnertubeEndpoint.browse)",
+            body: body,
+            headers: authHeaders(token: token),
+            logTag: "playlistsFetch"
+        ) { json -> [Playlist]? in
+            let tabs = ((json["contents"] as? [String: Any])?["tvBrowseRenderer"] as? [String: Any])?["content"] as? [String: Any]
+            let sections = ((tabs?["tvSecondaryNavRenderer"] as? [String: Any])?["sections"] as? [[String: Any]]) ?? []
+            let allTabs = sections.first.flatMap {
+                ($0["tvSecondaryNavSectionRenderer"] as? [String: Any])?["tabs"] as? [[String: Any]]
+            } ?? []
+            return allTabs.compactMap { tab -> Playlist? in
+                guard let tr = tab["tabRenderer"] as? [String: Any],
+                      let title = tr["title"] as? String,
+                      let params = (tr["endpoint"] as? [String: Any]).flatMap({
+                          ($0["browseEndpoint"] as? [String: Any])?["params"] as? String
+                      }),
+                      let playlistId = Self.extractPlaylistIdFromParams(params)
+                else { return nil }
+                return Playlist(id: playlistId, title: title, description: "", thumbnailURL: nil, itemCount: nil)
+            }
+        } completion: { [weak self] result in
+            guard let self else { return }
             switch result {
             case .failure(let e): completion(.failure(e))
-            case .success(let data):
-                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                    completion(.failure(APIError.decodingFailed)); return
-                }
-                let tabs = ((json["contents"] as? [String: Any])?["tvBrowseRenderer"] as? [String: Any])?["content"] as? [String: Any]
-                let navRenderer = (tabs?["tvSecondaryNavRenderer"] as? [String: Any])
-                let sections = navRenderer?["sections"] as? [[String: Any]] ?? []
-                let allTabs = sections.first.flatMap {
-                    ($0["tvSecondaryNavSectionRenderer"] as? [String: Any])?["tabs"] as? [[String: Any]]
-                } ?? []
-
-                let playlists: [Playlist] = allTabs.compactMap { tab in
-                    guard let tr = tab["tabRenderer"] as? [String: Any],
-                          let title = tr["title"] as? String,
-                          let params = (tr["endpoint"] as? [String: Any]).flatMap({
-                              ($0["browseEndpoint"] as? [String: Any])?["params"] as? String
-                          }),
-                          let playlistId = Self.extractPlaylistIdFromParams(params)
-                    else { return nil }
-                    return Playlist(id: playlistId, title: title, description: "",
-                                    thumbnailURL: nil, itemCount: nil)
-                }
-                AppLog.innertube("playlists via FEmy_youtube: \(playlists.count)")
-
-                // Include Watch Later in thumbnail batch
-                let wl = Playlist(id: "WL", title: "Watch Later", description: "",
-                                  thumbnailURL: nil, itemCount: nil)
-                let allPlaylists = [wl] + playlists
-
-                // Fetch thumbnails (first valid video thumbnail) in parallel
-                guard !allPlaylists.isEmpty else { completion(.success(allPlaylists)); return }
+            case .success(let playlists):
+                let wl = Playlist(id: "WL", title: "Watch Later", description: "", thumbnailURL: nil, itemCount: nil)
+                let all = [wl] + playlists
+                guard !all.isEmpty else { completion(.success(all)); return }
                 let group = DispatchGroup()
                 var thumbnails: [String: String] = [:]
                 let lock = NSLock()
-                for playlist in allPlaylists {
+                for playlist in all {
                     group.enter()
                     self.fetchPlaylistFirstThumbnail(playlistId: playlist.id, token: token) { url in
-                        if let url = url {
-                            lock.lock(); thumbnails[playlist.id] = url; lock.unlock()
-                        }
+                        if let url { lock.lock(); thumbnails[playlist.id] = url; lock.unlock() }
                         group.leave()
                     }
                 }
                 group.notify(queue: .global()) {
-                    let withThumbs = allPlaylists.map { p in
+                    let withThumbs = all.map { p in
                         Playlist(id: p.id, title: p.title, description: p.description,
                                  thumbnailURL: thumbnails[p.id], itemCount: p.itemCount)
                     }
@@ -181,8 +146,6 @@ extension InnertubeClient {
         }
     }
 
-    /// Decodes an Innertube browse params string (URL-encoded base64 protobuf)
-    /// and extracts the playlist ID from field 70 (wiretype 2).
     private static func extractPlaylistIdFromParams(_ params: String) -> String? {
         guard let urlDecoded = params.removingPercentEncoding,
               let data = Data(base64Encoded: urlDecoded, options: .ignoreUnknownCharacters)
@@ -190,32 +153,24 @@ extension InnertubeClient {
         let bytes = [UInt8](data)
         var i = 0
         while i < bytes.count {
-            // Parse varint tag
-            var tag: UInt64 = 0
-            var shift = 0
+            var tag: UInt64 = 0; var shift = 0
             while i < bytes.count {
                 let b = bytes[i]; i += 1
-                tag |= UInt64(b & 0x7f) << shift
-                shift += 7
+                tag |= UInt64(b & 0x7f) << shift; shift += 7
                 if b & 0x80 == 0 { break }
             }
-            let fieldNum = tag >> 3
-            let wireType = tag & 0x7
+            let fieldNum = tag >> 3; let wireType = tag & 0x7
             switch wireType {
-            case 0: // varint — skip
-                while i < bytes.count { let b = bytes[i]; i += 1; if b & 0x80 == 0 { break } }
-            case 2: // length-delimited
+            case 0: while i < bytes.count { let b = bytes[i]; i += 1; if b & 0x80 == 0 { break } }
+            case 2:
                 guard i < bytes.count else { return nil }
                 let len = Int(bytes[i]); i += 1
                 guard i + len <= bytes.count else { return nil }
                 if fieldNum == 70,
                    let id = String(bytes: bytes[i..<i+len], encoding: .utf8),
-                   id.hasPrefix("PL") || id == "LL" {
-                    return id
-                }
+                   id.hasPrefix("PL") || id == "LL" { return id }
                 i += len
-            default:
-                return nil
+            default: return nil
             }
         }
         return nil
@@ -223,86 +178,61 @@ extension InnertubeClient {
 
     func executePlaylistVideosFetch(playlistId: String, token: String,
                                     completion: @escaping (Result<[Video], Error>) -> Void) {
-        guard let url = URL(string: "\(baseURL)/browse") else {
-            completion(.failure(APIError.invalidURL)); return
-        }
         var body = tvContext
         body["browseId"] = "VL\(playlistId)"
-        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
-            completion(.failure(APIError.decodingFailed)); return
-        }
-        let headers = ["Content-Type": "application/json", "Authorization": "Bearer \(token)"]
-        api.post(url: url, headers: headers, body: bodyData) { result in
-            switch result {
-            case .failure(let e): completion(.failure(e))
-            case .success(let data):
-                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                    completion(.failure(APIError.decodingFailed)); return
-                }
-                let rightColumn = ((json["contents"] as? [String: Any])?["tvBrowseRenderer"] as? [String: Any])?["content"] as? [String: Any]
-                let surface = (rightColumn?["tvSurfaceContentRenderer"] as? [String: Any])?["content"] as? [String: Any]
-                let twoCol = surface?["twoColumnRenderer"] as? [String: Any]
-                let playlistVL = (twoCol?["rightColumn"] as? [String: Any])?["playlistVideoListRenderer"] as? [String: Any]
-                let items = playlistVL?["contents"] as? [[String: Any]] ?? []
-
-                let videos: [Video] = items.compactMap { item in
-                    guard let tile = item["tileRenderer"] as? [String: Any],
-                          let thr = (tile["header"] as? [String: Any])?["tileHeaderRenderer"] as? [String: Any],
-                          thr["thumbnailOverlays"] != nil  // absent on deleted/unavailable videos
-                    else { return nil }
-                    return InnertubeClient.parseTileRenderer(tile)
-                }
-                AppLog.innertube("playlist \(playlistId): \(videos.count) videos via Innertube")
-                if videos.isEmpty {
-                    completion(.failure(APIError.decodingFailed))
-                } else {
-                    completion(.success(videos))
-                }
+        execute(
+            urlString: "\(baseURL)\(InnertubeEndpoint.browse)",
+            body: body,
+            headers: authHeaders(token: token),
+            logTag: "playlistVideos(\(playlistId))"
+        ) { json -> [Video]? in
+            let rightColumn = ((json["contents"] as? [String: Any])?["tvBrowseRenderer"] as? [String: Any])?["content"] as? [String: Any]
+            let surface = (rightColumn?["tvSurfaceContentRenderer"] as? [String: Any])?["content"] as? [String: Any]
+            let twoCol = surface?["twoColumnRenderer"] as? [String: Any]
+            let items = ((twoCol?["rightColumn"] as? [String: Any])?["playlistVideoListRenderer"] as? [String: Any])?["contents"] as? [[String: Any]] ?? []
+            let videos: [Video] = items.compactMap { item -> Video? in
+                guard let tile = item["tileRenderer"] as? [String: Any],
+                      let thr = (tile["header"] as? [String: Any])?["tileHeaderRenderer"] as? [String: Any],
+                      thr["thumbnailOverlays"] != nil
+                else { return nil }
+                return InnertubeClient.parseTileRenderer(tile)
             }
-        }
+            AppLog.innertube("playlist \(playlistId): \(videos.count) videos")
+            return videos.isEmpty ? nil : videos
+        } completion: { completion($0) }
     }
+
+    // MARK: - Votes / Likes
 
     func sendVote(endpoint: String, videoId: String, completion: @escaping (Result<Void, Error>) -> Void) {
         OAuthClient.shared.validToken { [weak self] result in
-            guard let self = self else { return }
+            guard let self else { return }
             switch result {
-            case .failure(let e):
-                AppLog.innertube("sendVote '\(endpoint)' token error: \(e)")
-                completion(.failure(e))
+            case .failure(let e): completion(.failure(e))
             case .success(let token):
-                guard let url = URL(string: "\(self.baseURL)/\(endpoint)") else {
-                    completion(.failure(APIError.invalidURL)); return
-                }
-                // Must use TV client context — token was issued for TVHTML5
                 var body = self.tvContext
                 body["target"] = ["videoId": videoId]
-                guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
-                    completion(.failure(APIError.decodingFailed)); return
-                }
                 let headers: [String: String] = [
-                    "Content-Type": "application/json",
-                    "Authorization": "Bearer \(token)",
-                    "X-Youtube-Client-Name": "7",
-                    "X-Youtube-Client-Version": "7.20260311.12.00",
+                    HTTPHeader.contentType: HTTPHeaderValue.contentTypeJSON,
+                    HTTPHeader.authorization: "Bearer \(token)",
+                    HTTPHeader.xYoutubeClientName: "7",
+                    HTTPHeader.xYoutubeClientVersion: "7.20260311.12.00",
                 ]
                 AppLog.innertube("sendVote '\(endpoint)' videoId=\(videoId)")
-                self.api.post(url: url, headers: headers, body: bodyData) { result in
-                    switch result {
-                    case .failure(let e):
-                        AppLog.innertube("sendVote '\(endpoint)' failed: \(e)")
-                        completion(.failure(e))
-                    case .success(let data):
-                        let preview = String(data: data.prefix(200), encoding: .utf8) ?? "?"
-                        AppLog.innertube("sendVote '\(endpoint)' success, response: \(preview)")
-                        completion(.success(()))
-                    }
-                }
+                self.execute(
+                    urlString: "\(self.baseURL)/\(endpoint)",
+                    body: body,
+                    headers: headers,
+                    logTag: "vote(\(endpoint))"
+                ) { _ -> Void? in
+                    AppLog.innertube("sendVote '\(endpoint)' success")
+                    return ()
+                } completion: { completion($0) }
             }
         }
     }
 
-
-    // MARK: - Authenticated browse
+    // MARK: - Browse (authenticated)
 
     func authenticatedBrowse(browseId: String, completion: @escaping (Result<FeedPage, Error>) -> Void) {
         OAuthClient.shared.validToken { [weak self] result in
@@ -314,256 +244,121 @@ extension InnertubeClient {
         }
     }
 
-    /// Web-client authenticated browse — used for endpoints like FEhistory that return
-    /// twoColumnBrowseResultsRenderer instead of the TV tvBrowseRenderer structure.
     func executeWebBrowse(browseId: String?, continuation: String?, token: String,
-                                   completion: @escaping (Result<FeedPage, Error>) -> Void) {
-        guard let url = URL(string: "\(baseURL)/browse") else {
-            completion(.failure(APIError.invalidURL)); return
-        }
+                          completion: @escaping (Result<FeedPage, Error>) -> Void) {
         var body = webContext
-        if let c = continuation {
-            body["continuation"] = c
-        } else if let b = browseId {
-            body["browseId"] = b
-        }
-        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
-            completion(.failure(APIError.decodingFailed)); return
-        }
+        if let c = continuation { body["continuation"] = c } else if let b = browseId { body["browseId"] = b }
         let headers: [String: String] = [
-            "Content-Type": "application/json",
-            "Authorization": "Bearer \(token)",
-            "X-Youtube-Client-Name": "1",
-            "X-Youtube-Client-Version": "2.20260206.01.00",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36,gzip(gfe)",
-            "Origin": "https://www.youtube.com",
-            "Referer": "https://www.youtube.com/"
+            HTTPHeader.contentType: HTTPHeaderValue.contentTypeJSON,
+            HTTPHeader.authorization: "Bearer \(token)",
+            HTTPHeader.xYoutubeClientName: "1",
+            HTTPHeader.xYoutubeClientVersion: "2.20260206.01.00",
+            HTTPHeader.userAgent: UserAgent.chromeDesktop,
+            HTTPHeader.origin: AppURLs.YouTube.base,
+            HTTPHeader.referer: AppURLs.YouTube.base + "/"
         ]
-        api.post(url: url, headers: headers, body: bodyData) { result in
-            switch result {
-            case .failure(let e): completion(.failure(e))
-            case .success(let data):
-                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                    completion(.failure(APIError.decodingFailed)); return
-                }
-                let page = InnertubeClient.parseWebBrowsePage(json)
-                if page.videos.isEmpty {
-                    let topKeys = json.keys.joined(separator: ", ")
-                    let contentsKeys = (json["contents"] as? [String: Any])?.keys.joined(separator: ", ") ?? "nil"
-                    AppLog.innertube("web browse '\(browseId ?? "continuation")': 0 videos. topKeys=[\(topKeys)] contentsKeys=[\(contentsKeys)]")
-                } else {
-                    AppLog.innertube("web browse '\(browseId ?? "continuation")': \(page.videos.count) videos")
-                }
-                completion(.success(page))
+        execute(urlString: "\(baseURL)\(InnertubeEndpoint.browse)", body: body, headers: headers, logTag: "webBrowse") { json -> FeedPage? in
+            let page = InnertubeClient.parseWebBrowsePage(json)
+            if page.videos.isEmpty {
+                AppLog.innertube("web browse '\(browseId ?? "continuation")': 0 videos. topKeys=[\(json.keys.joined(separator: ", "))]")
+            } else {
+                AppLog.innertube("web browse '\(browseId ?? "continuation")': \(page.videos.count) videos")
             }
-        }
+            return page
+        } completion: { completion($0) }
     }
 
-    /// TV-client authenticated browse for FEhistory.
-    /// TV context accepts Bearer token. Logs the raw structure on first call so we can
-    /// determine the correct parse path.
     func executeTVHistoryBrowse(token: String, continuation: String?,
-                                         completion: @escaping (Result<FeedPage, Error>) -> Void) {
-        guard let url = URL(string: "\(baseURL)/browse") else {
-            completion(.failure(APIError.invalidURL)); return
-        }
+                                completion: @escaping (Result<FeedPage, Error>) -> Void) {
         var body = tvContext
-        if let c = continuation {
-            body["continuation"] = c
-        } else {
-            body["browseId"] = "FEhistory"
-        }
-        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
-            completion(.failure(APIError.decodingFailed)); return
-        }
-        let headers = ["Content-Type": "application/json", "Authorization": "Bearer \(token)"]
-        api.post(url: url, headers: headers, body: bodyData) { result in
-            switch result {
-            case .failure(let e): completion(.failure(e))
-            case .success(let data):
-                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                    completion(.failure(APIError.decodingFailed)); return
-                }
-                // Dump full JSON to ~/Documents/history_response.json for inspection
-                if let pretty = try? JSONSerialization.data(withJSONObject: json, options: .prettyPrinted) {
-                    let docsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
-                    if let file = docsDir?.appendingPathComponent("history_response.json") {
-                        try? pretty.write(to: file)
-                        AppLog.innertube("TV history JSON dumped to: \(file.path)")
-                    }
-                    // Also log top-level and contents keys
-                    let topKeys = json.keys.sorted().joined(separator: ", ")
-                    let contentsKeys = (json["contents"] as? [String: Any])?.keys.sorted().joined(separator: ", ") ?? "nil (array or missing)"
-                    AppLog.innertube("TVhistory topKeys=[\(topKeys)] contentsKeys=[\(contentsKeys)]")
-                }
-                let page = InnertubeClient.parseTVHistoryPage(json)
-                AppLog.innertube("TV history: \(page.videos.count) videos, cont=\(page.continuation != nil)")
-                completion(.success(page))
-            }
-        }
+        if let c = continuation { body["continuation"] = c } else { body[JSONKey.browseId] = BrowseID.history }
+        execute(urlString: "\(baseURL)\(InnertubeEndpoint.browse)", body: body, headers: authHeaders(token: token),
+                logTag: "tvHistory") { json -> FeedPage? in
+            let page = InnertubeClient.parseTVHistoryPage(json)
+            AppLog.innertube("TV history: \(page.videos.count) videos, cont=\(page.continuation != nil)")
+            return page
+        } completion: { completion($0) }
     }
-
 
     func executeBrowseAnonymous(browseId: String, completion: @escaping (Result<FeedPage, Error>) -> Void) {
-        guard let url = URL(string: "\(baseURL)/browse") else {
-            completion(.failure(APIError.invalidURL)); return
-        }
-        // Use TV context without auth — same format as authenticated browse,
-        // but TVHTML5 client works for public content without an OAuth token.
         var body = tvContext
         body["browseId"] = browseId
-        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
-            completion(.failure(APIError.decodingFailed)); return
-        }
-        api.post(url: url, headers: ["Content-Type": "application/json"], body: bodyData) { result in
-            switch result {
-            case .failure(let e): completion(.failure(e))
-            case .success(let data):
-                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                    completion(.failure(APIError.decodingFailed)); return
-                }
-                let page = InnertubeClient.parsePageJSON(json)
-                if page.videos.isEmpty {
-                    AppLog.innertube("executeBrowseAnonymous: empty result for browseId=\(browseId)")
-                    completion(.failure(APIError.decodingFailed))
-                } else {
-                    completion(.success(page))
-                }
+        execute(urlString: "\(baseURL)\(InnertubeEndpoint.browse)", body: body, headers: anonHeaders(),
+                logTag: "browseAnon(\(browseId))") { json -> FeedPage? in
+            let page = InnertubeClient.parsePageJSON(json)
+            if page.videos.isEmpty {
+                AppLog.innertube("executeBrowseAnonymous: empty result for browseId=\(browseId)")
+                return nil
             }
-        }
+            return page
+        } completion: { completion($0) }
     }
 
     func executeBrowse(browseId: String?, continuation: String?, token: String,
-                                completion: @escaping (Result<FeedPage, Error>) -> Void) {
-        guard let url = URL(string: "\(baseURL)/browse") else {
-            completion(.failure(APIError.invalidURL)); return
-        }
+                       completion: @escaping (Result<FeedPage, Error>) -> Void) {
         var body = tvContext
-        if let c = continuation {
-            body["continuation"] = c
-        } else if let b = browseId {
-            body["browseId"] = b
-        }
-        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
-            completion(.failure(APIError.decodingFailed)); return
-        }
-        let headers = ["Content-Type": "application/json", "Authorization": "Bearer \(token)"]
-        api.post(url: url, headers: headers, body: bodyData) { result in
-            switch result {
-            case .failure(let e): completion(.failure(e))
-            case .success(let data):
-                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                    completion(.failure(APIError.decodingFailed)); return
-                }
-                let page = InnertubeClient.parsePageJSON(json)
-                if page.videos.isEmpty {
-                    completion(.failure(APIError.decodingFailed))
-                } else {
-                    completion(.success(page))
-                }
-            }
-        }
+        if let c = continuation { body["continuation"] = c } else if let b = browseId { body["browseId"] = b }
+        execute(urlString: "\(baseURL)\(InnertubeEndpoint.browse)", body: body, headers: authHeaders(token: token),
+                logTag: "browse(\(browseId ?? "cont"))") { json -> FeedPage? in
+            let page = InnertubeClient.parsePageJSON(json)
+            return page.videos.isEmpty ? nil : page
+        } completion: { completion($0) }
     }
 
+    // MARK: - Channel
+
     func executeChannelBrowse(channelId: String, token: String,
-                                      completion: @escaping (Result<ChannelInfo, Error>) -> Void) {
+                               completion: @escaping (Result<ChannelInfo, Error>) -> Void) {
         executeChannelBrowse(channelId: channelId, token: token, context: tvContext, completion: completion)
     }
 
     func executeChannelBrowse(channelId: String, token: String, context: [String: Any],
-                                      completion: @escaping (Result<ChannelInfo, Error>) -> Void) {
-        guard let url = URL(string: "\(baseURL)/browse") else {
-            completion(.failure(APIError.invalidURL))
-            return
-        }
-
+                               completion: @escaping (Result<ChannelInfo, Error>) -> Void) {
         var body = context
         body["browseId"] = channelId
-
-        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
-            completion(.failure(APIError.decodingFailed))
-            return
-        }
-
-        let headers = ["Content-Type": "application/json", "Authorization": "Bearer \(token)"]
-        api.post(url: url, headers: headers, body: bodyData) { result in
-            switch result {
-            case .failure(let error):
-                let clientName = (((context["context"] as? [String: Any])?["client"] as? [String: Any])?["clientName"] as? String) ?? "unknown"
-                AppLog.innertube("channel browse request failed (\(clientName)) \(channelId): \(error)")
-                completion(.failure(error))
-            case .success(let data):
-                let clientName = (((context["context"] as? [String: Any])?["client"] as? [String: Any])?["clientName"] as? String) ?? "unknown"
-                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                      let info = InnertubeClient.parseChannelInfo(json, fallbackChannelId: channelId)
-                else {
-                    AppLog.innertube("channel browse parse failed (\(clientName)) for \(channelId)")
-                    completion(.failure(APIError.decodingFailed))
-                    return
-                }
-                completion(.success(info))
-            }
-        }
+        let clientName = (((context["context"] as? [String: Any])?["client"] as? [String: Any])?["clientName"] as? String) ?? "unknown"
+        execute(urlString: "\(baseURL)\(InnertubeEndpoint.browse)", body: body, headers: authHeaders(token: token),
+                logTag: "channelBrowse(\(clientName),\(channelId))") { json -> ChannelInfo? in
+            InnertubeClient.parseChannelInfo(json, fallbackChannelId: channelId)
+        } completion: { completion($0) }
     }
 
     func executeChannelPageBrowse(channelId: String, token: String,
-                                          completion: @escaping (Result<ChannelPage, Error>) -> Void) {
-        guard let url = URL(string: "\(baseURL)/browse") else {
-            completion(.failure(APIError.invalidURL))
-            return
+                                  completion: @escaping (Result<ChannelPage, Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)\(InnertubeEndpoint.browse)") else {
+            completion(.failure(APIError.invalidURL)); return
         }
+        var tvBody = tvContext; tvBody["browseId"] = channelId
+        var webBody = webContext; webBody["browseId"] = channelId
 
-        // TV request: subscribe state + video feed (requires Bearer auth)
-        var tvBody = tvContext
-        tvBody["browseId"] = channelId
         guard let tvBodyData = try? JSONSerialization.data(withJSONObject: tvBody) else {
-            completion(.failure(APIError.decodingFailed))
-            return
+            completion(.failure(APIError.decodingFailed)); return
         }
-
-        // WEB request: banner, verified, subscribers, description (fires in parallel, non-blocking)
-        var webBody = webContext
-        webBody["browseId"] = channelId
         let webBodyData = try? JSONSerialization.data(withJSONObject: webBody)
 
-        // Protected by lock so TV callback can safely read webResult
+        // Fire web request in parallel (non-blocking — used only if it finishes before TV)
         let lock = NSLock()
         var webResult: Result<Data, Error>?
         var webDone = false
-
         if let webData = webBodyData {
-            api.post(url: url, headers: ["Content-Type": "application/json"], body: webData) { result in
-                lock.lock()
-                webResult = result
-                webDone = true
-                lock.unlock()
+            api.post(url: url, headers: anonHeaders(), body: webData) { result in
+                lock.lock(); webResult = result; webDone = true; lock.unlock()
             }
         }
 
-        let tvHeaders = ["Content-Type": "application/json", "Authorization": "Bearer \(token)"]
-        api.post(url: url, headers: tvHeaders, body: tvBodyData) { result in
-            // Complete immediately when TV finishes — don't wait for web
+        api.post(url: url, headers: authHeaders(token: token), body: tvBodyData) { result in
             guard case .success(let tvData) = result,
                   let tvJson = try? JSONSerialization.jsonObject(with: tvData) as? [String: Any],
                   let tvInfo = InnertubeClient.parseChannelInfo(tvJson, fallbackChannelId: channelId)
             else {
                 AppLog.innertube("channel page parse failed for \(channelId)")
-                if case .failure(let err) = result {
-                    completion(.failure(err))
-                } else {
-                    completion(.failure(APIError.decodingFailed))
-                }
+                if case .failure(let err) = result { completion(.failure(err)) }
+                else { completion(.failure(APIError.decodingFailed)) }
                 return
             }
-
             let page = InnertubeClient.parsePageJSON(tvJson)
             let subscribeState = InnertubeClient.parseSubscribeState(tvJson)
-
-            // Use web data only if it already finished (non-blocking check)
-            lock.lock()
-            let webSnapshot = webDone ? webResult : nil
-            lock.unlock()
-
+            lock.lock(); let webSnapshot = webDone ? webResult : nil; lock.unlock()
             var finalInfo = tvInfo
             if case .success(let wData) = webSnapshot,
                let wJson = try? JSONSerialization.jsonObject(with: wData) as? [String: Any],
@@ -580,343 +375,163 @@ extension InnertubeClient {
                     videoCountText: webInfo.videoCountText
                 )
             }
-
-            AppLog.channel("parsed: title='\(finalInfo.title)' subs='\(finalInfo.subscriberCountText ?? "nil")' banner=\(finalInfo.bannerURL != nil ? "YES" : "NO") verified=\(finalInfo.isVerified)")
-            completion(.success(ChannelPage(info: finalInfo,
-                                            videosPage: page,
+            AppLog.channel("parsed: title='\(finalInfo.title)' subs='\(finalInfo.subscriberCountText ?? "nil")' banner=\(finalInfo.bannerURL != nil) verified=\(finalInfo.isVerified)")
+            completion(.success(ChannelPage(info: finalInfo, videosPage: page,
                                             subscribeButtonText: subscribeState.text,
                                             isSubscribed: subscribeState.isSubscribed)))
         }
     }
 
-    func executeWatchNext(video: Video, token: String,
-                                  anonymous: Bool = false,
-                                  cancellationToken: CancellationToken? = nil,
-                                  completion: @escaping (Result<WatchPage, Error>) -> Void) {
-        guard let url = URL(string: "\(baseURL)/next") else {
-            completion(.failure(APIError.invalidURL))
-            return
-        }
+    // MARK: - Watch / Next
 
+    func executeWatchNext(video: Video, token: String,
+                          anonymous: Bool = false,
+                          cancellationToken: CancellationToken? = nil,
+                          completion: @escaping (Result<WatchPage, Error>) -> Void) {
         var body = anonymous ? webContext : tvContext
         body["videoId"] = video.id
-
-        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
-            completion(.failure(APIError.decodingFailed))
-            return
-        }
-
-        var headers: [String: String] = ["Content-Type": "application/json"]
-        if !anonymous && !token.isEmpty {
-            headers["Authorization"] = "Bearer \(token)"
-        }
-        api.post(url: url, headers: headers, body: bodyData, cancellationToken: cancellationToken) { result in
-            switch result {
-            case .failure(let error):
-                AppLog.innertube("watch next request failed \(video.id): \(error)")
-                completion(.failure(error))
-            case .success(let data):
-                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                      let page = InnertubeClient.parseWatchPage(json, fallbackVideo: video)
-                else {
-                    AppLog.innertube("watch next parse failed for \(video.id)")
-                    completion(.failure(APIError.decodingFailed))
-                    return
-                }
-                completion(.success(page))
-            }
-        }
+        var headers = anonHeaders()
+        if !anonymous && !token.isEmpty { headers[HTTPHeader.authorization] = "Bearer \(token)" }
+        execute(urlString: "\(baseURL)\(InnertubeEndpoint.next)", body: body, headers: headers,
+                cancellationToken: cancellationToken, logTag: "watchNext(\(video.id))") { json -> WatchPage? in
+            InnertubeClient.parseWatchPage(json, fallbackVideo: video)
+        } completion: { completion($0) }
     }
+
+    // MARK: - Comments
 
     func executeComments(videoId: String, continuation: String?,
-                                 cancellationToken: CancellationToken? = nil,
-                                 completion: @escaping (Result<CommentsPage, Error>) -> Void) {
-        guard let url = URL(string: "\(baseURL)/next") else {
-            completion(.failure(APIError.invalidURL))
-            return
-        }
-
+                         cancellationToken: CancellationToken? = nil,
+                         completion: @escaping (Result<CommentsPage, Error>) -> Void) {
         var body = webContext
-        if let continuation {
-            body["continuation"] = continuation
-        } else {
-            body["continuation"] = Self.buildCommentsContinuation(videoId: videoId, sortBy: 0, commentId: nil)
-        }
-
-        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
-            completion(.failure(APIError.decodingFailed))
-            return
-        }
-
-        let headers = [
-            "Content-Type": "application/json",
-            "X-Youtube-Client-Name": DirectPlaybackClient.web.clientHeaderName,
-            "X-Youtube-Client-Version": DirectPlaybackClient.web.clientVersion
+        body["continuation"] = continuation ?? Self.buildCommentsContinuation(videoId: videoId, sortBy: 0, commentId: nil)
+        let headers: [String: String] = [
+            HTTPHeader.contentType: HTTPHeaderValue.contentTypeJSON,
+            HTTPHeader.xYoutubeClientName: DirectPlaybackClient.web.clientHeaderName,
+            HTTPHeader.xYoutubeClientVersion: DirectPlaybackClient.web.clientVersion
         ]
-
-        api.post(url: url, headers: headers, body: bodyData, cancellationToken: cancellationToken) { result in
-            switch result {
-            case .failure(let error):
-                AppLog.innertube("comments request failed \(videoId): \(error)")
-                completion(.failure(error))
-            case .success(let data):
-                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                      let page = Self.parseCommentsPage(json)
-                else {
-                    AppLog.innertube("comments parse failed for \(videoId)")
-                    completion(.failure(APIError.decodingFailed))
-                    return
-                }
-                completion(.success(page))
-            }
-        }
+        execute(urlString: "\(baseURL)\(InnertubeEndpoint.next)", body: body, headers: headers,
+                cancellationToken: cancellationToken, logTag: "comments(\(videoId))") { json -> CommentsPage? in
+            Self.parseCommentsPage(json)
+        } completion: { completion($0) }
     }
 
+    // MARK: - Player debug
+
     func executePlayerDebug(videoId: String, token: String,
-                                    completion: @escaping (Result<Void, Error>) -> Void) {
+                            completion: @escaping (Result<Void, Error>) -> Void) {
         let contexts: [(name: String, body: [String: Any], auth: Bool)] = [
             ("TVHTML5", tvContext, true),
-            ("WEB", webContext, false)
+            ("WEB",     webContext, false)
         ]
-
         let group = DispatchGroup()
         var firstError: Error?
-
         for context in contexts {
             group.enter()
-            executePlayer(videoId: videoId, contextName: context.name, context: context.body, token: context.auth ? token : nil) { result in
-                if case .failure(let error) = result, firstError == nil {
-                    firstError = error
-                }
+            executePlayer(videoId: videoId, contextName: context.name, context: context.body,
+                          token: context.auth ? token : nil) { result in
+                if case .failure(let e) = result, firstError == nil { firstError = e }
                 group.leave()
             }
         }
-
         group.notify(queue: .main) {
-            if let firstError {
-                completion(.failure(firstError))
-            } else {
-                completion(.success(()))
-            }
+            completion(firstError.map { .failure($0) } ?? .success(()))
         }
     }
 
-    func executeDirectPlayback(videoId: String, client: DirectPlaybackClient, token: String, poToken: String?,
-                                       visitorData: String? = nil,
-                                       cancellationToken: CancellationToken? = nil,
-                                       completion: @escaping (Result<DirectPlaybackInfo, Error>) -> Void) {
-        let urlStr = "\(baseURL)/player\(client.playerURLSuffix)"
-        guard let url = URL(string: urlStr) else {
-            completion(.failure(APIError.invalidURL))
-            return
-        }
+    // MARK: - Direct playback
 
+    func executeDirectPlayback(videoId: String, client: DirectPlaybackClient, token: String, poToken: String?,
+                               visitorData: String? = nil,
+                               cancellationToken: CancellationToken? = nil,
+                               completion: @escaping (Result<DirectPlaybackInfo, Error>) -> Void) {
         var body = client.context
         body["videoId"] = videoId
         if client.requiresContentCheckFlags {
             body["contentCheckOk"] = true
             body["racyCheckOk"] = true
-            body["playbackContext"] = [
-                "contentPlaybackContext": [
-                    "html5Preference": "HTML5_PREF_WANTS"
-                ]
-            ]
+            body["playbackContext"] = ["contentPlaybackContext": ["html5Preference": "HTML5_PREF_WANTS"]]
         }
         if let poToken, !poToken.isEmpty {
-            body["serviceIntegrityDimensions"] = [
-                "poToken": poToken
-            ]
+            body["serviceIntegrityDimensions"] = ["poToken": poToken]
         }
-
-        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
-            completion(.failure(APIError.decodingFailed))
-            return
-        }
-
-        let requestHeaders = client.apiHeaders(token: token, visitorData: visitorData)
-
-        AppLog.innertube("sending \(client) request to \(url.absoluteString), bodySize=\(bodyData.count), headers=\(requestHeaders.keys.sorted().joined(separator: ","))")
-
-        api.post(url: url, headers: requestHeaders, body: bodyData, cancellationToken: cancellationToken) { result in
-            switch result {
-            case .failure(let error):
-                AppLog.innertube("direct playback request failed \(videoId), client: \(client): \(error)")
-                completion(.failure(error))
-            case .success(let data):
-                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                      let info = Self.parseDirectPlaybackInfo(json)
-                else {
-                    AppLog.innertube("direct playback parse failed \(videoId), client: \(client), responseBytes=\(data.count)")
-                    if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                        AppLog.innertube("response topKeys (\(client)): \(json.keys.sorted().joined(separator: ", "))")
-                        if let errorObj = json["error"] {
-                            if let errorData = try? JSONSerialization.data(withJSONObject: errorObj, options: .prettyPrinted),
-                               let errorStr = String(data: errorData, encoding: .utf8) {
-                                AppLog.innertube("error body (\(client)): \(errorStr)")
-                            }
-                        }
-                        Self.logPlayerDebug(videoId: videoId, contextName: client.description, json: json)
-                    } else {
-                        let preview = String(data: data.prefix(500), encoding: .utf8) ?? "binary"
-                        AppLog.innertube("response not JSON (\(client)): \(preview)")
-                    }
-                    completion(.failure(APIError.decodingFailed))
-                    return
+        let headers = client.apiHeaders(token: token, visitorData: visitorData)
+        AppLog.innertube("directPlayback(\(client)): videoId=\(videoId) headers=\(headers.keys.sorted().joined(separator: ","))")
+        execute(
+            urlString: "\(baseURL)/player\(client.playerURLSuffix)",
+            body: body,
+            headers: headers,
+            cancellationToken: cancellationToken,
+            logTag: "directPlayback(\(client))"
+        ) { json -> DirectPlaybackInfo? in
+            guard let info = Self.parseDirectPlaybackInfo(json) else {
+                if let errorObj = json["error"],
+                   let d = try? JSONSerialization.data(withJSONObject: errorObj, options: .prettyPrinted),
+                   let s = String(data: d, encoding: .utf8) {
+                    AppLog.innertube("directPlayback error (\(client)): \(s)")
                 }
-
-                let progressive = info.progressiveURL?.absoluteString ?? "nil"
-                let video = info.videoURL?.absoluteString ?? "nil"
-                let audio = info.audioURL?.absoluteString ?? "nil"
-                let sabr = info.serverAbrStreamingURL?.absoluteString ?? "nil"
-                let videoUstreamerLength = info.videoPlaybackUstreamerConfig?.count ?? 0
-                let onesieUstreamerLength = info.onesieUstreamerConfig?.count ?? 0
-                AppLog.innertube("direct playback selected \(videoId), client: \(client): progressive=\(progressive), video=\(video), audio=\(audio), sabr=\(sabr), ustreamer=\(info.hasVideoPlaybackUstreamerConfig), videoUstreamerLen=\(videoUstreamerLength), onesieUstreamerLen=\(onesieUstreamerLength)")
-                completion(.success(info))
+                Self.logPlayerDebug(videoId: videoId, contextName: client.description, json: json)
+                return nil
             }
-        }
+            AppLog.innertube("directPlayback selected (\(client)) \(videoId): hls=\(info.hlsManifestURL != nil) prog=\(info.progressiveURL != nil) v+a=\(info.videoURL != nil && info.audioURL != nil)")
+            return info
+        } completion: { completion($0) }
     }
 
     func executePlayer(videoId: String, contextName: String, context: [String: Any], token: String?,
-                               completion: @escaping (Result<Void, Error>) -> Void) {
-        guard let url = URL(string: "\(baseURL)/player") else {
-            completion(.failure(APIError.invalidURL))
-            return
-        }
-
+                       completion: @escaping (Result<Void, Error>) -> Void) {
         var body = context
         body["videoId"] = videoId
-
-        if contextName != "TVHTML5" {
-            body["contentCheckOk"] = true
-            body["racyCheckOk"] = true
-        }
-
-        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
-            completion(.failure(APIError.decodingFailed))
-            return
-        }
-
-        var headers: [String: String] = [
-            "Content-Type": "application/json"
-        ]
-
+        if contextName != "TVHTML5" { body["contentCheckOk"] = true; body["racyCheckOk"] = true }
+        var headers = anonHeaders()
         if contextName == "WEB" {
-            headers["X-Youtube-Client-Name"] = DirectPlaybackClient.web.clientHeaderName
-            headers["X-Youtube-Client-Version"] = DirectPlaybackClient.web.clientVersion
+            headers[HTTPHeader.xYoutubeClientName] = DirectPlaybackClient.web.clientHeaderName
+            headers[HTTPHeader.xYoutubeClientVersion] = DirectPlaybackClient.web.clientVersion
         }
-
-        if let token {
-            headers["Authorization"] = "Bearer \(token)"
-        }
-
-        api.post(url: url, headers: headers, body: bodyData) { result in
-            switch result {
-            case .failure(let error):
-                AppLog.innertube("player debug request failed (\(contextName)) \(videoId): \(error)")
-                completion(.failure(error))
-            case .success(let data):
-                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                    AppLog.innertube("player debug decode failed (\(contextName)) \(videoId)")
-                    completion(.failure(APIError.decodingFailed))
-                    return
-                }
-
-                Self.logPlayerDebug(videoId: videoId, contextName: contextName, json: json)
-                completion(.success(()))
-            }
-        }
+        if let token { headers[HTTPHeader.authorization] = "Bearer \(token)" }
+        execute(urlString: "\(baseURL)\(InnertubeEndpoint.player)", body: body, headers: headers,
+                logTag: "playerDebug(\(contextName))") { json -> Void? in
+            Self.logPlayerDebug(videoId: videoId, contextName: contextName, json: json)
+            return ()
+        } completion: { completion($0) }
     }
+
+    // MARK: - Subscriptions
 
     func executeSubscribe(channelId: String, token: String, cancellationToken: CancellationToken? = nil,
                           completion: @escaping (Result<Void, Error>) -> Void) {
-        guard let url = URL(string: "\(baseURL)/subscription/subscribe") else {
-            completion(.failure(APIError.invalidURL)); return
-        }
-        var body = tvContext
-        body["channelIds"] = [channelId]
-        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
-            completion(.failure(APIError.decodingFailed)); return
-        }
-        let headers: [String: String] = [
-            "Content-Type": "application/json",
-            "Authorization": "Bearer \(token)",
-        ]
+        var body = tvContext; body["channelIds"] = [channelId]
         AppLog.innertube("executeSubscribe channelId=\(channelId)")
-        let task = api.post(url: url, headers: headers, body: bodyData) { result in
-            switch result {
-            case .failure(let e):
-                AppLog.innertube("executeSubscribe failed: \(e)")
-                completion(.failure(e))
-            case .success(let data):
-                let preview = String(data: data.prefix(200), encoding: .utf8) ?? "?"
-                AppLog.innertube("executeSubscribe success, response: \(preview)")
-                completion(.success(()))
-            }
-        }
-        cancellationToken?.register(task)
+        execute(urlString: "\(baseURL)\(InnertubeEndpoint.subscribe)", body: body,
+                headers: authHeaders(token: token), cancellationToken: cancellationToken,
+                logTag: "subscribe(\(channelId))") { _ -> Void? in () } completion: { completion($0) }
     }
 
     func executeUnsubscribe(channelId: String, token: String, cancellationToken: CancellationToken? = nil,
                             completion: @escaping (Result<Void, Error>) -> Void) {
-        guard let url = URL(string: "\(baseURL)/subscription/unsubscribe") else {
-            completion(.failure(APIError.invalidURL)); return
-        }
-        var body = tvContext
-        body["channelIds"] = [channelId]
-        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
-            completion(.failure(APIError.decodingFailed)); return
-        }
-        let headers: [String: String] = [
-            "Content-Type": "application/json",
-            "Authorization": "Bearer \(token)",
-        ]
+        var body = tvContext; body["channelIds"] = [channelId]
         AppLog.innertube("executeUnsubscribe channelId=\(channelId)")
-        let task = api.post(url: url, headers: headers, body: bodyData) { result in
-            switch result {
-            case .failure(let e):
-                AppLog.innertube("executeUnsubscribe failed: \(e)")
-                completion(.failure(e))
-            case .success(let data):
-                let preview = String(data: data.prefix(200), encoding: .utf8) ?? "?"
-                AppLog.innertube("executeUnsubscribe success, response: \(preview)")
-                completion(.success(()))
-            }
-        }
-        cancellationToken?.register(task)
+        execute(urlString: "\(baseURL)\(InnertubeEndpoint.unsubscribe)", body: body,
+                headers: authHeaders(token: token), cancellationToken: cancellationToken,
+                logTag: "unsubscribe(\(channelId))") { _ -> Void? in () } completion: { completion($0) }
     }
 
-    // Fetch first video thumbnail for a playlist (used to show cover in playlist list)
+    // MARK: - Private helpers
+
     private func fetchPlaylistFirstThumbnail(playlistId: String, token: String,
                                               completion: @escaping (String?) -> Void) {
-        guard let url = URL(string: "\(baseURL)/browse") else { completion(nil); return }
-        var body = tvContext
-        body["browseId"] = "VL\(playlistId)"
-        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
-            completion(nil); return
-        }
-        let headers = ["Content-Type": "application/json", "Authorization": "Bearer \(token)"]
-        api.post(url: url, headers: headers, body: bodyData) { result in
-            guard case .success(let data) = result,
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
-            else { completion(nil); return }
-            let right = ((json["contents"] as? [String: Any])?["tvBrowseRenderer"] as? [String: Any])
-                .flatMap { $0["content"] as? [String: Any] }
-                .flatMap { $0["tvSurfaceContentRenderer"] as? [String: Any] }
-                .flatMap { $0["content"] as? [String: Any] }
-                .flatMap { $0["twoColumnRenderer"] as? [String: Any] }
-                .flatMap { $0["rightColumn"] as? [String: Any] }
-            let items = (right?["playlistVideoListRenderer"] as? [String: Any])?["contents"] as? [[String: Any]]
-            let best: String? = items?.lazy.compactMap { item -> String? in
-                guard let tile = item["tileRenderer"] as? [String: Any],
-                      let thr = (tile["header"] as? [String: Any])?["tileHeaderRenderer"] as? [String: Any],
-                      thr["thumbnailOverlays"] != nil  // absent on deleted/unavailable videos
-                else { return nil }
-                let thumbs = (thr["thumbnail"] as? [String: Any])?["thumbnails"] as? [[String: Any]]
-                return thumbs?.last.flatMap { $0["url"] as? String }
-                    ?? thumbs?.first.flatMap { $0["url"] as? String }
-            }.first
-            completion(best)
-        }
+        var body = tvContext; body["browseId"] = "VL\(playlistId)"
+        execute(urlString: "\(baseURL)\(InnertubeEndpoint.browse)", body: body, headers: authHeaders(token: token),
+                logTag: "playlistThumb(\(playlistId))") { json -> String? in
+            let rightColumn = ((json["contents"] as? [String: Any])?["tvBrowseRenderer"] as? [String: Any])?["content"] as? [String: Any]
+            let surface = (rightColumn?["tvSurfaceContentRenderer"] as? [String: Any])?["content"] as? [String: Any]
+            let twoCol = surface?["twoColumnRenderer"] as? [String: Any]
+            let items = ((twoCol?["rightColumn"] as? [String: Any])?["playlistVideoListRenderer"] as? [String: Any])?["contents"] as? [[String: Any]] ?? []
+            for item in items {
+                if let tile = item["tileRenderer"] as? [String: Any],
+                   let video = InnertubeClient.parseTileRenderer(tile) { return video.thumbnailURL }
+            }
+            return nil
+        } completion: { result in completion(try? result.get()) }
     }
-
 }

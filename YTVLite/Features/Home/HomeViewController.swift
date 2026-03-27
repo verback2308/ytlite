@@ -2,7 +2,7 @@ import UIKit
 
 class HomeViewController: VideosViewController {
 
-    private let service = ServiceContainer.video
+    private let service: FeedService = ServiceContainer.video
     private let cache = AppCache.shared
     override var columns: Int {
         if UIDevice.current.userInterfaceIdiom == .phone {

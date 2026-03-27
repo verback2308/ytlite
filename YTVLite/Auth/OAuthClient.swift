@@ -57,7 +57,7 @@ final class OAuthClient {
         guard let url = URL(string: deviceCodeURL) else { return }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(HTTPHeaderValue.contentTypeJSON, forHTTPHeaderField: HTTPHeader.contentType)
         let body: [String: Any] = [
             "client_id": clientId,
             "scope": scope,
@@ -97,7 +97,7 @@ final class OAuthClient {
         guard let url = URL(string: tokenURL) else { return }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(HTTPHeaderValue.contentTypeJSON, forHTTPHeaderField: HTTPHeader.contentType)
         let body: [String: Any] = [
             "client_id": clientId,
             "client_secret": clientSecret,
@@ -118,7 +118,7 @@ final class OAuthClient {
                                     clientId: clientId, clientSecret: clientSecret)
                 self?.tokens = t
                 self?.saveToKeychain(t)
-                AppLog.auth("New token obtained: \(accessToken)")
+                AppLog.auth("New token obtained: \(accessToken.prefix(16))...")
                 completion(.success(()))
             } else if (json["error"] as? String) == "authorization_pending" {
                 self?.pollForToken(deviceCode: deviceCode, clientId: clientId, clientSecret: clientSecret,
@@ -145,7 +145,7 @@ final class OAuthClient {
             return
         }
         if !tokens.isExpired {
-            AppLog.auth("Using cached token: \(tokens.accessToken)")
+            AppLog.auth("Using cached token: \(tokens.accessToken.prefix(16))...")
             completion(.success(tokens.accessToken)); return
         }
         doRefresh(tokens: tokens, completion: completion)
@@ -155,7 +155,7 @@ final class OAuthClient {
         guard let url = URL(string: tokenURL) else { return }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(HTTPHeaderValue.contentTypeJSON, forHTTPHeaderField: HTTPHeader.contentType)
         let body: [String: Any] = [
             "client_id": tokens.clientId,
             "client_secret": tokens.clientSecret,
@@ -175,7 +175,7 @@ final class OAuthClient {
             updated.expiryDate = Date().addingTimeInterval(TimeInterval(expiresIn))
             self?.tokens = updated
             self?.saveToKeychain(updated)
-            AppLog.auth("Token refreshed: \(accessToken)")
+            AppLog.auth("Token refreshed: \(accessToken.prefix(16))...")
             completion(.success(accessToken))
         }.resume()
     }
@@ -189,11 +189,11 @@ final class OAuthClient {
     // MARK: - Fetch client credentials from YouTube TV page
 
     private func fetchClientCredentials(completion: @escaping (Result<(String, String), Error>) -> Void) {
-        guard let url = URL(string: "https://www.youtube.com/tv") else { return }
+        guard let url = URL(string: AppURLs.YouTube.tv) else { return }
         var request = URLRequest(url: url)
-        request.setValue("Mozilla/5.0 (ChromiumStylePlatform) Cobalt/Version", forHTTPHeaderField: "User-Agent")
-        request.setValue("https://www.youtube.com/tv", forHTTPHeaderField: "Referer")
-        request.setValue("en-US", forHTTPHeaderField: "Accept-Language")
+        request.setValue(UserAgent.cobaltTV, forHTTPHeaderField: HTTPHeader.userAgent)
+        request.setValue(AppURLs.YouTube.tv, forHTTPHeaderField: HTTPHeader.referer)
+        request.setValue("en-US", forHTTPHeaderField: HTTPHeader.acceptLanguage)
         URLSession.shared.dataTask(with: request) { data, _, error in
             if let error = error { completion(.failure(error)); return }
             guard let data = data, let html = String(data: data, encoding: .utf8) else {

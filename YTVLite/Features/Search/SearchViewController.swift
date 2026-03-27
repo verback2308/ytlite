@@ -2,7 +2,7 @@ import UIKit
 
 class SearchViewController: UIViewController {
 
-    private let service = ServiceContainer.video
+    private let service: SearchService = ServiceContainer.video
     private var results: [Video] = []
     private var lastQuery: String = ""
 

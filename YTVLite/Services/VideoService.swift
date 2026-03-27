@@ -5,43 +5,61 @@ struct FeedPage: Codable {
     let continuation: String?
 }
 
-protocol VideoService: AnyObject {
-    // Feed
+// MARK: - ISP-compliant service protocols
+//
+// Each protocol covers exactly one responsibility.
+// ViewControllers depend only on the protocol they use, not the full VideoService.
+
+protocol FeedService: AnyObject {
     func fetchHomeFeed(completion: @escaping (Result<FeedPage, Error>) -> Void)
     func fetchSubscriptionFeed(completion: @escaping (Result<FeedPage, Error>) -> Void)
+    func fetchNextPage(continuation: String, completion: @escaping (Result<FeedPage, Error>) -> Void)
+}
+
+protocol HistoryService: AnyObject {
     func fetchHistory(completion: @escaping (Result<FeedPage, Error>) -> Void)
     func fetchHistoryNextPage(continuation: String, token: String, completion: @escaping (Result<FeedPage, Error>) -> Void)
-    func fetchNextPage(continuation: String, completion: @escaping (Result<FeedPage, Error>) -> Void)
+}
 
-    // Search
+protocol SearchService: AnyObject {
     func search(query: String, completion: @escaping (Result<[Video], Error>) -> Void)
+}
 
-    // Playlists
+protocol PlaylistService: AnyObject {
     func fetchPlaylists(completion: @escaping (Result<[Playlist], Error>) -> Void)
     func fetchPlaylistVideos(playlistId: String, completion: @escaping (Result<[Video], Error>) -> Void)
+}
 
-    // Channel
+protocol ChannelService: AnyObject {
     func fetchChannelInfo(channelId: String, completion: @escaping (Result<ChannelInfo, Error>) -> Void)
     func fetchChannelPage(channelId: String, completion: @escaping (Result<ChannelPage, Error>) -> Void)
+}
 
-    // Watch page & playback
+protocol WatchService: AnyObject {
     func fetchWatchPage(video: Video, cancellationToken: CancellationToken?, completion: @escaping (Result<WatchPage, Error>) -> Void)
     func fetchDirectPlayback(videoId: String, client: DirectPlaybackClient, poToken: String?, cancellationToken: CancellationToken?, completion: @escaping (Result<DirectPlaybackInfo, Error>) -> Void)
     func fetchComments(videoId: String, continuation: String?, cancellationToken: CancellationToken?, completion: @escaping (Result<CommentsPage, Error>) -> Void)
+}
 
-    // Actions
+protocol EngagementService: AnyObject {
     func sendLike(videoId: String, completion: @escaping (Result<Void, Error>) -> Void)
     func sendDislike(videoId: String, completion: @escaping (Result<Void, Error>) -> Void)
     func removeLike(videoId: String, completion: @escaping (Result<Void, Error>) -> Void)
     func subscribeToChannel(channelId: String, cancellationToken: CancellationToken?, completion: @escaping (Result<Void, Error>) -> Void)
     func unsubscribeFromChannel(channelId: String, cancellationToken: CancellationToken?, completion: @escaping (Result<Void, Error>) -> Void)
+}
 
-    // Account
+protocol AccountService: AnyObject {
     func fetchAccountInfo(completion: @escaping (Result<(name: String, avatarURL: String?), Error>) -> Void)
 }
 
-// Default parameter values for protocol methods
-extension VideoService {
+// MARK: - Composite umbrella (kept for backwards compat; prefer narrow protocols in new code)
+typealias VideoService = FeedService & HistoryService & SearchService & PlaylistService
+    & ChannelService & WatchService & EngagementService & AccountService
+
+// MARK: - Default parameter convenience extensions
+
+extension WatchService {
     func fetchWatchPage(video: Video, completion: @escaping (Result<WatchPage, Error>) -> Void) {
         fetchWatchPage(video: video, cancellationToken: nil, completion: completion)
     }
@@ -53,6 +71,9 @@ extension VideoService {
                        completion: @escaping (Result<CommentsPage, Error>) -> Void) {
         fetchComments(videoId: videoId, continuation: continuation, cancellationToken: nil, completion: completion)
     }
+}
+
+extension EngagementService {
     func subscribeToChannel(channelId: String, completion: @escaping (Result<Void, Error>) -> Void) {
         subscribeToChannel(channelId: channelId, cancellationToken: nil, completion: completion)
     }
@@ -60,3 +81,4 @@ extension VideoService {
         unsubscribeFromChannel(channelId: channelId, cancellationToken: nil, completion: completion)
     }
 }
+

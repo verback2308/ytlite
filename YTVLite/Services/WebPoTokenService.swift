@@ -42,7 +42,7 @@ final class WebPoTokenService: NSObject {
         let config = WKWebViewConfiguration()
         config.websiteDataStore = .nonPersistent()
         config.userContentController = contentController
-        config.applicationNameForUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15"
+        config.applicationNameForUserAgent = UserAgent.safariMac
 
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.isHidden = true
@@ -109,7 +109,7 @@ final class WebPoTokenService: NSObject {
         <body></body>
         </html>
         """
-        webView.loadHTMLString(html, baseURL: URL(string: "https://www.youtube.com"))
+        webView.loadHTMLString(html, baseURL: URL(string: AppURLs.YouTube.base))
     }
 
     private func ensureReady(_ completion: @escaping () -> Void) {
@@ -144,12 +144,12 @@ final class WebPoTokenService: NSObject {
           const identifier = \(identifierLiteral);
           const attemptID = \(attemptLiteral);
           const requestKey = \(requestKeyLiteral);
-          const googApiKey = "AIzaSyDyT5W0Jh49F30Pqqtyfdf7pDLFKLJoAnw";
+          const googApiKey = "\(YouTubeCredentials.tvApiKey)";
           const postLog = (message) => window.webkit.messageHandlers.webPoLog.postMessage({ identifier, attemptID, message });
 
           function getHeaders() {
             return {
-              "content-type": "application/json+protobuf",
+              "Content-Type": "application/json+protobuf",
               "x-goog-api-key": googApiKey,
               "x-user-agent": "grpc-web-javascript/0.1"
             };
@@ -460,7 +460,7 @@ final class WebPoTokenService: NSObject {
             </head>
             <body></body>
             </html>
-            """, baseURL: URL(string: "https://www.youtube.com"))
+            """, baseURL: URL(string: AppURLs.YouTube.base))
         }
     }
 
@@ -520,9 +520,9 @@ final class WebPoTokenService: NSObject {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.timeoutInterval = 8
-        request.setValue("application/json+protobuf", forHTTPHeaderField: "content-type")
-        request.setValue("AIzaSyDyT5W0Jh49F30Pqqtyfdf7pDLFKLJoAnw", forHTTPHeaderField: "x-goog-api-key")
-        request.setValue("grpc-web-javascript/0.1", forHTTPHeaderField: "x-user-agent")
+        request.setValue("application/json+protobuf", forHTTPHeaderField: HTTPHeader.contentType)
+        request.setValue(YouTubeCredentials.tvApiKey, forHTTPHeaderField: HTTPHeader.xGoogApiKey)
+        request.setValue("grpc-web-javascript/0.1", forHTTPHeaderField: HTTPHeader.xUserAgent)
 
         guard let body = try? JSONSerialization.data(withJSONObject: [requestKey, botguardResponse], options: []) else {
             resolve(identifier: identifier, result: .failure(ServiceError.generateITFailed("Invalid body")))

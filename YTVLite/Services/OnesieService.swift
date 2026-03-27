@@ -172,7 +172,7 @@ final class OnesieService {
             }
 
             var req = URLRequest(url: url)
-            req.setValue("Mozilla/5.0 (ChromiumStylePlatform) Cobalt/Version", forHTTPHeaderField: "User-Agent")
+            req.setValue(UserAgent.cobaltTV, forHTTPHeaderField: HTTPHeader.userAgent)
             req.timeoutInterval = 15
 
             URLSession.shared.dataTask(with: req) { [weak self] data, _, error in
@@ -299,14 +299,14 @@ final class OnesieService {
 
         // Header: Content-Type
         var h1 = Data()
-        Self.appendString(1, value: "Content-Type", to: &h1)
-        Self.appendString(2, value: "application/json", to: &h1)
+        Self.appendString(1, value: HTTPHeader.contentType, to: &h1)
+        Self.appendString(2, value: HTTPHeaderValue.contentTypeJSON, to: &h1)
         Self.appendBytes(2, payload: h1, to: &onesieInnerReq)
 
         // Header: X-Goog-Visitor-Id
         if !visitorData.isEmpty {
             var h2 = Data()
-            Self.appendString(1, value: "X-Goog-Visitor-Id", to: &h2)
+            Self.appendString(1, value: HTTPHeader.xGoogVisitorId, to: &h2)
             Self.appendString(2, value: visitorData, to: &h2)
             Self.appendBytes(2, payload: h2, to: &onesieInnerReq)
         }
@@ -314,7 +314,7 @@ final class OnesieService {
         // Header: Authorization
         if let authToken, !authToken.isEmpty {
             var h3 = Data()
-            Self.appendString(1, value: "Authorization", to: &h3)
+            Self.appendString(1, value: HTTPHeader.authorization, to: &h3)
             Self.appendString(2, value: "Bearer \(authToken)", to: &h3)
             Self.appendBytes(2, payload: h3, to: &onesieInnerReq)
         }
@@ -381,16 +381,16 @@ final class OnesieService {
         urlReq.httpMethod = "POST"
         urlReq.httpBody = onesieReq
         urlReq.timeoutInterval = 30
-        urlReq.setValue("application/x-protobuf", forHTTPHeaderField: "Content-Type")
-        urlReq.setValue("application/vnd.yt-ump", forHTTPHeaderField: "Accept")
-        urlReq.setValue("gzip, deflate, br", forHTTPHeaderField: "Accept-Encoding")
-        urlReq.setValue("Mozilla/5.0 (ChromiumStylePlatform) Cobalt/Version", forHTTPHeaderField: "User-Agent")
-        urlReq.setValue("https://www.youtube.com", forHTTPHeaderField: "Origin")
-        urlReq.setValue("https://www.youtube.com/tv", forHTTPHeaderField: "Referer")
-        urlReq.setValue("https://www.youtube.com", forHTTPHeaderField: "X-Origin")
-        urlReq.setValue("7", forHTTPHeaderField: "X-Youtube-Client-Name")
-        urlReq.setValue("7.20260311.12.00", forHTTPHeaderField: "X-Youtube-Client-Version")
-        urlReq.setValue(visitorData, forHTTPHeaderField: "X-Goog-Visitor-Id")
+        urlReq.setValue("application/x-protobuf", forHTTPHeaderField: HTTPHeader.contentType)
+        urlReq.setValue("application/vnd.yt-ump", forHTTPHeaderField: HTTPHeader.accept)
+        urlReq.setValue("gzip, deflate, br", forHTTPHeaderField: HTTPHeader.acceptEncoding)
+        urlReq.setValue(UserAgent.cobaltTV, forHTTPHeaderField: HTTPHeader.userAgent)
+        urlReq.setValue(AppURLs.YouTube.base, forHTTPHeaderField: HTTPHeader.origin)
+        urlReq.setValue(AppURLs.YouTube.tv, forHTTPHeaderField: HTTPHeader.referer)
+        urlReq.setValue(AppURLs.YouTube.base, forHTTPHeaderField: HTTPHeader.xOrigin)
+        urlReq.setValue("7", forHTTPHeaderField: HTTPHeader.xYoutubeClientName)
+        urlReq.setValue("7.20260311.12.00", forHTTPHeaderField: HTTPHeader.xYoutubeClientVersion)
+        urlReq.setValue(visitorData, forHTTPHeaderField: HTTPHeader.xGoogVisitorId)
 
         URLSession.shared.dataTask(with: urlReq) { data, response, error in
             if let error = error {

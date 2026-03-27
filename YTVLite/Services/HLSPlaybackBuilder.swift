@@ -109,7 +109,7 @@ enum HLSPlaybackBuilder {
                                completion: @escaping (Data?) -> Void) {
         var request = URLRequest(url: url)
         for (k, v) in headers { request.setValue(v, forHTTPHeaderField: k) }
-        request.setValue("bytes=\(start)-\(end)", forHTTPHeaderField: "Range")
+        request.setValue("bytes=\(start)-\(end)", forHTTPHeaderField: HTTPHeader.range)
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 AppLog.hls("range fetch failed: \(error.localizedDescription)")

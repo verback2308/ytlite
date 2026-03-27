@@ -2,7 +2,7 @@ import UIKit
 
 final class PlaylistsViewController: UIViewController {
 
-    private let service = ServiceContainer.video
+    private let service: PlaylistService = ServiceContainer.video
     private var playlists: [Playlist] = []
     private let tableView = UITableView()
     private let spinner = UIActivityIndicatorView(style: .white)
