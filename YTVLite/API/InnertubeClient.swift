@@ -6,14 +6,8 @@ final class InnertubeClient: VideoService {
 
     let api = APIClient()
     let baseURL = "https://www.youtube.com/youtubei/v1"
-    let androidClientVersion = "19.09.37"
-
-
     var webContext: [String: Any] { InnertubeContexts.web }
-    var androidContext: [String: Any] { InnertubeContexts.android }
     var tvContext: [String: Any] { InnertubeContexts.tv }
-    var androidVRContext: [String: Any] { InnertubeContexts.androidVR }
-    var iosContext: [String: Any] { InnertubeContexts.ios }
 
     // MARK: - VideoService
 
@@ -204,7 +198,7 @@ final class InnertubeClient: VideoService {
         }
     }
 
-    func fetchDirectPlayback(videoId: String, client: DirectPlaybackClient = .tvHTML5, poToken: String? = nil,
+    func fetchDirectPlayback(videoId: String, client: DirectPlaybackClient = .androidVR, poToken: String? = nil,
                              cancellationToken: CancellationToken? = nil,
                              completion: @escaping (Result<DirectPlaybackInfo, Error>) -> Void) {
         print("[Innertube] fetchDirectPlayback start: \(videoId), client: \(client)")

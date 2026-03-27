@@ -678,8 +678,7 @@ extension InnertubeClient {
                                     completion: @escaping (Result<Void, Error>) -> Void) {
         let contexts: [(name: String, body: [String: Any], auth: Bool)] = [
             ("TVHTML5", tvContext, true),
-            ("WEB", webContext, false),
-            ("ANDROID", androidContext, false)
+            ("WEB", webContext, false)
         ]
 
         let group = DispatchGroup()
@@ -708,38 +707,15 @@ extension InnertubeClient {
                                        visitorData: String? = nil,
                                        cancellationToken: CancellationToken? = nil,
                                        completion: @escaping (Result<DirectPlaybackInfo, Error>) -> Void) {
-        let urlStr: String
-        switch client {
-        case .ios:
-            urlStr = "\(baseURL)/player?prettyPrint=false&key=AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc"
-        default:
-            urlStr = client.usesCookieAuth ? "\(baseURL)/player?prettyPrint=false" : "\(baseURL)/player"
-        }
+        let urlStr = "\(baseURL)/player\(client.playerURLSuffix)"
         guard let url = URL(string: urlStr) else {
             completion(.failure(APIError.invalidURL))
             return
         }
 
-        let context: [String: Any]
-        switch client {
-        case .tvHTML5:
-            context = tvContext
-        case .web:
-            context = webContext
-        case .android:
-            context = androidContext
-        case .androidVR:
-            context = androidVRContext
-        case .ios:
-            context = iosContext
-        }
-
-        var body = context
+        var body = client.context
         body["videoId"] = videoId
-        switch client {
-        case .tvHTML5:
-            break
-        case .web, .android, .androidVR, .ios:
+        if client.requiresContentCheckFlags {
             body["contentCheckOk"] = true
             body["racyCheckOk"] = true
             body["playbackContext"] = [
@@ -759,38 +735,7 @@ extension InnertubeClient {
             return
         }
 
-        var requestHeaders: [String: String] = [
-            "Content-Type": "application/json"
-        ]
-        if !client.usesCookieAuth {
-            requestHeaders["Authorization"] = "Bearer \(token)"
-        }
-        switch client {
-        case .tvHTML5:
-            break
-        case .web:
-            requestHeaders["X-Youtube-Client-Name"] = DirectPlaybackClient.web.clientHeaderName
-            requestHeaders["X-Youtube-Client-Version"] = DirectPlaybackClient.web.clientVersion
-        case .android:
-            requestHeaders["X-Youtube-Client-Name"] = DirectPlaybackClient.android.clientHeaderName
-            requestHeaders["X-Youtube-Client-Version"] = DirectPlaybackClient.android.clientVersion
-        case .androidVR:
-            requestHeaders["X-YouTube-Client-Name"] = DirectPlaybackClient.androidVR.clientHeaderName
-            requestHeaders["X-YouTube-Client-Version"] = DirectPlaybackClient.androidVR.clientVersion
-            requestHeaders["User-Agent"] = "com.google.android.apps.youtube.vr.oculus/1.71.26 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip"
-            requestHeaders["Origin"] = "https://www.youtube.com"
-            if let visitorData = visitorData, !visitorData.isEmpty {
-                requestHeaders["X-Goog-Visitor-Id"] = visitorData
-            }
-        case .ios:
-            requestHeaders["X-YouTube-Client-Name"] = DirectPlaybackClient.ios.clientHeaderName
-            requestHeaders["X-YouTube-Client-Version"] = DirectPlaybackClient.ios.clientVersion
-            requestHeaders["User-Agent"] = "com.google.ios.youtube/19.45.4 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X;)"
-            requestHeaders["Origin"] = "https://www.youtube.com"
-            if let visitorData = visitorData, !visitorData.isEmpty {
-                requestHeaders["X-Goog-Visitor-Id"] = visitorData
-            }
-        }
+        let requestHeaders = client.apiHeaders(token: token, visitorData: visitorData)
 
         print("[Innertube] sending \(client) request to \(url.absoluteString), bodySize=\(bodyData.count), headers=\(requestHeaders.keys.sorted().joined(separator: ","))")
 
@@ -860,9 +805,6 @@ extension InnertubeClient {
         if contextName == "WEB" {
             headers["X-Youtube-Client-Name"] = DirectPlaybackClient.web.clientHeaderName
             headers["X-Youtube-Client-Version"] = DirectPlaybackClient.web.clientVersion
-        } else if contextName == "ANDROID" {
-            headers["X-Youtube-Client-Name"] = "3"
-            headers["X-Youtube-Client-Version"] = androidClientVersion
         }
 
         if let token {

@@ -269,7 +269,7 @@ final class OnesieService {
             "context": [
                 "client": [
                     "clientName": "TVHTML5",
-                    "clientVersion": DirectPlaybackClient.tvHTML5.clientVersion,
+                    "clientVersion": "7.20260311.12.00",
                     "hl": "en",
                     "gl": "US",
                     "visitorData": visitorData
@@ -351,7 +351,7 @@ final class OnesieService {
         // ClientInfo { client_name = 16 (int32), client_version = 17 (string) }
         var clientInfo = Data()
         Self.appendInt32(16, value: 7, to: &clientInfo)  // TVHTML5
-        Self.appendString(17, value: DirectPlaybackClient.tvHTML5.clientVersion, to: &clientInfo)
+        Self.appendString(17, value: "7.20260311.12.00", to: &clientInfo)
         var streamerCtx = Data()
         Self.appendBytes(1, payload: clientInfo, to: &streamerCtx)
 
@@ -388,8 +388,8 @@ final class OnesieService {
         urlReq.setValue("https://www.youtube.com", forHTTPHeaderField: "Origin")
         urlReq.setValue("https://www.youtube.com/tv", forHTTPHeaderField: "Referer")
         urlReq.setValue("https://www.youtube.com", forHTTPHeaderField: "X-Origin")
-        urlReq.setValue(DirectPlaybackClient.tvHTML5.clientHeaderName, forHTTPHeaderField: "X-Youtube-Client-Name")
-        urlReq.setValue(DirectPlaybackClient.tvHTML5.clientVersion, forHTTPHeaderField: "X-Youtube-Client-Version")
+        urlReq.setValue("7", forHTTPHeaderField: "X-Youtube-Client-Name")
+        urlReq.setValue("7.20260311.12.00", forHTTPHeaderField: "X-Youtube-Client-Version")
         urlReq.setValue(visitorData, forHTTPHeaderField: "X-Goog-Visitor-Id")
 
         URLSession.shared.dataTask(with: urlReq) { data, response, error in

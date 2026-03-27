@@ -39,9 +39,6 @@ struct InnertubeContexts {
             "request": ["useSsl": true, "internalExperimentFlags": []]
         ]
     ]
-    static let android: [String: Any] = [
-        "context": ["client": ["clientName": DirectPlaybackClient.android.clientName, "clientVersion": DirectPlaybackClient.android.clientVersion, "hl": "en", "gl": "US", "androidSdkVersion": 28]]
-    ]
     static let tv: [String: Any] = [
         "context": [
             "client": [
@@ -58,8 +55,8 @@ struct InnertubeContexts {
     ]
     static let androidVR: [String: Any] = [
         "context": ["client": [
-            "clientName": DirectPlaybackClient.androidVR.clientName,
-            "clientVersion": DirectPlaybackClient.androidVR.clientVersion,
+            "clientName": "ANDROID_VR",
+            "clientVersion": "1.71.26",
             "hl": "en",
             "timeZone": "UTC",
             "utcOffsetMinutes": 0,
@@ -69,20 +66,6 @@ struct InnertubeContexts {
             "osName": "Android",
             "osVersion": "12L",
             "userAgent": "com.google.android.apps.youtube.vr.oculus/1.71.26 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip"
-        ]]
-    ]
-    static let ios: [String: Any] = [
-        "context": ["client": [
-            "clientName": DirectPlaybackClient.ios.clientName,
-            "clientVersion": DirectPlaybackClient.ios.clientVersion,
-            "hl": "en",
-            "timeZone": "UTC",
-            "utcOffsetMinutes": 0,
-            "deviceMake": "Apple",
-            "deviceModel": "iPhone16,2",
-            "osName": "iPhone",
-            "osVersion": "17.5.1.21F90",
-            "userAgent": "com.google.ios.youtube/19.45.4 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X;)"
         ]]
     ]
 }

@@ -15,7 +15,7 @@ final class WatchViewController: UIViewController {
     private var playerViewController: AVPlayerViewController?
     private var videoPlayerView: VideoPlayerView?
     private var playerItemContext = 0
-    private var activeDirectPlaybackClient: DirectPlaybackClient = .tvHTML5
+    private var activeDirectPlaybackClient: DirectPlaybackClient = .androidVR
     private var retriedDirectPlaybackWithWeb = false
     private var descriptionExpanded = false
     private var relatedExpansionWorkItem: DispatchWorkItem?
@@ -1232,20 +1232,7 @@ final class WatchViewController: UIViewController {
         if let pot = poToken, !pot.isEmpty {
             items.append(URLQueryItem(name: "pot", value: pot))
         }
-        let cver: String
-        switch client {
-        case .tvHTML5:
-            cver = DirectPlaybackClient.tvHTML5.clientVersion
-        case .web:
-            cver = DirectPlaybackClient.web.clientVersion
-        case .android:
-            cver = DirectPlaybackClient.android.clientVersion
-        case .androidVR:
-            cver = DirectPlaybackClient.androidVR.clientVersion
-        case .ios:
-            cver = DirectPlaybackClient.ios.clientVersion
-        }
-        items.append(URLQueryItem(name: "cver", value: cver))
+        items.append(URLQueryItem(name: "cver", value: client.clientVersion))
         components.queryItems = items
         let finalURL = components.url ?? baseURL
         print("[WatchViewController] direct URL prepared with pot/cver for \(client)")
@@ -1692,59 +1679,7 @@ final class WatchViewController: UIViewController {
     }
 
     private func makeDirectRequestHeaders(visitorData: String?, client: DirectPlaybackClient) -> [String: String] {
-        var headers: [String: String]
-        switch client {
-        case .tvHTML5:
-            headers = [
-                "Accept": "*/*",
-                "Accept-Language": "*",
-                "User-Agent": "Mozilla/5.0 (ChromiumStylePlatform) Cobalt/Version",
-                "Referer": "https://www.youtube.com/tv",
-                "Origin": "https://www.youtube.com",
-                "X-Origin": "https://www.youtube.com",
-                "X-Youtube-Client-Name": DirectPlaybackClient.tvHTML5.clientHeaderName,
-                "X-Youtube-Client-Version": DirectPlaybackClient.tvHTML5.clientVersion
-            ]
-        case .web:
-            headers = [
-                "Accept": "*/*",
-                "Accept-Language": "*",
-                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-                "Referer": "https://www.youtube.com/",
-                "Origin": "https://www.youtube.com",
-                "X-Origin": "https://www.youtube.com",
-                "X-Youtube-Client-Name": DirectPlaybackClient.web.clientHeaderName,
-                "X-Youtube-Client-Version": DirectPlaybackClient.web.clientVersion
-            ]
-        case .android:
-            headers = [
-                "Accept": "*/*",
-                "Accept-Language": "*",
-                "User-Agent": "com.google.android.youtube/19.09.37 (Linux; U; Android 9; en_US)",
-                "X-Youtube-Client-Name": DirectPlaybackClient.android.clientHeaderName,
-                "X-Youtube-Client-Version": DirectPlaybackClient.android.clientVersion
-            ]
-        case .androidVR:
-            headers = [
-                "Accept": "*/*",
-                "Accept-Language": "*",
-                "User-Agent": "com.google.android.apps.youtube.vr.oculus/1.71.26 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip",
-                "X-Youtube-Client-Name": DirectPlaybackClient.androidVR.clientHeaderName,
-                "X-Youtube-Client-Version": DirectPlaybackClient.androidVR.clientVersion
-            ]
-        case .ios:
-            headers = [
-                "Accept": "*/*",
-                "Accept-Language": "*",
-                "User-Agent": "com.google.ios.youtube/19.45.4 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X;)",
-                "X-Youtube-Client-Name": DirectPlaybackClient.ios.clientHeaderName,
-                "X-Youtube-Client-Version": DirectPlaybackClient.ios.clientVersion
-            ]
-        }
-        if let visitorData, !visitorData.isEmpty {
-            headers["X-Goog-Visitor-Id"] = visitorData
-        }
-        return headers
+        client.streamHeaders(visitorData: visitorData)
     }
 
     private func attachPlayer(item: AVPlayerItem, minimizeStalling: Bool = true) {
