@@ -222,7 +222,7 @@ private extension HLSPlaybackBuilder {
             queue: loader.loaderQueue
         )
         let item = AVPlayerItem(asset: asset)
-        item.preferredForwardBufferDuration = 5.0
+        PlaybackBufferPolicy.configure(item: item)
         return Result(playerItem: item, loader: loader)
     }
 

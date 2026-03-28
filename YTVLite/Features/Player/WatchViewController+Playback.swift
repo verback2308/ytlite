@@ -53,10 +53,7 @@ extension WatchViewController {
                 completion(false)
                 return
             }
-            self.attachPlayer(
-                item: item,
-                minimizeStalling: false
-            )
+            self.attachPlayer(item: item)
             completion(true)
         }
     }
@@ -90,6 +87,8 @@ extension WatchViewController {
         }
         let currentTime = player.currentTime()
         let wasPlaying = player.rate > 0
+        PlaybackBufferPolicy.configure(item: item)
+        PlaybackBufferPolicy.configure(player: player)
         if let oldItem = player.currentItem {
             stopObservingPlayerItem(oldItem)
         }
@@ -207,13 +206,13 @@ extension WatchViewController {
         resetPlaybackSurfaces()
         playerSpinner.stopAnimating()
         playerStatusLabel.isHidden = true
+        PlaybackBufferPolicy.configure(item: item)
         startObservingPlayerItem(item)
         let player = AVPlayer(playerItem: item)
-        if !minimizeStalling {
-            player
-                .automaticallyWaitsToMinimizeStalling
-                = false
-        }
+        PlaybackBufferPolicy.configure(
+            player: player,
+            waitsToMinimizeStalling: minimizeStalling
+        )
         let pv = getOrCreatePlayerView()
         configureSponsorBlock(on: pv)
         playerContainer.bringSubviewToFront(pv)

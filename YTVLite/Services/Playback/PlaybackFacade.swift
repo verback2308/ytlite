@@ -1,5 +1,25 @@
 import AVFoundation
 
+enum PlaybackBufferPolicy {
+    static let defaultForwardBufferDuration: TimeInterval = 20.0
+    static let backgroundBufferDuration: TimeInterval = 30.0
+
+    static func configure(
+        item: AVPlayerItem,
+        forwardBufferDuration: TimeInterval = defaultForwardBufferDuration
+    ) {
+        item.preferredForwardBufferDuration = forwardBufferDuration
+    }
+
+    static func configure(
+        player: AVPlayer,
+        waitsToMinimizeStalling: Bool = true
+    ) {
+        player.automaticallyWaitsToMinimizeStalling =
+            waitsToMinimizeStalling
+    }
+}
+
 struct PlaybackPipelineContext {
     let videoId: String
     let client: DirectPlaybackClient
@@ -86,7 +106,8 @@ extension PlaybackFacade {
         guard switchToHLSPlaylist(
             player: player,
             urlString: "\(scheme)://audio-master.m3u8",
-            bufferDuration: 10.0
+            bufferDuration: PlaybackBufferPolicy
+                .backgroundBufferDuration
         ) else {
             return
         }
@@ -122,7 +143,8 @@ extension PlaybackFacade {
         guard switchToHLSPlaylist(
             player: player,
             urlString: "\(scheme)://master.m3u8",
-            bufferDuration: 5.0
+            bufferDuration: PlaybackBufferPolicy
+                .defaultForwardBufferDuration
         ) else {
             return
         }
@@ -156,7 +178,11 @@ extension PlaybackFacade {
             queue: loader.loaderQueue
         )
         let item = AVPlayerItem(asset: asset)
-        item.preferredForwardBufferDuration = bufferDuration
+        PlaybackBufferPolicy.configure(
+            item: item,
+            forwardBufferDuration: bufferDuration
+        )
+        PlaybackBufferPolicy.configure(player: player)
         player.replaceCurrentItem(with: item)
         return true
     }
