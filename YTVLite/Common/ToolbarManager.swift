@@ -101,7 +101,7 @@ extension UIViewController {
         sheet.addAction(UIAlertAction(
             title: "Sign Out",
             style: .destructive
-        ) { [weak self] _ in
+        ) { _ in
             OAuthClient.shared.signOut()
             UserProfileStore.shared.clear()
             AppCache.shared.clearHomeFeed()

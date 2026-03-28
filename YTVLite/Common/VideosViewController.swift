@@ -147,7 +147,6 @@ class VideosViewController: UIViewController {
         let available = collectionView.bounds.width
             - inset - spacing
         let width = floor(available / CGFloat(columns))
-        let useGrid = true
         let height: CGFloat = width * (9.0 / 16.0) + 92
         let newSize = CGSize(
             width: width,

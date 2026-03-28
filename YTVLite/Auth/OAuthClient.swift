@@ -23,7 +23,7 @@ final class OAuthClient {
         "https://www.googleapis.com/auth/youtube-paid-content"
     let keychainService = "com.ytvlite.oauth"
     let keychainAccount = "youtube"
-    internal(set) var tokens: OAuthTokens?
+    var tokens: OAuthTokens?
     var isSignedIn: Bool { tokens != nil }
     var isAnonymous: Bool {
         get {

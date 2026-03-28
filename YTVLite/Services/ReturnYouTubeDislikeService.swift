@@ -281,7 +281,9 @@ extension ReturnYouTubeDislikeService {
     }
     private func sha512(_ data: Data) -> Data {
         var hash = [UInt8](repeating: 0, count: Int(CC_SHA512_DIGEST_LENGTH))
-        data.withUnsafeBytes { CC_SHA512($0.baseAddress, CC_LONG(data.count), &hash) }
+        _ = data.withUnsafeBytes {
+            CC_SHA512($0.baseAddress, CC_LONG(data.count), &hash)
+        }
         return Data(hash)
     }
     private func leadingZeroBits(in data: Data) -> Int {

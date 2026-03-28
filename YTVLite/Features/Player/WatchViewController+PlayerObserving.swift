@@ -158,7 +158,7 @@ extension WatchViewController {
             )
             return
         }
-        let domain = last.errorDomain ?? "nil"
+        let domain = last.errorDomain
         let comment = last.errorComment ?? "nil"
         let uri = last.uri ?? "nil"
         AppLog.player(

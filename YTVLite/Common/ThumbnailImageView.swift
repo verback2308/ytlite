@@ -4,6 +4,7 @@ class ThumbnailImageView: UIImageView {
     private static let cache = ImageMemoryCache()
     private static let diskCache = ImageDiskCache()
     private var currentURL: URL?
+    private var task: URLSessionDataTask?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -24,9 +25,11 @@ class ThumbnailImageView: UIImageView {
     }
 
     func setImage(url: URL) {
-        if currentURL == url, image != nil {
+        if currentURL == url, image != nil || task != nil {
             return
         }
+        task?.cancel()
+        task = nil
         currentURL = url
         loadFromMemoryOrDisk(url: url)
     }
@@ -36,6 +39,7 @@ class ThumbnailImageView: UIImageView {
         if let cached = ThumbnailImageView.cache.object(forKey: key) {
             AppLog.img("mem-hit \(url.lastPathComponent)")
             image = cached
+            task = nil
             return
         }
 
@@ -50,11 +54,12 @@ class ThumbnailImageView: UIImageView {
     private func loadFromDiskOrNetwork(url: URL, cacheKey: String) {
         if let cached = ThumbnailImageView.diskCache.image(for: url) {
             AppLog.img("disk-hit \(url.lastPathComponent)")
-            ThumbnailImageView.cache.setObject(cached, forKey: cacheKey)
+            ThumbnailImageView.cache.setObject(cached, forKey: cacheKey, cost: cached.memoryCost)
             DispatchQueue.main.async { [weak self] in
                 guard self?.currentURL == url else {
                     return
                 }
+                self?.task = nil
                 self?.image = cached
             }
             return
@@ -73,13 +78,21 @@ class ThumbnailImageView: UIImageView {
     private func fetchFromNetwork(url: URL, cacheKey: String) {
         AppLog.img("fetch \(url.lastPathComponent)")
         let task = URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
+            defer {
+                DispatchQueue.main.async { [weak self] in
+                    guard self?.currentURL == url else {
+                        return
+                    }
+                    self?.task = nil
+                }
+            }
             guard let self,
                   let data,
                   let img = UIImage(data: data),
                   self.currentURL == url else {
                 return
             }
-            ThumbnailImageView.cache.setObject(img, forKey: cacheKey)
+            ThumbnailImageView.cache.setObject(img, forKey: cacheKey, cost: img.memoryCost)
             ThumbnailImageView.diskCache.store(data: data, for: url)
             AppLog.img("stored \(url.lastPathComponent)")
             DispatchQueue.main.async { [weak self] in
@@ -89,10 +102,13 @@ class ThumbnailImageView: UIImageView {
                 self?.image = img
             }
         }
+        self.task = task
         task.resume()
     }
 
     func cancel() {
+        task?.cancel()
+        task = nil
         currentURL = nil
         image = nil
     }
@@ -103,12 +119,21 @@ private final class ImageMemoryCache {
     // swiftlint:disable:next legacy_objc_type
     private let backing = NSCache<NSString, UIImage>()
 
+    init() {
+        backing.countLimit = 300
+        backing.totalCostLimit = 64 * 1_024 * 1_024
+    }
+
     func object(forKey key: String) -> UIImage? {
         backing.object(forKey: key as NSString) // swiftlint:disable:this legacy_objc_type
     }
 
-    func setObject(_ image: UIImage, forKey key: String) {
-        backing.setObject(image, forKey: key as NSString) // swiftlint:disable:this legacy_objc_type
+    func setObject(_ image: UIImage, forKey key: String, cost: Int) {
+        backing.setObject(
+            image,
+            forKey: key as NSString, // swiftlint:disable:this legacy_objc_type
+            cost: cost
+        )
     }
 
     func removeAll() {
@@ -170,11 +195,24 @@ private final class ImageDiskCache {
     }
 
     private func cacheKey(for url: URL) -> String {
-        let allowed = CharacterSet.alphanumerics
-        let compact = url.absoluteString
-            .unicodeScalars
-            .map { allowed.contains($0) ? Character($0) : "_" }
-        let truncated = String(String(compact).prefix(180))
-        return truncated + ".img"
+        "\(fnv1a64Hex(for: url.absoluteString)).img"
+    }
+
+    private func fnv1a64Hex(for string: String) -> String {
+        let offsetBasis: UInt64 = 0xcbf2_9ce4_8422_2325
+        let prime: UInt64 = 0x0000_0100_0000_01b3
+        let hash = string.utf8.reduce(offsetBasis) { partial, byte in
+            (partial ^ UInt64(byte)) &* prime
+        }
+        return String(format: "%016llx", hash)
+    }
+}
+
+private extension UIImage {
+    var memoryCost: Int {
+        guard let cgImage else {
+            return 0
+        }
+        return cgImage.bytesPerRow * cgImage.height
     }
 }
