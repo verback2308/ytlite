@@ -1,13 +1,44 @@
 import UIKit
 import AVKit
 
+private func makePortraitRelatedLayout() -> UICollectionViewFlowLayout {
+    let layout = UICollectionViewFlowLayout()
+    layout.minimumLineSpacing = 12
+    layout.minimumInteritemSpacing = 8
+    layout.sectionInset = UIEdgeInsets(
+        top: 0,
+        left: 12,
+        bottom: 16,
+        right: 12
+    )
+    return layout
+}
+
+private func makeLandscapeRelatedLayout() -> UICollectionViewFlowLayout {
+    let layout = UICollectionViewFlowLayout()
+    layout.minimumLineSpacing = 12
+    layout.minimumInteritemSpacing = 0
+    layout.sectionInset = UIEdgeInsets(
+        top: 0,
+        left: 8,
+        bottom: 12,
+        right: 8
+    )
+    return layout
+}
+
 final class WatchViewController: UIViewController {
     // MARK: - Dependencies
 
     var initialVideo: Video
-    let client: WatchService = ServiceContainer.watch
-    let engagementClient: EngagementService =
-        ServiceContainer.engagement
+    let client: WatchService
+    let engagementClient: EngagementService
+    let channelInfoStore: ChannelInfoStore
+    let channelViewControllerFactory: (
+        String,
+        String
+    ) -> ChannelViewController
+    let videoRouter: VideoRouter
     let cache = AppCache.shared
 
     // MARK: - State
@@ -67,8 +98,7 @@ final class WatchViewController: UIViewController {
     let downloadButton = UIButton(type: .system)
     let likeCountLabel = UILabel()
     let dislikeCountLabel = UILabel()
-    var likeCount: String?
-    var dislikeCount: String?
+    var likeCount: String?; var dislikeCount: String?
     var currentLikeStatus: LikeStatus = .indifferent
 
     // MARK: - Constraints
@@ -82,10 +112,8 @@ final class WatchViewController: UIViewController {
     var scrollTopToPlayerConstraint: NSLayoutConstraint?
     var scrollTrailingConstraint: NSLayoutConstraint?
     var scrollToSidebarConstraint: NSLayoutConstraint?
-    var sidebarTopConstraint: NSLayoutConstraint?
-    var sidebarTrailingConstraint: NSLayoutConstraint?
-    var sidebarBottomConstraint: NSLayoutConstraint?
-    var sidebarWidthConstraint: NSLayoutConstraint?
+    var sidebarTopConstraint, sidebarTrailingConstraint: NSLayoutConstraint?
+    var sidebarBottomConstraint, sidebarWidthConstraint: NSLayoutConstraint?
     var bottomCommentsConstraint: NSLayoutConstraint?
     var relatedPortraitConstraints: [NSLayoutConstraint] = []
     var relatedLandscapeConstraints: [NSLayoutConstraint] = []
@@ -110,27 +138,21 @@ final class WatchViewController: UIViewController {
 
     // MARK: - Initializers
 
-    init(video: Video) {
-        let portraitLayout = UICollectionViewFlowLayout()
-        portraitLayout.minimumLineSpacing = 12
-        portraitLayout.minimumInteritemSpacing = 8
-        portraitLayout.sectionInset = UIEdgeInsets(
-            top: 0,
-            left: 12,
-            bottom: 16,
-            right: 12
-        )
+    init(
+        video: Video,
+        watchService: WatchService,
+        engagementService: EngagementService,
+        channelInfoStore: ChannelInfoStore,
+        channelViewControllerFactory: @escaping (
+            String,
+            String
+        ) -> ChannelViewController,
+        videoRouter: VideoRouter = .shared
+    ) {
+        let portraitLayout = makePortraitRelatedLayout()
         self.portraitRelatedLayout = portraitLayout
 
-        let landscapeLayout = UICollectionViewFlowLayout()
-        landscapeLayout.minimumLineSpacing = 12
-        landscapeLayout.minimumInteritemSpacing = 0
-        landscapeLayout.sectionInset = UIEdgeInsets(
-            top: 0,
-            left: 8,
-            bottom: 12,
-            right: 8
-        )
+        let landscapeLayout = makeLandscapeRelatedLayout()
         self.landscapeRelatedLayout = landscapeLayout
 
         self.relatedCollectionView = UICollectionView(
@@ -138,6 +160,11 @@ final class WatchViewController: UIViewController {
             collectionViewLayout: portraitLayout
         )
         self.initialVideo = video
+        self.client = watchService
+        self.engagementClient = engagementService
+        self.channelInfoStore = channelInfoStore
+        self.channelViewControllerFactory = channelViewControllerFactory
+        self.videoRouter = videoRouter
         super.init(nibName: nil, bundle: nil)
         playbackFacade.context = self
     }

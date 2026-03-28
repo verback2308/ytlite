@@ -1,18 +1,18 @@
 import UIKit
 
 final class ChannelViewController: VideosViewController {
-    private let client: ChannelService = ServiceContainer.channel
-    private let feedClient: FeedService = ServiceContainer.feed
-    private let engagementClient: EngagementService = ServiceContainer.engagement
-    private let cache = AppCache.shared
-    private let channelId: String
-    private let initialChannelName: String
-    private let headerView = ChannelHeaderView()
-    private let errorLabel = UILabel()
-    private var isSubscribed: Bool = false
-    private var currentChannelPage: ChannelPage?
+    let client: ChannelService
+    let feedClient: FeedService
+    let engagementClient: EngagementService
+    let cache = AppCache.shared
+    let channelId: String
+    let initialChannelName: String
+    let headerView = ChannelHeaderView()
+    let errorLabel = UILabel()
+    var isSubscribed: Bool = false
+    var currentChannelPage: ChannelPage?
 
-    private lazy var infoBarButton: UIBarButtonItem = {
+    lazy var infoBarButton: UIBarButtonItem = {
         if #available(iOS 13, *) {
             return UIBarButtonItem(
                 image: UIImage(systemName: "info.circle"),
@@ -40,15 +40,32 @@ final class ChannelViewController: VideosViewController {
         return width > view.bounds.height ? 3 : 2
     }
 
-    init(channelId: String, channelName: String) {
+    init(
+        channelId: String,
+        channelName: String,
+        channelService: ChannelService,
+        feedService: FeedService,
+        engagementService: EngagementService,
+        channelViewControllerFactory: @escaping (
+            String,
+            String
+        ) -> ChannelViewController,
+        videoRouter: VideoRouter = .shared
+    ) {
         self.channelId = channelId
         self.initialChannelName = channelName
-        super.init(nibName: nil, bundle: nil)
+        self.client = channelService
+        self.feedClient = feedService
+        self.engagementClient = engagementService
+        super.init(
+            channelViewControllerFactory: channelViewControllerFactory,
+            videoRouter: videoRouter
+        )
     }
 
     @available(*, unavailable)
     required init?(coder: NSCoder) {
-        fatalError("Not supported")
+        fatalError("init(coder:) is not supported")
     }
 
     override func viewDidLoad() {
@@ -172,123 +189,11 @@ final class ChannelViewController: VideosViewController {
         }
     }
 
-    private func updateInfoBarButton(for info: ChannelInfo) {
+    func updateInfoBarButton(for info: ChannelInfo) {
         let hasAbout = info.description != nil
             || info.contactInfo != nil
             || info.videoCountText != nil
         navigationItem.rightBarButtonItem = hasAbout
             ? infoBarButton : nil
-    }
-}
-
-// MARK: - Data & Actions
-
-extension ChannelViewController {
-    private func applyChannelInfo(_ info: ChannelInfo) {
-        headerView.update(with: info, fallback: initialChannelName)
-        title = info.title.isEmpty ? initialChannelName : info.title
-        updateInfoBarButton(for: info)
-    }
-
-    private func applyChannelPage(_ page: ChannelPage) {
-        currentChannelPage = page
-        headerView.update(
-            with: page.info, fallback: initialChannelName
-        )
-        title = page.info.title.isEmpty
-            ? initialChannelName : page.info.title
-        applyPageSubscription(page)
-        updateInfoBarButton(for: page.info)
-        let enriched = page.withChannelAvatars()
-        cache.setChannelPage(enriched, channelId: channelId)
-        cache.setChannelInfo(page.info, channelId: channelId)
-        setPage(enriched.videosPage)
-        errorLabel.isHidden = !videos.isEmpty
-        if let cv = collectionView {
-            handleScroll(cv)
-        }
-    }
-
-    private func applyPageSubscription(_ page: ChannelPage) {
-        let txt = page.subscribeButtonText
-            ?? (page.isSubscribed ? "Subscribed" : "Subscribe")
-        headerView.updateSubscription(
-            title: txt, isEnabled: !OAuthClient.shared.isAnonymous
-        )
-        isSubscribed = page.isSubscribed
-        headerView.applyTheme(isSubscribed: isSubscribed)
-    }
-
-    @objc
-    private func showAbout() {
-        guard let page = currentChannelPage
-        else {
-            return
-        }
-        let vc = ChannelAboutViewController(page: page)
-        let nav = UINavigationController(rootViewController: vc)
-        nav.modalPresentationStyle = .pageSheet
-        present(nav, animated: true)
-    }
-
-    @objc
-    private func subscribeButtonTapped() {
-        let wasSubscribed = isSubscribed
-        isSubscribed = !wasSubscribed
-        updateSubscribeUI(subscribed: isSubscribed, enabled: false)
-        let handler = buildCompletion(wasSubscribed: wasSubscribed)
-        if wasSubscribed {
-            engagementClient.unsubscribeFromChannel(
-                channelId: channelId, completion: handler
-            )
-        } else {
-            engagementClient.subscribeToChannel(
-                channelId: channelId, completion: handler
-            )
-        }
-    }
-
-    private func buildCompletion(
-        wasSubscribed: Bool
-    ) -> (Result<Void, Error>) -> Void {
-        { [weak self] result in
-            DispatchQueue.main.async {
-                self?.handleSubscribeResult(
-                    result, wasSubscribed: wasSubscribed
-                )
-            }
-        }
-    }
-
-    private func handleSubscribeResult(
-        _ result: Result<Void, Error>,
-        wasSubscribed: Bool
-    ) {
-        updateSubscribeUI(subscribed: isSubscribed, enabled: true)
-        switch result {
-        case .success:
-            let act = wasSubscribed ? "unsubscribed" : "subscribed"
-            AppLog.subscribe("\(act) channelId=\(channelId)")
-        case .failure(let error):
-            let act = wasSubscribed ? "unsubscribe" : "subscribe"
-            AppLog.subscribe(
-                "\(act) failed channelId=\(channelId): \(error)"
-            )
-            isSubscribed = wasSubscribed
-            updateSubscribeUI(
-                subscribed: wasSubscribed, enabled: true
-            )
-        }
-    }
-
-    private func updateSubscribeUI(
-        subscribed: Bool,
-        enabled: Bool
-    ) {
-        let txt = subscribed ? "Subscribed" : "Subscribe"
-        headerView.updateSubscription(
-            title: txt, isEnabled: enabled
-        )
-        headerView.applyTheme(isSubscribed: subscribed)
     }
 }

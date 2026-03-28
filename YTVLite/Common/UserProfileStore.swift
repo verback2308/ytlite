@@ -8,16 +8,25 @@ final class UserProfileStore {
 
     private(set) var avatarImage: UIImage?
     private(set) var displayName: String?
+    private var accountService: AccountService?
     private var isLoading = false
 
     private init() {}
 
+    func configure(accountService: AccountService) {
+        self.accountService = accountService
+    }
+
     func load() {
         guard OAuthClient.shared.isSignedIn, !isLoading
         else { return }
+        guard let accountService else {
+            assertionFailure("UserProfileStore is not configured")
+            return
+        }
         isLoading = true
 
-        ServiceContainer.account.fetchAccountInfo { [weak self] result in
+        accountService.fetchAccountInfo { [weak self] result in
             guard let self
             else { return }
             switch result {

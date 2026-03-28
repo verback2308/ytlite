@@ -10,11 +10,17 @@ import Foundation
 final class CancellationToken {
     private let lock = NSLock()
     private var tasks: [URLSessionDataTask] = []
-    private(set) var isCancelled = false
+    private var cancelled = false
+
+    var isCancelled: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return cancelled
+    }
 
     func cancel() {
         lock.lock()
-        isCancelled = true
+        cancelled = true
         let pending = tasks
         tasks = []
         lock.unlock()
@@ -23,7 +29,7 @@ final class CancellationToken {
 
     func register(_ task: URLSessionDataTask) {
         lock.lock()
-        if isCancelled {
+        if cancelled {
             lock.unlock()
             task.cancel()
         } else {

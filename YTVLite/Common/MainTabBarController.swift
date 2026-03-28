@@ -33,6 +33,8 @@ final class RotatingNavigationController: UINavigationController {
 }
 
 class MainTabBarController: UITabBarController {
+    private let dependencies: AppDependencies
+
     override var shouldAutorotate: Bool {
         selectedViewController?.shouldAutorotate
             ?? super.shouldAutorotate
@@ -41,6 +43,19 @@ class MainTabBarController: UITabBarController {
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
         selectedViewController?.supportedInterfaceOrientations
             ?? super.supportedInterfaceOrientations
+    }
+
+    init(dependencies: AppDependencies) {
+        self.dependencies = dependencies
+        super.init(nibName: nil, bundle: nil)
+        ToolbarManager.shared.searchViewControllerFactory = { [dependencies] in
+            dependencies.makeSearchViewController()
+        }
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) is not supported")
     }
 
     override func viewDidLoad() {
@@ -56,34 +71,53 @@ class MainTabBarController: UITabBarController {
     }
 
     private func buildTabs() -> [UIViewController] {
+        [makeHomeTab(), makeSubscriptionsTab(), makeLibraryTab()]
+    }
+
+    private func makeHomeTab() -> UIViewController {
         let home = RotatingNavigationController(
-            rootViewController: HomeViewController()
+            rootViewController: HomeViewController(
+                service: dependencies.feedService,
+                channelViewControllerFactory:
+                    dependencies.makeChannelViewController
+            )
         )
         home.tabBarItem = UITabBarItem(
             title: "Home",
             image: TabBarIcons.home(),
             tag: 0
         )
+        return home
+    }
 
+    private func makeSubscriptionsTab() -> UIViewController {
         let subs = RotatingNavigationController(
-            rootViewController: SubscriptionsViewController()
+            rootViewController: SubscriptionsViewController(
+                service: dependencies.feedService,
+                channelViewControllerFactory:
+                    dependencies.makeChannelViewController
+            )
         )
         subs.tabBarItem = UITabBarItem(
             title: "Subscriptions",
             image: TabBarIcons.subscriptions(),
             tag: 1
         )
+        return subs
+    }
 
+    private func makeLibraryTab() -> UIViewController {
         let library = RotatingNavigationController(
-            rootViewController: LibraryViewController()
+            rootViewController: LibraryViewController(
+                dependencies: dependencies
+            )
         )
         library.tabBarItem = UITabBarItem(
             title: "Library",
             image: TabBarIcons.library(),
             tag: 2
         )
-
-        return [home, subs, library]
+        return library
     }
 
     @objc

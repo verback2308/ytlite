@@ -52,7 +52,7 @@ extension WatchViewController {
     }
 
     func fetchChannelAvatar(channelId: String) {
-        ChannelInfoStore.shared.fetch(
+        channelInfoStore.fetch(
             channelId: channelId
         ) { [weak self] result in
             guard let self,
@@ -223,7 +223,7 @@ extension WatchViewController {
             page.relatedVideos.prefix(relatedBatchSize)
         )
         relatedCollectionView.reloadData()
-        ChannelInfoStore.shared.preload(
+        channelInfoStore.preload(
             channelIds: page.relatedVideos
                 .compactMap(\.channelId)
         )

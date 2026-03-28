@@ -22,13 +22,27 @@ final class LibraryViewController: UIViewController {
         }
     }
 
+    private let dependencies: AppDependencies
+
     // MARK: - Child nav controllers
 
     private lazy var childNavVCs: [UINavigationController] = {
         let navs = [
-            UINavigationController(rootViewController: HistoryViewController()),
+            UINavigationController(
+                rootViewController: HistoryViewController(
+                    service: dependencies.historyService,
+                    channelViewControllerFactory:
+                        dependencies.makeChannelViewController
+                )
+            ),
             UINavigationController(rootViewController: DownloadsViewController()),
-            UINavigationController(rootViewController: PlaylistsViewController())
+            UINavigationController(
+                rootViewController: PlaylistsViewController(
+                    service: dependencies.playlistService,
+                    channelViewControllerFactory:
+                        dependencies.makeChannelViewController
+                )
+            )
         ]
         navs.forEach { $0.setNavigationBarHidden(true, animated: false) }
         return navs
@@ -44,6 +58,16 @@ final class LibraryViewController: UIViewController {
     private var currentChild: UINavigationController?
 
     // MARK: - Lifecycle
+
+    init(dependencies: AppDependencies) {
+        self.dependencies = dependencies
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()

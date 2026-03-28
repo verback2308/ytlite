@@ -162,12 +162,16 @@ struct CommentsPage {
 final class ChannelInfoStore {
     static let shared = ChannelInfoStore()
 
-    private let client: ChannelService = ServiceContainer.channel
+    private var channelService: ChannelService?
     private let queue = DispatchQueue(label: "com.ytvlite.channel-info-store")
     private var cache: [String: ChannelInfo] = [:]
     private var pending: [String: [(Result<ChannelInfo, Error>) -> Void]] = [:]
 
     private init() {}
+
+    func configure(channelService: ChannelService) {
+        self.channelService = channelService
+    }
 
     func fetch(
         channelId: String,
@@ -213,10 +217,17 @@ final class ChannelInfoStore {
         channelId: String,
         completion: @escaping (Result<ChannelInfo, Error>) -> Void
     ) {
+        guard let channelService else {
+            assertionFailure("ChannelInfoStore is not configured")
+            DispatchQueue.main.async {
+                completion(.failure(APIError.invalidResponse))
+            }
+            return
+        }
         pending[channelId] = [completion]
         AppLog.channel("info fetch \(channelId)")
 
-        client.fetchChannelInfo(channelId: channelId) { result in
+        channelService.fetchChannelInfo(channelId: channelId) { result in
             self.queue.async {
                 if case .success(let info) = result {
                     self.cache[channelId] = info

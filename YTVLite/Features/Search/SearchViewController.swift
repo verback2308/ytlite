@@ -1,7 +1,12 @@
 import UIKit
 
 class SearchViewController: UIViewController {
-    private let service: SearchService = ServiceContainer.video
+    private let service: SearchService
+    private let channelViewControllerFactory: (
+        String,
+        String
+    ) -> ChannelViewController
+    private let videoRouter: VideoRouter
     private var results: [Video] = []
     private var lastQuery: String = ""
     private var activeSearchQuery: String?
@@ -10,6 +15,25 @@ class SearchViewController: UIViewController {
     private let searchBar = UISearchBar()
     private let tableView = UITableView()
     private let refreshControl = UIRefreshControl()
+
+    init(
+        service: SearchService,
+        channelViewControllerFactory: @escaping (
+            String,
+            String
+        ) -> ChannelViewController,
+        videoRouter: VideoRouter = .shared
+    ) {
+        self.service = service
+        self.channelViewControllerFactory = channelViewControllerFactory
+        self.videoRouter = videoRouter
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) is not supported")
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -224,13 +248,16 @@ extension SearchViewController: UITableViewDataSource {
         let video = results[indexPath.row]
         cell.configure(with: video)
         cell.onChannelTap = { [weak self] in
+            guard let self else {
+                return
+            }
             guard let channelId = video.channelId else {
                 return
             }
-            self?.navigationController?.pushViewController(
-                ChannelViewController(
-                    channelId: channelId,
-                    channelName: video.channelName
+            self.navigationController?.pushViewController(
+                self.channelViewControllerFactory(
+                    channelId,
+                    video.channelName
                 ),
                 animated: true
             )
@@ -245,6 +272,6 @@ extension SearchViewController: UITableViewDelegate {
         didSelectRowAt indexPath: IndexPath
     ) {
         let video = results[indexPath.row]
-        VideoRouter.shared.open(video: video, from: self)
+        videoRouter.open(video: video, from: self)
     }
 }

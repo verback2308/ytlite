@@ -1,8 +1,9 @@
 import UIKit
 
 class HomeViewController: VideosViewController {
-    private let service: FeedService = ServiceContainer.video
-    private let cache = AppCache.shared
+    private let service: FeedService
+    private let cache: AppCache
+
     override var columns: Int {
         if UIDevice.current.userInterfaceIdiom == .phone {
             return 1
@@ -32,6 +33,23 @@ class HomeViewController: VideosViewController {
         emptyView.onSignIn = { [weak self] in self?.toolbarOpenProfile() }
         return emptyView
     }()
+
+    init(
+        service: FeedService,
+        cache: AppCache = .shared,
+        channelViewControllerFactory: @escaping (
+            String,
+            String
+        ) -> ChannelViewController,
+        videoRouter: VideoRouter = .shared
+    ) {
+        self.service = service
+        self.cache = cache
+        super.init(
+            channelViewControllerFactory: channelViewControllerFactory,
+            videoRouter: videoRouter
+        )
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()

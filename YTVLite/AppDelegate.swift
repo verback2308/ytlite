@@ -3,11 +3,13 @@ import UIKit
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
+    private let dependencies = AppDependencies.live()
 
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
+        configureSharedDependencies()
         ThemeManager.shared.applyGlobal()
         BackgroundPlaybackService.apply()
         if ReturnYouTubeDislikeService.enabled {
@@ -38,8 +40,22 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return true
     }
 
+    private func configureSharedDependencies() {
+        UserProfileStore.shared.configure(
+            accountService: dependencies.accountService
+        )
+        ChannelInfoStore.shared.configure(
+            channelService: dependencies.channelService
+        )
+        VideoRouter.shared.watchViewControllerFactory = { [dependencies] video in
+            dependencies.makeWatchViewController(video: video)
+        }
+    }
+
     func showMain() {
-        window?.rootViewController = MainTabBarController()
+        window?.rootViewController = MainTabBarController(
+            dependencies: dependencies
+        )
     }
 
     @objc
@@ -54,7 +70,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             auth.onAuthorized = { [weak self] in
                 root.dismiss(animated: true)
                 UserProfileStore.shared.load()
-                self?.window?.rootViewController = MainTabBarController()
+                self?.window?.rootViewController = MainTabBarController(
+                    dependencies: self?.dependencies ?? AppDependencies.live()
+                )
             }
             auth.onContinueAnonymously = { [weak self] in
                 root.dismiss(animated: true)

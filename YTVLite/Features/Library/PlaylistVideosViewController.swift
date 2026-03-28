@@ -4,14 +4,31 @@ final class PlaylistVideosViewController: UIViewController {
     private static let skeletonCount = 6
 
     private let playlist: Playlist
+    private let service: PlaylistService
+    private let channelViewControllerFactory: (
+        String,
+        String
+    ) -> ChannelViewController
+    private let videoRouter: VideoRouter
     private var videos: [Video] = []
     private var isLoading = true
     private let tableView = UITableView()
     private let spinner = UIActivityIndicatorView(style: .white)
     private let emptyLabel = UILabel()
 
-    init(playlist: Playlist) {
+    init(
+        playlist: Playlist,
+        service: PlaylistService,
+        channelViewControllerFactory: @escaping (
+            String,
+            String
+        ) -> ChannelViewController,
+        videoRouter: VideoRouter = .shared
+    ) {
         self.playlist = playlist
+        self.service = service
+        self.channelViewControllerFactory = channelViewControllerFactory
+        self.videoRouter = videoRouter
         super.init(nibName: nil, bundle: nil)
         title = playlist.title
     }
@@ -105,7 +122,7 @@ final class PlaylistVideosViewController: UIViewController {
 
     private func loadVideos() {
         isLoading = true
-        ServiceContainer.playlists.fetchPlaylistVideos(playlistId: playlist.id) { [weak self] result in
+        service.fetchPlaylistVideos(playlistId: playlist.id) { [weak self] result in
             DispatchQueue.main.async {
                 guard let self else {
                     return
@@ -161,15 +178,18 @@ extension PlaylistVideosViewController: UITableViewDataSource, UITableViewDelega
         let video = videos[indexPath.row]
         cell.configure(with: video)
         cell.onChannelTap = { [weak self] in
+            guard let self else {
+                return
+            }
             guard let channelId = video.channelId else {
                 return
             }
-            let parentNav = self?.navigationController?.parent?.navigationController
-            let targetNav = parentNav ?? self?.navigationController
+            let parentNav = self.navigationController?.parent?.navigationController
+            let targetNav = parentNav ?? self.navigationController
             targetNav?.pushViewController(
-                ChannelViewController(
-                    channelId: channelId,
-                    channelName: video.channelName
+                self.channelViewControllerFactory(
+                    channelId,
+                    video.channelName
                 ),
                 animated: true
             )
@@ -182,6 +202,6 @@ extension PlaylistVideosViewController: UITableViewDataSource, UITableViewDelega
             return
         }
         let video = videos[indexPath.row]
-        VideoRouter.shared.open(video: video, from: self)
+        videoRouter.open(video: video, from: self)
     }
 }

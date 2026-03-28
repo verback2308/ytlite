@@ -11,6 +11,8 @@ class VideosViewController: UIViewController {
 
     private(set) var videos: [Video] = []
     private(set) var collectionView: UICollectionView?
+    let channelViewControllerFactory: (String, String) -> ChannelViewController
+    let videoRouter: VideoRouter
     let spinner = UIActivityIndicatorView(style: .white)
     var isLoadingInitial = true
 
@@ -19,6 +21,23 @@ class VideosViewController: UIViewController {
     private var seenVideoIds: Set<String> = []
 
     var currentContinuation: String? { continuationToken }
+
+    init(
+        channelViewControllerFactory: @escaping (
+            String,
+            String
+        ) -> ChannelViewController,
+        videoRouter: VideoRouter = .shared
+    ) {
+        self.channelViewControllerFactory = channelViewControllerFactory
+        self.videoRouter = videoRouter
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) is not supported")
+    }
 
     // MARK: - View Life Cycle
 
@@ -96,16 +115,16 @@ class VideosViewController: UIViewController {
             return
         }
         navigationController?.pushViewController(
-            ChannelViewController(
-                channelId: channelId,
-                channelName: video.channelName
+            channelViewControllerFactory(
+                channelId,
+                video.channelName
             ),
             animated: true
         )
     }
 
     func openVideo(_ video: Video) {
-        VideoRouter.shared.open(
+        videoRouter.open(
             video: video,
             from: self
         )

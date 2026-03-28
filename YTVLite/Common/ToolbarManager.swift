@@ -16,7 +16,7 @@ private func resized(_ name: String, size: CGFloat) -> UIImage? {
 final class ToolbarManager {
     static let shared = ToolbarManager()
 
-    var searchViewController: SearchViewController?
+    var searchViewControllerFactory: (() -> SearchViewController)?
 
     private init() {}
 
@@ -64,8 +64,11 @@ final class ToolbarManager {
 extension UIViewController {
     @objc
     func toolbarOpenSearch() {
-        let searchVC = ToolbarManager.shared.searchViewController ?? SearchViewController()
-        ToolbarManager.shared.searchViewController = searchVC
+        let searchVC = ToolbarManager.shared.searchViewControllerFactory?()
+        guard let searchVC else {
+            assertionFailure("ToolbarManager search factory is not configured")
+            return
+        }
         navigationController?.pushViewController(searchVC, animated: true)
     }
 

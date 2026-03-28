@@ -136,9 +136,9 @@ extension WatchViewController {
             return
         }
         navigationController?.pushViewController(
-            ChannelViewController(
-                channelId: channelId,
-                channelName: sourceVideo.channelName
+            channelViewControllerFactory(
+                channelId,
+                sourceVideo.channelName
             ),
             animated: true
         )
@@ -157,7 +157,7 @@ extension WatchViewController {
     @objc
     func closeTapped() {
         exitFullscreenIfNeeded()
-        VideoRouter.shared.clearCurrentWatch()
+        videoRouter.clearCurrentWatch()
         dismiss(animated: true)
     }
 

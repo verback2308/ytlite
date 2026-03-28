@@ -3,6 +3,7 @@ import UIKit
 final class VideoRouter {
     static let shared = VideoRouter()
 
+    var watchViewControllerFactory: ((Video) -> WatchViewController)?
     private var watchVC: WatchViewController?
 
     private init() {}
@@ -13,7 +14,11 @@ final class VideoRouter {
             existing.loadVideo(video)
             return
         }
-        let vc = WatchViewController(video: video)
+        guard let watchViewControllerFactory else {
+            assertionFailure("VideoRouter is not configured")
+            return
+        }
+        let vc = watchViewControllerFactory(video)
         watchVC = vc
         let nav = UINavigationController(rootViewController: vc)
         nav.modalPresentationStyle = .fullScreen

@@ -2,17 +2,42 @@ import UIKit
 
 class SubscriptionsViewController: UIViewController {
     private static let skeletonCount = 6
-    private let service: FeedService = ServiceContainer.video
-    private let cache = AppCache.shared
+    private let service: FeedService
+    private let cache: AppCache
+    private let channelViewControllerFactory: (
+        String,
+        String
+    ) -> ChannelViewController
+    private let videoRouter: VideoRouter
     private var videos: [Video] = []
     private var continuationToken: String?
     private var isLoadingMore = false
     private var seenVideoIds: Set<String> = []
-    private var sortDatesByVideoId: [String: Date] = [:]
+    var sortDatesByVideoId: [String: Date] = [:]
     private let tableView = UITableView()
     private let spinner = UIActivityIndicatorView(style: .white)
-    private var isLoadingInitial = true
-    private var signInPrompt: SignInEmptyStateView?
+    private var isLoadingInitial = true; private var signInPrompt: SignInEmptyStateView?
+
+    init(
+        service: FeedService,
+        cache: AppCache = .shared,
+        channelViewControllerFactory: @escaping (
+            String,
+            String
+        ) -> ChannelViewController,
+        videoRouter: VideoRouter = .shared
+    ) {
+        self.service = service
+        self.cache = cache
+        self.channelViewControllerFactory = channelViewControllerFactory
+        self.videoRouter = videoRouter
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) is not supported")
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -189,56 +214,6 @@ class SubscriptionsViewController: UIViewController {
     }
 }
 
-private extension SubscriptionsViewController {
-    func sortDate(for video: Video) -> Date {
-        if let cached = sortDatesByVideoId[video.id] {
-            return cached
-        }
-        let date = video.publishedAt.flatMap {
-            VideoFormatters.approximateDate(fromRelative: $0)
-        } ?? .distantPast
-        sortDatesByVideoId[video.id] = date
-        return date
-    }
-
-    func mergeSortedVideos(
-        _ lhs: [Video],
-        _ rhs: [Video]
-    ) -> [Video] {
-        guard !lhs.isEmpty else {
-            return rhs
-        }
-        guard !rhs.isEmpty else {
-            return lhs
-        }
-
-        var merged: [Video] = []
-        merged.reserveCapacity(lhs.count + rhs.count)
-        var lhsIndex = 0
-        var rhsIndex = 0
-
-        while lhsIndex < lhs.count, rhsIndex < rhs.count {
-            let lhsVideo = lhs[lhsIndex]
-            let rhsVideo = rhs[rhsIndex]
-            if sortDate(for: lhsVideo) >= sortDate(for: rhsVideo) {
-                merged.append(lhsVideo)
-                lhsIndex += 1
-            } else {
-                merged.append(rhsVideo)
-                rhsIndex += 1
-            }
-        }
-
-        if lhsIndex < lhs.count {
-            merged.append(contentsOf: lhs[lhsIndex...])
-        }
-        if rhsIndex < rhs.count {
-            merged.append(contentsOf: rhs[rhsIndex...])
-        }
-        return merged
-    }
-}
-
 extension SubscriptionsViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         isLoadingInitial ? SubscriptionsViewController.skeletonCount : videos.count
@@ -258,13 +233,16 @@ extension SubscriptionsViewController: UITableViewDataSource {
         let video = videos[indexPath.row]
         cell.configure(with: video)
         cell.onChannelTap = { [weak self] in
+            guard let self else {
+                return
+            }
             guard let channelId = video.channelId else {
                 return
             }
-            self?.navigationController?.pushViewController(
-                ChannelViewController(
-                    channelId: channelId,
-                    channelName: video.channelName
+            self.navigationController?.pushViewController(
+                self.channelViewControllerFactory(
+                    channelId,
+                    video.channelName
                 ),
                 animated: true
             )
@@ -279,7 +257,7 @@ extension SubscriptionsViewController: UITableViewDelegate {
             return
         }
         let video = videos[indexPath.row]
-        VideoRouter.shared.open(video: video, from: self)
+        videoRouter.open(video: video, from: self)
     }
 
     func tableView(

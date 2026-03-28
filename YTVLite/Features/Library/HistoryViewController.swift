@@ -1,15 +1,42 @@
 import UIKit
 
 final class HistoryViewController: UIViewController {
-    private static let skeletonCount = 6
-
-    private var videos: [Video] = []
-    private var continuationToken: String?
-    private var isLoadingMore = false
-    private var isLoadingInitial = true
+    static let skeletonCount = 6
+    private let service: HistoryService
+    private let cache: AppCache
+    let channelViewControllerFactory: (
+        String,
+        String
+    ) -> ChannelViewController
+    let videoRouter: VideoRouter
+    var videos: [Video] = []
+    var continuationToken: String?
+    var isLoadingMore = false
+    var isLoadingInitial = true
     private let tableView = UITableView()
     private let spinner = UIActivityIndicatorView(style: .white)
     private let emptyLabel = UILabel()
+
+    init(
+        service: HistoryService,
+        cache: AppCache = .shared,
+        channelViewControllerFactory: @escaping (
+            String,
+            String
+        ) -> ChannelViewController,
+        videoRouter: VideoRouter = .shared
+    ) {
+        self.service = service
+        self.cache = cache
+        self.channelViewControllerFactory = channelViewControllerFactory
+        self.videoRouter = videoRouter
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -107,7 +134,7 @@ final class HistoryViewController: UIViewController {
 
     /// Show cached data immediately, then silently refresh in background.
     private func loadFromCacheThenFetch() {
-        AppCache.shared.loadHistoryFeed { [weak self] cached in
+        cache.loadHistoryFeed { [weak self] cached in
             guard let self else {
                 return
             }
@@ -129,7 +156,7 @@ final class HistoryViewController: UIViewController {
             isLoadingInitial = true
             spinner.startAnimating()
         }
-        ServiceContainer.history.fetchHistory { [weak self] result in
+        service.fetchHistory { [weak self] result in
             DispatchQueue.main.async {
                 self?.spinner.stopAnimating()
                 self?.tableView.refreshControl?.endRefreshing()
@@ -144,33 +171,13 @@ final class HistoryViewController: UIViewController {
         }
     }
 
-    private func applyHistoryPage(_ page: FeedPage) {
-        AppCache.shared.setHistoryFeed(page)
-        videos = page.videos
-        continuationToken = page.continuation
-        emptyLabel.isHidden = !page.videos.isEmpty
-        if page.videos.isEmpty {
-            emptyLabel.text = "No watch history found"
-        }
-        tableView.reloadData()
-    }
-
-    private func handleHistoryError(_ error: Error) {
-        AppLog.log("History", "error: \(error)")
-        if videos.isEmpty {
-            emptyLabel.text = "Could not load history"
-            emptyLabel.isHidden = false
-        }
-        tableView.reloadData()
-    }
-
     @objc
     private func handleRefresh() {
-        AppCache.shared.clearHistoryFeed()
+        cache.clearHistoryFeed()
         fetchHistory(showSpinner: false)
     }
 
-    private func loadMore() {
+    func loadMore() {
         guard let continuation = continuationToken, !isLoadingMore else {
             return
         }
@@ -185,7 +192,7 @@ final class HistoryViewController: UIViewController {
     }
 
     private func fetchNextPage(continuation: String, token: String) {
-        ServiceContainer.history.fetchHistoryNextPage(
+        service.fetchHistoryNextPage(
             continuation: continuation,
             token: token
         ) { [weak self] result in
@@ -197,8 +204,30 @@ final class HistoryViewController: UIViewController {
             }
         }
     }
+}
 
-    private func applyNextPage(_ page: FeedPage) {
+private extension HistoryViewController {
+    func applyHistoryPage(_ page: FeedPage) {
+        cache.setHistoryFeed(page)
+        videos = page.videos
+        continuationToken = page.continuation
+        emptyLabel.isHidden = !page.videos.isEmpty
+        if page.videos.isEmpty {
+            emptyLabel.text = "No watch history found"
+        }
+        tableView.reloadData()
+    }
+
+    func handleHistoryError(_ error: Error) {
+        AppLog.log("History", "error: \(error)")
+        if videos.isEmpty {
+            emptyLabel.text = "Could not load history"
+            emptyLabel.isHidden = false
+        }
+        tableView.reloadData()
+    }
+
+    func applyNextPage(_ page: FeedPage) {
         let startIndex = videos.count
         videos.append(contentsOf: page.videos)
         continuationToken = page.continuation
@@ -212,67 +241,6 @@ final class HistoryViewController: UIViewController {
             videos: videos,
             continuation: continuationToken
         )
-        AppCache.shared.setHistoryFeed(updated)
-    }
-}
-
-// MARK: - DataSource / Delegate
-
-extension HistoryViewController: UITableViewDataSource, UITableViewDelegate {
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        isLoadingInitial ? HistoryViewController.skeletonCount : videos.count
-    }
-
-    func tableView(
-        _ tableView: UITableView,
-        cellForRowAt indexPath: IndexPath
-    ) -> UITableViewCell {
-        guard let cell = tableView.dequeueReusableCell(
-            withIdentifier: SubscriptionVideoCell.reuseId,
-            for: indexPath
-        ) as? SubscriptionVideoCell else {
-            return UITableViewCell()
-        }
-        if isLoadingInitial {
-            cell.configureSkeleton()
-            return cell
-        }
-        let video = videos[indexPath.row]
-        cell.configure(with: video)
-        cell.onChannelTap = { [weak self] in
-            guard let channelId = video.channelId else {
-                return
-            }
-            self?.navigationController?.pushViewController(
-                ChannelViewController(
-                    channelId: channelId,
-                    channelName: video.channelName
-                ),
-                animated: true
-            )
-        }
-        return cell
-    }
-
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        guard !isLoadingInitial else {
-            return
-        }
-        let video = videos[indexPath.row]
-        VideoRouter.shared.open(video: video, from: self)
-    }
-
-    func tableView(
-        _ tableView: UITableView,
-        willDisplay cell: UITableViewCell,
-        forRowAt indexPath: IndexPath
-    ) {
-        guard !isLoadingInitial, !isLoadingMore,
-              continuationToken != nil,
-              indexPath.row >= videos.count - 5
-        else {
-            return
-        }
-        loadMore()
+        cache.setHistoryFeed(updated)
     }
 }

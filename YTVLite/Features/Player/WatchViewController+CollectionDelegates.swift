@@ -3,6 +3,25 @@ import UIKit
 // MARK: - UICollectionViewDataSource
 
 extension WatchViewController: UICollectionViewDataSource {
+    private func configureChannelNavigation(
+        for cell: VideoCell,
+        video: Video
+    ) {
+        cell.onChannelTap = { [weak self] in
+            guard let self,
+                  let channelId = video.channelId else {
+                return
+            }
+            self.navigationController?.pushViewController(
+                self.channelViewControllerFactory(
+                    channelId,
+                    video.channelName
+                ),
+                animated: true
+            )
+        }
+    }
+
     func collectionView(
         _ collectionView: UICollectionView,
         numberOfItemsInSection section: Int
@@ -30,18 +49,7 @@ extension WatchViewController: UICollectionViewDataSource {
             view.bounds.width > view.bounds.height
         cell.forceGridLayout = !isLandscape
         cell.configure(with: video)
-        cell.onChannelTap = { [weak self] in
-            guard let channelId = video.channelId else {
-                return
-            }
-            self?.navigationController?.pushViewController(
-                ChannelViewController(
-                    channelId: channelId,
-                    channelName: video.channelName
-                ),
-                animated: true
-            )
-        }
+        configureChannelNavigation(for: cell, video: video)
         return cell
     }
 }
@@ -67,7 +75,7 @@ extension WatchViewController: UICollectionViewDelegate {
             return
         }
         let video = visibleRelatedVideos[indexPath.item]
-        VideoRouter.shared.open(
+        videoRouter.open(
             video: video,
             from: self
         )
