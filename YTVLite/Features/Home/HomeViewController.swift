@@ -69,14 +69,19 @@ class HomeViewController: VideosViewController {
     }
 
     private func loadCachedOrFetchFeed() {
-        if let cachedPage = cache.cachedHomeFeed() {
-            AppLog.home("cache-hit → showing \(cachedPage.videos.count) videos instantly")
-            isLoadingInitial = false
-            spinner.stopAnimating()
-            setPage(cachedPage)
-        } else {
-            AppLog.home("no cache → loading from network")
-            loadFeed()
+        cache.loadHomeFeed { [weak self] cachedPage in
+            guard let self else {
+                return
+            }
+            if let cachedPage {
+                AppLog.home("cache-hit → showing \(cachedPage.videos.count) videos instantly")
+                self.isLoadingInitial = false
+                self.spinner.stopAnimating()
+                self.setPage(cachedPage)
+            } else {
+                AppLog.home("no cache → loading from network")
+                self.loadFeed()
+            }
         }
     }
 

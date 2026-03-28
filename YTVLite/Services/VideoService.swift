@@ -37,6 +37,7 @@ protocol HistoryService: AnyObject {
 protocol SearchService: AnyObject {
     func search(
         query: String,
+        cancellationToken: CancellationToken?,
         completion: @escaping (Result<[Video], Error>) -> Void
     )
 }
@@ -124,6 +125,19 @@ typealias VideoService =
     & EngagementService & AccountService
 
 // MARK: - Default parameter convenience extensions
+
+extension SearchService {
+    func search(
+        query: String,
+        completion: @escaping (Result<[Video], Error>) -> Void
+    ) {
+        search(
+            query: query,
+            cancellationToken: nil,
+            completion: completion
+        )
+    }
+}
 
 extension WatchService {
     func fetchWatchPage(

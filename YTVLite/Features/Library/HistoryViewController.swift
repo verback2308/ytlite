@@ -107,15 +107,20 @@ final class HistoryViewController: UIViewController {
 
     /// Show cached data immediately, then silently refresh in background.
     private func loadFromCacheThenFetch() {
-        if let cached = AppCache.shared.cachedHistoryFeed(), !cached.videos.isEmpty {
-            isLoadingInitial = false
-            spinner.stopAnimating()
-            videos = cached.videos
-            continuationToken = cached.continuation
-            tableView.reloadData()
-            fetchHistory(showSpinner: false)
-        } else {
-            fetchHistory(showSpinner: true)
+        AppCache.shared.loadHistoryFeed { [weak self] cached in
+            guard let self else {
+                return
+            }
+            if let cached, !cached.videos.isEmpty {
+                self.isLoadingInitial = false
+                self.spinner.stopAnimating()
+                self.videos = cached.videos
+                self.continuationToken = cached.continuation
+                self.tableView.reloadData()
+                self.fetchHistory(showSpinner: false)
+            } else {
+                self.fetchHistory(showSpinner: true)
+            }
         }
     }
 

@@ -4,6 +4,8 @@ class SearchViewController: UIViewController {
     private let service: SearchService = ServiceContainer.video
     private var results: [Video] = []
     private var lastQuery: String = ""
+    private var activeSearchQuery: String?
+    private var searchCancellationToken = CancellationToken()
 
     private let searchBar = UISearchBar()
     private let tableView = UITableView()
@@ -102,27 +104,83 @@ class SearchViewController: UIViewController {
     }
 
     private func search(query: String) {
-        lastQuery = query
-        service.search(query: query) { [weak self] result in
+        let normalizedQuery = query.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        )
+        guard !normalizedQuery.isEmpty else {
+            clearSearchResults()
+            return
+        }
+
+        let cancellationToken = beginSearch(for: normalizedQuery)
+        service.search(
+            query: normalizedQuery,
+            cancellationToken: cancellationToken
+        ) { [weak self] result in
             DispatchQueue.main.async {
-                self?.refreshControl.endRefreshing()
-                switch result {
-                case .success(let videos):
-                    self?.results = videos
-                    self?.tableView.reloadData()
-                case .failure(let error):
-                    let alert = UIAlertController(
-                        title: "Error",
-                        message: error.localizedDescription,
-                        preferredStyle: .alert
-                    )
-                    alert.addAction(
-                        UIAlertAction(title: "OK", style: .default)
-                    )
-                    self?.present(alert, animated: true)
+                guard let self else {
+                    return
                 }
+                guard self.shouldApplyResult(
+                    for: normalizedQuery,
+                    cancellationToken: cancellationToken
+                ) else {
+                    return
+                }
+                self.applySearchResult(result)
             }
         }
+    }
+
+    private func beginSearch(for query: String) -> CancellationToken {
+        searchCancellationToken.cancel()
+        let cancellationToken = CancellationToken()
+        searchCancellationToken = cancellationToken
+        lastQuery = query
+        activeSearchQuery = query
+        return cancellationToken
+    }
+
+    private func applySearchResult(_ result: Result<[Video], Error>) {
+        refreshControl.endRefreshing()
+        switch result {
+        case .success(let videos):
+            results = videos
+            tableView.reloadData()
+        case .failure(let error):
+            presentSearchError(error)
+        }
+    }
+
+    private func presentSearchError(_ error: Error) {
+        let alert = UIAlertController(
+            title: "Error",
+            message: error.localizedDescription,
+            preferredStyle: .alert
+        )
+        alert.addAction(
+            UIAlertAction(title: "OK", style: .default)
+        )
+        present(alert, animated: true)
+    }
+
+    private func shouldApplyResult(
+        for query: String,
+        cancellationToken: CancellationToken
+    ) -> Bool {
+        searchCancellationToken === cancellationToken
+            && activeSearchQuery == query
+            && !cancellationToken.isCancelled
+    }
+
+    private func clearSearchResults() {
+        searchCancellationToken.cancel()
+        searchCancellationToken = CancellationToken()
+        activeSearchQuery = nil
+        lastQuery = ""
+        results = []
+        refreshControl.endRefreshing()
+        tableView.reloadData()
     }
 }
 
@@ -140,9 +198,7 @@ extension SearchViewController: UISearchBarDelegate {
         textDidChange searchText: String
     ) {
         if searchText.isEmpty {
-            lastQuery = ""
-            results = []
-            tableView.reloadData()
+            clearSearchResults()
         }
     }
 }

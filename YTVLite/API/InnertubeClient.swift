@@ -80,7 +80,11 @@ extension InnertubeClient {
         }
     }
 
-    func search(query: String, completion: @escaping (Result<[Video], Error>) -> Void) {
+    func search(
+        query: String,
+        cancellationToken: CancellationToken? = nil,
+        completion: @escaping (Result<[Video], Error>) -> Void
+    ) {
         guard let url = URL(string: "\(baseURL)/search") else {
             completion(.failure(APIError.invalidURL))
             return
@@ -92,7 +96,12 @@ extension InnertubeClient {
             return
         }
         let headers = [HTTPHeader.contentType: HTTPHeaderValue.contentTypeJSON]
-        api.post(url: url, body: bodyData, headers: headers) { result in
+        api.post(
+            url: url,
+            body: bodyData,
+            headers: headers,
+            cancellationToken: cancellationToken
+        ) { result in
             switch result {
             case .failure(let error):
                 completion(.failure(error))

@@ -2,13 +2,13 @@ import UIKit
 
 class SubscriptionsViewController: UIViewController {
     private static let skeletonCount = 6
-
     private let service: FeedService = ServiceContainer.video
     private let cache = AppCache.shared
     private var videos: [Video] = []
     private var continuationToken: String?
     private var isLoadingMore = false
     private var seenVideoIds: Set<String> = []
+    private var sortDatesByVideoId: [String: Date] = [:]
     private let tableView = UITableView()
     private let spinner = UIActivityIndicatorView(style: .white)
     private var isLoadingInitial = true
@@ -29,22 +29,29 @@ class SubscriptionsViewController: UIViewController {
             object: nil
         )
         ToolbarManager.shared.install(in: self)
+        loadInitialContent()
+    }
 
+    private func loadInitialContent() {
         if OAuthClient.shared.isAnonymous {
             AppLog.subs("anonymous → skip load")
             spinner.stopAnimating()
             showSignInPrompt(true)
             return
         }
-
-        if let cachedPage = cache.cachedSubscriptionsFeed() {
-            AppLog.subs("cache-hit → showing \(cachedPage.videos.count) videos instantly")
-            isLoadingInitial = false
-            spinner.stopAnimating()
-            setPage(cachedPage)
-        } else {
-            AppLog.subs("no cache → loading from network")
-            loadFeed()
+        cache.loadSubscriptionsFeed { [weak self] cachedPage in
+            guard let self else {
+                return
+            }
+            if let cachedPage {
+                AppLog.subs("cache-hit → showing \(cachedPage.videos.count) videos instantly")
+                self.isLoadingInitial = false
+                self.spinner.stopAnimating()
+                self.setPage(cachedPage)
+            } else {
+                AppLog.subs("no cache → loading from network")
+                self.loadFeed()
+            }
         }
     }
 
@@ -61,7 +68,6 @@ class SubscriptionsViewController: UIViewController {
         ])
         signInPrompt = prompt
     }
-
     private func showSignInPrompt(_ show: Bool) {
         signInPrompt?.isHidden = !show
         tableView.isHidden = show
@@ -91,7 +97,6 @@ class SubscriptionsViewController: UIViewController {
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
     }
-
     private func setupSpinner() {
         spinner.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(spinner)
@@ -101,7 +106,6 @@ class SubscriptionsViewController: UIViewController {
         ])
         spinner.startAnimating()
     }
-
     @objc
     private func applyTheme() {
         let theme = ThemeManager.shared
@@ -143,7 +147,6 @@ class SubscriptionsViewController: UIViewController {
             }
         }
     }
-
     private func loadMore() {
         guard let continuation = continuationToken else {
             finishLoadingMore()
@@ -162,33 +165,77 @@ class SubscriptionsViewController: UIViewController {
             }
         }
     }
-
     private func setPage(_ page: FeedPage) {
         isLoadingInitial = false
         seenVideoIds = []
+        sortDatesByVideoId = [:]
         videos = []
         appendPage(page)
     }
-
     private func appendPage(_ page: FeedPage) {
         let newVideos = page.videos.filter { seenVideoIds.insert($0.id).inserted }
-        videos.append(contentsOf: newVideos)
-        videos.sort { lhs, rhs in
-            let lhsDate = lhs.publishedAt.flatMap {
-                VideoFormatters.approximateDate(fromRelative: $0)
-            } ?? .distantPast
-            let rhsDate = rhs.publishedAt.flatMap {
-                VideoFormatters.approximateDate(fromRelative: $0)
-            } ?? .distantPast
-            return lhsDate > rhsDate
+        if !newVideos.isEmpty {
+            let sortedNewVideos = newVideos.sorted {
+                sortDate(for: $0) > sortDate(for: $1)
+            }
+            videos = mergeSortedVideos(videos, sortedNewVideos)
         }
         continuationToken = page.continuation
         isLoadingMore = false
         tableView.reloadData()
     }
-
     private func finishLoadingMore() {
         isLoadingMore = false
+    }
+}
+
+private extension SubscriptionsViewController {
+    func sortDate(for video: Video) -> Date {
+        if let cached = sortDatesByVideoId[video.id] {
+            return cached
+        }
+        let date = video.publishedAt.flatMap {
+            VideoFormatters.approximateDate(fromRelative: $0)
+        } ?? .distantPast
+        sortDatesByVideoId[video.id] = date
+        return date
+    }
+
+    func mergeSortedVideos(
+        _ lhs: [Video],
+        _ rhs: [Video]
+    ) -> [Video] {
+        guard !lhs.isEmpty else {
+            return rhs
+        }
+        guard !rhs.isEmpty else {
+            return lhs
+        }
+
+        var merged: [Video] = []
+        merged.reserveCapacity(lhs.count + rhs.count)
+        var lhsIndex = 0
+        var rhsIndex = 0
+
+        while lhsIndex < lhs.count, rhsIndex < rhs.count {
+            let lhsVideo = lhs[lhsIndex]
+            let rhsVideo = rhs[rhsIndex]
+            if sortDate(for: lhsVideo) >= sortDate(for: rhsVideo) {
+                merged.append(lhsVideo)
+                lhsIndex += 1
+            } else {
+                merged.append(rhsVideo)
+                rhsIndex += 1
+            }
+        }
+
+        if lhsIndex < lhs.count {
+            merged.append(contentsOf: lhs[lhsIndex...])
+        }
+        if rhsIndex < rhs.count {
+            merged.append(contentsOf: rhs[rhsIndex...])
+        }
+        return merged
     }
 }
 

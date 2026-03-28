@@ -27,15 +27,16 @@ final class AppCache {
     }
 
     // MARK: - Instance Properties
-    private let feedTTL: TimeInterval = 24 * 60 * 60
+    let feedTTL: TimeInterval = 24 * 60 * 60
     private let watchPageTTL: TimeInterval = 60 * 60
     private let channelInfoTTL: TimeInterval = 24 * 60 * 60
-    private var homeFeed: FeedPage?
-    private var subscriptionsFeed: FeedPage?
-    private var historyFeed: FeedPage?
+    let diskQueue = DispatchQueue(label: "com.verback.YTVLite.AppCache.disk")
+    var homeFeed: FeedPage?
+    var subscriptionsFeed: FeedPage?
+    var historyFeed: FeedPage?
     private var watchPages: [String: TimedWatchPage] = [:]
     private var channelPages: [String: ChannelPage] = [:]
-    private var channelInfoMemory: [String: ChannelInfo] = [:]
+    var channelInfoMemory: [String: ChannelInfo] = [:]
 
     private var cacheDir: URL {
         FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
@@ -46,15 +47,25 @@ final class AppCache {
     private init() {}
 
     // MARK: - Disk Helpers
-    private func ensureCacheDir() {
+    func deliverOnMain<T>(_ value: T, completion: @escaping (T) -> Void) {
+        if Thread.isMainThread {
+            completion(value)
+        } else {
+            DispatchQueue.main.async {
+                completion(value)
+            }
+        }
+    }
+
+    func ensureCacheDir() {
         try? FileManager.default.createDirectory(at: cacheDir, withIntermediateDirectories: true)
     }
 
-    private func cacheURL(for key: String) -> URL {
+    func cacheURL(for key: String) -> URL {
         cacheDir.appendingPathComponent("\(key).json")
     }
 
-    private func readDisk<T: Codable>(_ type: T.Type, key: String, ttl: TimeInterval) -> T? {
+    func readDisk<T: Codable>(_ type: T.Type, key: String, ttl: TimeInterval) -> T? {
         guard AppCache.persistenceEnabled else {
             return nil
         }
@@ -75,7 +86,7 @@ final class AppCache {
         return entry.data
     }
 
-    private func writeDisk<T: Codable>(_ value: T, key: String) {
+    func writeDisk<T: Codable>(_ value: T, key: String) {
         guard AppCache.persistenceEnabled else {
             return
         }
@@ -87,82 +98,8 @@ final class AppCache {
         }
     }
 
-    private func deleteDisk(key: String) {
+    func deleteDisk(key: String) {
         try? FileManager.default.removeItem(at: cacheURL(for: key))
-    }
-
-    // MARK: - Home
-    func cachedHomeFeed() -> FeedPage? {
-        if let feed = homeFeed {
-            AppLog.cache("home mem-hit videos=\(feed.videos.count)")
-            return feed
-        }
-        if let feed = readDisk(FeedPage.self, key: "home", ttl: feedTTL) {
-            homeFeed = feed
-            AppLog.cache("home disk-hit videos=\(feed.videos.count)")
-            return feed
-        }
-        AppLog.cache("home miss")
-        return nil
-    }
-
-    func setHomeFeed(_ page: FeedPage) {
-        homeFeed = page
-        writeDisk(page, key: "home")
-        AppLog.cache("home stored videos=\(page.videos.count)")
-    }
-
-    func clearHomeFeed() {
-        homeFeed = nil
-        deleteDisk(key: "home")
-    }
-
-    // MARK: - Subscriptions
-    func cachedSubscriptionsFeed() -> FeedPage? {
-        if let feed = subscriptionsFeed {
-            AppLog.cache("subs mem-hit videos=\(feed.videos.count)")
-            return feed
-        }
-        if let feed = readDisk(FeedPage.self, key: "subscriptions", ttl: feedTTL) {
-            subscriptionsFeed = feed
-            AppLog.cache("subs disk-hit videos=\(feed.videos.count)")
-            return feed
-        }
-        AppLog.cache("subs miss")
-        return nil
-    }
-
-    func setSubscriptionsFeed(_ page: FeedPage) {
-        subscriptionsFeed = page
-        writeDisk(page, key: "subscriptions")
-        AppLog.cache("subs stored videos=\(page.videos.count)")
-    }
-
-    func clearSubscriptionsFeed() {
-        subscriptionsFeed = nil
-        deleteDisk(key: "subscriptions")
-    }
-
-    // MARK: - History
-    func cachedHistoryFeed() -> FeedPage? {
-        if let feed = historyFeed {
-            return feed
-        }
-        if let feed = readDisk(FeedPage.self, key: "history", ttl: feedTTL) {
-            historyFeed = feed
-            return feed
-        }
-        return nil
-    }
-
-    func setHistoryFeed(_ page: FeedPage) {
-        historyFeed = page
-        writeDisk(page, key: "history")
-    }
-
-    func clearHistoryFeed() {
-        historyFeed = nil
-        deleteDisk(key: "history")
     }
 
     // MARK: - Channel Pages
@@ -196,14 +133,18 @@ final class AppCache {
 
     func setChannelInfo(_ info: ChannelInfo, channelId: String) {
         channelInfoMemory[channelId] = info
-        writeDisk(info, key: "channel_info_\(channelId)")
+        diskQueue.async { [weak self] in
+            self?.writeDisk(info, key: "channel_info_\(channelId)")
+        }
         let hasBanner = info.bannerURL != nil ? "YES" : "NO"
         AppLog.cache("channel-info stored: \(channelId) title='\(info.title)' banner=\(hasBanner)")
     }
 
     func clearChannelInfo(channelId: String) {
         channelInfoMemory[channelId] = nil
-        deleteDisk(key: "channel_info_\(channelId)")
+        diskQueue.async { [weak self] in
+            self?.deleteDisk(key: "channel_info_\(channelId)")
+        }
     }
 
     // MARK: - Watch Pages
@@ -227,14 +168,4 @@ final class AppCache {
     }
 
     // MARK: - Clear All
-    func clearAllDiskCache() {
-        deleteDisk(key: "home")
-        deleteDisk(key: "subscriptions")
-        deleteDisk(key: "history")
-        homeFeed = nil
-        subscriptionsFeed = nil
-        historyFeed = nil
-        channelInfoMemory.keys.forEach { deleteDisk(key: "channel_info_\($0)") }
-        channelInfoMemory.removeAll()
-    }
 }
