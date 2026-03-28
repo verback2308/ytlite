@@ -26,14 +26,13 @@ protocol VideoRendererParser {
 ///     VideoRendererParserChain.shared.video(from: item)
 ///
 enum VideoRendererParserChain {
-
     private static let parsers: [VideoRendererParser] = [
         TileVideoRendererParser(),
         DirectVideoRendererParser(),
         CompactVideoRendererParser(),
         RichItemVideoRendererParser(),
         RadioRendererParser(),
-        PlaylistRendererParser(),
+        PlaylistRendererParser()
     ]
 
     static func video(from item: [String: Any]) -> Video? {
@@ -42,9 +41,13 @@ enum VideoRendererParserChain {
 
     /// Extracts a continuation token from a `continuationItemRenderer` item, if present.
     static func continuation(from item: [String: Any]) -> String? {
-        guard let ct = (item["continuationItemRenderer"] as? [String: Any])?["continuationEndpoint"] as? [String: Any],
-              let token = (ct["continuationCommand"] as? [String: Any])?["token"] as? String
-        else { return nil }
+        guard let renderer = item["continuationItemRenderer"] as? [String: Any],
+              let ct = renderer["continuationEndpoint"] as? [String: Any],
+              let cmd = ct["continuationCommand"] as? [String: Any],
+              let token = cmd["token"] as? String
+        else {
+            return nil
+        }
         return token
     }
 

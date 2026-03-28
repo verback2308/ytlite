@@ -264,17 +264,20 @@ private extension AuthViewController {
         }
     }
 
-    func handleDeviceCode(_ code: DeviceCodeResponse) {
+    func handleDeviceCode(_ code: OAuthClient.DeviceCodeResponse) {
         codeLabel.text = code.userCode
         verificationURL = URL(string: code.verificationURL)
         openButton.isHidden = false
         statusLabel.text = "Waiting for authorization..."
 
-        OAuthClient.shared.pollForToken(
+        let config = OAuthClient.PollConfig(
             deviceCode: code.deviceCode,
             clientId: code.clientId,
             clientSecret: code.clientSecret,
             interval: code.interval
+        )
+        OAuthClient.shared.pollForToken(
+            config: config
         ) { [weak self] result in
             DispatchQueue.main.async {
                 switch result {

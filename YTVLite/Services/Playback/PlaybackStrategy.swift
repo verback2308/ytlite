@@ -6,19 +6,43 @@ import Foundation
 /// WatchViewController conforms to this protocol.
 protocol PlaybackContext: AnyObject {
     func attachPlayer(url: URL)
-    func attachDirectPlayer(url: URL, visitorData: String?, client: DirectPlaybackClient)
-    func attachComposedPlayer(videoURL: URL, audioURL: URL,
-                              headers: [String: String],
-                              completion: @escaping (Bool) -> Void)
-    func buildHLSAndPlay(videoURL: URL, audioURL: URL,
-                         videoFormat: DashFormatInfo, audioFormat: DashFormatInfo,
-                         headers: [String: String], quality: String)
-    func prepareAdaptiveUpgrade(videoURL: URL, audioURL: URL,
-                                headers: [String: String], quality: String)
+    func attachDirectPlayer(
+        url: URL,
+        visitorData: String?,
+        client: DirectPlaybackClient
+    )
+    func attachComposedPlayer(
+        videoURL: URL,
+        audioURL: URL,
+        headers: [String: String],
+        completion: @escaping (Bool) -> Void
+    )
+    // swiftlint:disable:next function_parameter_count
+    func buildHLSAndPlay(
+        videoURL: URL,
+        audioURL: URL,
+        videoFormat: DashFormatInfo,
+        audioFormat: DashFormatInfo,
+        headers: [String: String],
+        quality: String
+    )
+    func prepareAdaptiveUpgrade(
+        videoURL: URL,
+        audioURL: URL,
+        headers: [String: String],
+        quality: String
+    )
     func updateStatusLabel(_ text: String)
     func showPlaybackError(_ message: String)
-    func makeDirectRequestHeaders(visitorData: String?, client: DirectPlaybackClient) -> [String: String]
-    func prepareDirectPlaybackURL(baseURL: URL, client: DirectPlaybackClient, poToken: String?) -> URL
+    func makeDirectRequestHeaders(
+        visitorData: String?,
+        client: DirectPlaybackClient
+    ) -> [String: String]
+    func prepareDirectPlaybackURL(
+        baseURL: URL,
+        client: DirectPlaybackClient,
+        poToken: String?
+    ) -> URL
 }
 
 // MARK: - PlaybackStrategy

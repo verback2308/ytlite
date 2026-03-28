@@ -2,7 +2,6 @@ import UIKit
 
 /// Reusable "sign in" empty state: icon + message + red Sign In button.
 final class SignInEmptyStateView: UIView {
-
     var onSignIn: (() -> Void)?
 
     private let iconImageView: UIImageView = {
@@ -19,13 +18,13 @@ final class SignInEmptyStateView: UIView {
     }()
 
     private let titleLabel: UILabel = {
-        let l = UILabel()
-        l.textColor = .lightGray
-        l.font = UIFont.systemFont(ofSize: 15)
-        l.textAlignment = .center
-        l.numberOfLines = 0
-        l.translatesAutoresizingMaskIntoConstraints = false
-        return l
+        let label = UILabel()
+        label.textColor = .lightGray
+        label.font = UIFont.systemFont(ofSize: 15)
+        label.textAlignment = .center
+        label.numberOfLines = 0
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
     }()
 
     private let signInButton: UIButton = {
@@ -62,13 +61,15 @@ final class SignInEmptyStateView: UIView {
 
             signInButton.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 24),
             signInButton.centerXAnchor.constraint(equalTo: centerXAnchor),
-            signInButton.bottomAnchor.constraint(equalTo: bottomAnchor),
+            signInButton.bottomAnchor.constraint(equalTo: bottomAnchor)
         ])
     }
 
-    required init?(coder: NSCoder) { fatalError() }
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("Not implemented") }
 
-    @objc private func signInTapped() {
+    @objc
+    private func signInTapped() {
         onSignIn?()
     }
 }

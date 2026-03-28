@@ -1,7 +1,6 @@
 /// Centralised UserDefaults key namespace.
 /// All keys used in the app must be declared here to prevent typos and collisions.
 enum UserDefaultsKeys {
-
     enum Theme {
         static let mode = "themeMode"
     }

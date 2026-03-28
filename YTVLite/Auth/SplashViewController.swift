@@ -1,7 +1,6 @@
 import UIKit
 
 final class SplashViewController: UIViewController {
-
     var onComplete: (() -> Void)?
 
     private let logoView = UIImageView()
@@ -30,7 +29,7 @@ final class SplashViewController: UIViewController {
             logoView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             logoView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             logoView.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.15),
-            logoView.heightAnchor.constraint(equalTo: logoView.widthAnchor),
+            logoView.heightAnchor.constraint(equalTo: logoView.widthAnchor)
         ])
     }
 

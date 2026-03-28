@@ -18,9 +18,18 @@ struct Video: Codable {
     let duration: String?
     let isLive: Bool
 
-    init(id: String, title: String, channelId: String?, channelName: String,
-         channelAvatarURL: String?, thumbnailURL: String, viewCount: String?,
-         publishedAt: String?, duration: String?, isLive: Bool = false) {
+    init(
+        id: String,
+        title: String,
+        channelId: String?,
+        channelName: String,
+        channelAvatarURL: String?,
+        thumbnailURL: String,
+        viewCount: String?,
+        publishedAt: String?,
+        duration: String?,
+        isLive: Bool = false
+    ) {
         self.id = id
         self.title = title
         self.channelId = channelId
@@ -34,17 +43,21 @@ struct Video: Codable {
     }
 
     init(from decoder: Decoder) throws {
-        let c = try decoder.container(keyedBy: CodingKeys.self)
-        id = try c.decode(String.self, forKey: .id)
-        title = try c.decode(String.self, forKey: .title)
-        channelId = try c.decodeIfPresent(String.self, forKey: .channelId)
-        channelName = try c.decode(String.self, forKey: .channelName)
-        channelAvatarURL = try c.decodeIfPresent(String.self, forKey: .channelAvatarURL)
-        thumbnailURL = try c.decode(String.self, forKey: .thumbnailURL)
-        viewCount = try c.decodeIfPresent(String.self, forKey: .viewCount)
-        publishedAt = try c.decodeIfPresent(String.self, forKey: .publishedAt)
-        duration = try c.decodeIfPresent(String.self, forKey: .duration)
-        isLive = try c.decodeIfPresent(Bool.self, forKey: .isLive) ?? false
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        title = try container.decode(String.self, forKey: .title)
+        channelId = try container.decodeIfPresent(String.self, forKey: .channelId)
+        channelName = try container.decode(String.self, forKey: .channelName)
+        channelAvatarURL = try container.decodeIfPresent(
+            String.self, forKey: .channelAvatarURL
+        )
+        thumbnailURL = try container.decode(String.self, forKey: .thumbnailURL)
+        viewCount = try container.decodeIfPresent(String.self, forKey: .viewCount)
+        publishedAt = try container.decodeIfPresent(
+            String.self, forKey: .publishedAt
+        )
+        duration = try container.decodeIfPresent(String.self, forKey: .duration)
+        isLive = try container.decodeIfPresent(Bool.self, forKey: .isLive) ?? false
     }
 }
 
@@ -109,7 +122,7 @@ struct DirectPlaybackInfo {
     let audioItag: Int?
     let qualityLabel: String?
     let visitorData: String?
-    let hasVideoPlaybackUstreamerConfig: Bool
+    let hasPlaybackUstreamerConfig: Bool
     let dashVideoFormat: DashFormatInfo?
     let dashAudioFormat: DashFormatInfo?
     let allDashVideoFormats: [DashFormatInfo]
@@ -156,49 +169,65 @@ final class ChannelInfoStore {
 
     private init() {}
 
-    func fetch(channelId: String, completion: @escaping (Result<ChannelInfo, Error>) -> Void) {
-        // Fast-path: in-memory hit (main thread, zero cost)
+    func fetch(
+        channelId: String,
+        completion: @escaping (Result<ChannelInfo, Error>) -> Void
+    ) {
         if Thread.isMainThread, let cached = cache[channelId] {
             completion(.success(cached))
             return
         }
 
         queue.async {
-            // 1. In-memory cache
             if let cached = self.cache[channelId] {
                 DispatchQueue.main.async { completion(.success(cached)) }
                 return
             }
 
-            // 2. Deduplicate: if a request is already in-flight, just queue the callback
             if self.pending[channelId] != nil {
                 self.pending[channelId]?.append(completion)
                 return
             }
 
-            // 3. Disk cache (survives restarts) — only checked once per channel per session
-            if let cached = AppCache.shared.cachedChannelInfo(channelId: channelId) {
-                self.cache[channelId] = cached
-                AppLog.channel("info disk-hit \(channelId) avatar=\(cached.avatarURL != nil ? "YES" : "NO")")
+            if let cached = self.loadFromDisk(channelId: channelId) {
                 DispatchQueue.main.async { completion(.success(cached)) }
                 return
             }
 
-            // 4. Network fetch
-            self.pending[channelId] = [completion]
-            AppLog.channel("info fetch \(channelId)")
+            self.fetchFromNetwork(channelId: channelId, completion: completion)
+        }
+    }
 
-            self.client.fetchChannelInfo(channelId: channelId) { result in
-                self.queue.async {
-                    if case .success(let info) = result {
-                        self.cache[channelId] = info
-                        AppCache.shared.setChannelInfo(info, channelId: channelId)
-                    } else if case .failure(let error) = result {
-                        AppLog.channel("info fetch failed \(channelId): \(error)")
-                    }
-                    let callbacks = self.pending.removeValue(forKey: channelId) ?? []
-                    DispatchQueue.main.async { callbacks.forEach { $0(result) } }
+    private func loadFromDisk(channelId: String) -> ChannelInfo? {
+        guard let cached = AppCache.shared.cachedChannelInfo(channelId: channelId)
+        else { return nil }
+        cache[channelId] = cached
+        let hasAvatar = cached.avatarURL != nil ? "YES" : "NO"
+        AppLog.channel(
+            "info disk-hit \(channelId) avatar=\(hasAvatar)"
+        )
+        return cached
+    }
+
+    private func fetchFromNetwork(
+        channelId: String,
+        completion: @escaping (Result<ChannelInfo, Error>) -> Void
+    ) {
+        pending[channelId] = [completion]
+        AppLog.channel("info fetch \(channelId)")
+
+        client.fetchChannelInfo(channelId: channelId) { result in
+            self.queue.async {
+                if case .success(let info) = result {
+                    self.cache[channelId] = info
+                    AppCache.shared.setChannelInfo(info, channelId: channelId)
+                } else if case .failure(let error) = result {
+                    AppLog.channel(
+                        "info fetch failed \(channelId): \(error)"
+                    )
                 }
+                let callbacks = self.pending.removeValue(forKey: channelId) ?? []
+                DispatchQueue.main.async { callbacks.forEach { $0(result) } }
             }
         }
     }

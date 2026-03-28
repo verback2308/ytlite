@@ -2,15 +2,6 @@ import AVFoundation
 import AVKit
 import UIKit
 
-struct HLSBuildRequest {
-    let videoURL: URL
-    let audioURL: URL
-    let videoFormat: DashFormatInfo
-    let audioFormat: DashFormatInfo
-    let headers: [String: String]
-    let quality: String
-}
-
 // MARK: - Playback
 extension WatchViewController {
     func startPlayback() {
@@ -115,29 +106,38 @@ extension WatchViewController {
             "adaptive upgrade: switched to \(quality)"
         )
     }
+    // swiftlint:disable:next function_parameter_count
     func buildHLSAndPlay(
-        _ request: HLSBuildRequest
+        videoURL: URL,
+        audioURL: URL,
+        videoFormat: DashFormatInfo,
+        audioFormat: DashFormatInfo,
+        headers: [String: String],
+        quality: String
     ) {
         playbackFacade.activeVideoFormat =
-            request.videoFormat
+            videoFormat
         playbackFacade.activePlaybackHeaders =
-            request.headers
+            headers
+        let input = HLSPlaybackBuilder.BuildInput(
+            videoURL: videoURL,
+            audioURL: audioURL,
+            videoFormat: videoFormat,
+            audioFormat: audioFormat,
+            headers: headers
+        )
         HLSPlaybackBuilder.build(
-            videoURL: request.videoURL,
-            audioURL: request.audioURL,
-            videoFormat: request.videoFormat,
-            audioFormat: request.audioFormat,
-            headers: request.headers
+            input: input
         ) { [weak self] result in
             self?.handleHLSBuildResult(
                 result,
-                quality: request.quality
+                quality: quality
             )
         }
     }
 
     private func handleHLSBuildResult(
-        _ result: HLSBuildResult?,
+        _ result: HLSPlaybackBuilder.Result?,
         quality: String
     ) {
         guard let result else {

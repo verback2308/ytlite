@@ -2,9 +2,10 @@ import UIKit
 
 final class VideoRouter {
     static let shared = VideoRouter()
-    private init() {}
 
     private var watchVC: WatchViewController?
+
+    private init() {}
 
     func open(video: Video, from presenter: UIViewController) {
         if let existing = watchVC, existing.presentingViewController != nil {

@@ -2,11 +2,12 @@ import UIKit
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
-
     var window: UIWindow?
 
-    func application(_ application: UIApplication,
-                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+    ) -> Bool {
         ThemeManager.shared.applyGlobal()
         BackgroundPlaybackService.apply()
         if ReturnYouTubeDislikeService.enabled {
@@ -28,8 +29,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         window?.rootViewController = splash
         window?.makeKeyAndVisible()
 
-        NotificationCenter.default.addObserver(self, selector: #selector(handleAuthRequired),
-                                               name: .authorizationRequired, object: nil)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAuthRequired),
+            name: .authorizationRequired,
+            object: nil
+        )
         return true
     }
 
@@ -37,7 +42,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         window?.rootViewController = MainTabBarController()
     }
 
-    @objc private func handleAuthRequired() {
+    @objc
+    private func handleAuthRequired() {
         DispatchQueue.main.async { [weak self] in
             guard let root = self?.window?.rootViewController,
                   !(root is AuthViewController),

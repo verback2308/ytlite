@@ -1,38 +1,6 @@
 import Foundation
 
-struct OAuthTokens: Codable {
-    var accessToken: String
-    var refreshToken: String
-    var expiryDate: Date
-    var clientId: String
-    var clientSecret: String
-    var isExpired: Bool { expiryDate.timeIntervalSinceNow < 60 }
-}
-
-extension Notification.Name {
-    static let authorizationRequired = Notification.Name("authorizationRequired")
-    static let userDidSignOut = Notification.Name("userDidSignOut")
-}
-
 final class OAuthClient {
-    static let shared = OAuthClient()
-
-    private let deviceCodeURL = AppURLs.YouTube.OAuth.deviceCode
-    private let tokenURL      = AppURLs.YouTube.OAuth.token
-    private let scope         = "http://gdata.youtube.com https://www.googleapis.com/auth/youtube-paid-content"
-
-    private(set) var tokens: OAuthTokens?
-    var isSignedIn: Bool { tokens != nil }
-
-    var isAnonymous: Bool {
-        get { tokens == nil && UserDefaults.standard.bool(forKey: UserDefaultsKeys.Auth.isAnonymous) }
-        set { UserDefaults.standard.set(newValue, forKey: UserDefaultsKeys.Auth.isAnonymous) }
-    }
-
-    private init() { tokens = loadFromKeychain() }
-
-    // MARK: - Device flow
-
     struct DeviceCodeResponse {
         let deviceCode: String
         let userCode: String
@@ -41,231 +9,255 @@ final class OAuthClient {
         let clientId: String
         let clientSecret: String
     }
+    struct PollConfig {
+        let deviceCode: String
+        let clientId: String
+        let clientSecret: String
+        let interval: Int
+    }
+    static let shared = OAuthClient()
+    private let deviceCodeURL = AppURLs.YouTubeOAuth.deviceCode
+    let tokenURL = AppURLs.YouTubeOAuth.token
+    private let scope =
+        "http://gdata.youtube.com " +
+        "https://www.googleapis.com/auth/youtube-paid-content"
+    let keychainService = "com.ytvlite.oauth"
+    let keychainAccount = "youtube"
+    internal(set) var tokens: OAuthTokens?
+    var isSignedIn: Bool { tokens != nil }
+    var isAnonymous: Bool {
+        get {
+            tokens == nil && UserDefaults.standard.bool(
+                forKey: UserDefaultsKeys.Auth.isAnonymous
+            )
+        }
+        set {
+            UserDefaults.standard.set(
+                newValue,
+                forKey: UserDefaultsKeys.Auth.isAnonymous
+            )
+        }
+    }
+    private init() {
+        tokens = loadFromKeychain()
+    }
+}
 
-    func requestDeviceCode(completion: @escaping (Result<DeviceCodeResponse, Error>) -> Void) {
+extension OAuthClient {
+    static func match(
+        pattern: String,
+        in string: String,
+        group: Int
+    ) -> String? {
+        let fullRange = NSRange(string.startIndex..., in: string)
+        guard let regex = try? NSRegularExpression(pattern: pattern),
+              let result = regex.firstMatch(in: string, range: fullRange),
+              let range = Range(result.range(at: group), in: string)
+        else {
+            return nil
+        }
+        return String(string[range])
+    }
+    func makePostRequest(
+        urlString: String,
+        body: [String: Any]
+    ) -> URLRequest? {
+        guard let url = URL(string: urlString) else {
+            return nil
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(
+            HTTPHeaderValue.contentTypeJSON,
+            forHTTPHeaderField: HTTPHeader.contentType
+        )
+        request.httpBody = try? JSONSerialization.data(
+            withJSONObject: body
+        )
+        return request
+    }
+    func performRequest(
+        _ request: URLRequest,
+        completion: @escaping (Result<Data, Error>) -> Void
+    ) {
+        let task = URLSession.shared.dataTask(
+            with: request
+        ) { data, _, error in
+            if let error {
+                completion(.failure(error))
+                return
+            }
+            guard let data else {
+                completion(.failure(APIError.decodingFailed))
+                return
+            }
+            completion(.success(data))
+        }
+        task.resume()
+    }
+}
+
+extension OAuthClient {
+    func requestDeviceCode(
+        completion: @escaping (Result<DeviceCodeResponse, Error>) -> Void
+    ) {
         fetchClientCredentials { result in
             switch result {
-            case .failure(let e): completion(.failure(e))
+            case .failure(let error):
+                completion(.failure(error))
             case .success(let (clientId, clientSecret)):
-                self.doRequestDeviceCode(clientId: clientId, clientSecret: clientSecret, completion: completion)
+                self.doRequestDeviceCode(
+                    clientId: clientId,
+                    clientSecret: clientSecret,
+                    completion: completion
+                )
             }
         }
     }
-
-    private func doRequestDeviceCode(clientId: String, clientSecret: String,
-                                     completion: @escaping (Result<DeviceCodeResponse, Error>) -> Void) {
-        guard let url = URL(string: deviceCodeURL) else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue(HTTPHeaderValue.contentTypeJSON, forHTTPHeaderField: HTTPHeader.contentType)
+    private func doRequestDeviceCode(
+        clientId: String,
+        clientSecret: String,
+        completion: @escaping (Result<DeviceCodeResponse, Error>) -> Void
+    ) {
         let body: [String: Any] = [
             "client_id": clientId,
             "scope": scope,
             "device_id": UUID().uuidString,
             "device_model": "ytlr::"
         ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-        URLSession.shared.dataTask(with: request) { data, _, error in
-            if let error = error { completion(.failure(error)); return }
-            guard let data = data,
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let deviceCode = json["device_code"] as? String,
-                  let userCode = json["user_code"] as? String,
-                  let verificationURL = json["verification_url"] as? String,
-                  let interval = json["interval"] as? Int
-            else {
-                let raw = data.flatMap { String(data: $0, encoding: .utf8) } ?? "nil"
-                AppLog.auth("requestDeviceCode failed: \(raw)")
-                completion(.failure(APIError.decodingFailed)); return
+        guard let request = makePostRequest(
+            urlString: deviceCodeURL,
+            body: body
+        ) else {
+            return
+        }
+        performRequest(request) { result in
+            switch result {
+            case .failure(let error):
+                completion(.failure(error))
+            case .success(let data):
+                self.parseDeviceCodeResponse(
+                    data: data,
+                    clientId: clientId,
+                    clientSecret: clientSecret,
+                    completion: completion
+                )
             }
-            completion(.success(DeviceCodeResponse(deviceCode: deviceCode, userCode: userCode,
-                                                   verificationURL: verificationURL, interval: interval,
-                                                   clientId: clientId, clientSecret: clientSecret)))
-        }.resume()
-    }
-
-    func pollForToken(deviceCode: String, clientId: String, clientSecret: String,
-                      interval: Int, completion: @escaping (Result<Void, Error>) -> Void) {
-        DispatchQueue.global().asyncAfter(deadline: .now() + .seconds(interval)) { [weak self] in
-            self?.exchangeToken(deviceCode: deviceCode, clientId: clientId, clientSecret: clientSecret,
-                                interval: interval, completion: completion)
         }
     }
-
-    private func exchangeToken(deviceCode: String, clientId: String, clientSecret: String,
-                                interval: Int, completion: @escaping (Result<Void, Error>) -> Void) {
-        guard let url = URL(string: tokenURL) else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue(HTTPHeaderValue.contentTypeJSON, forHTTPHeaderField: HTTPHeader.contentType)
-        let body: [String: Any] = [
-            "client_id": clientId,
-            "client_secret": clientSecret,
-            "code": deviceCode,
-            "grant_type": "http://oauth.net/grant_type/device/1.0"
-        ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
-            if let error = error { completion(.failure(error)); return }
-            guard let data = data,
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
-            else { completion(.failure(APIError.decodingFailed)); return }
-            if let accessToken = json["access_token"] as? String,
-               let refreshToken = json["refresh_token"] as? String,
-               let expiresIn = json["expires_in"] as? Int {
-                let t = OAuthTokens(accessToken: accessToken, refreshToken: refreshToken,
-                                    expiryDate: Date().addingTimeInterval(TimeInterval(expiresIn)),
-                                    clientId: clientId, clientSecret: clientSecret)
-                self?.tokens = t
-                self?.saveToKeychain(t)
-                AppLog.auth("New token obtained: \(accessToken.prefix(16))...")
-                completion(.success(()))
-            } else if (json["error"] as? String) == "authorization_pending" {
-                self?.pollForToken(deviceCode: deviceCode, clientId: clientId, clientSecret: clientSecret,
-                                   interval: interval, completion: completion)
-            } else if (json["error"] as? String) == "slow_down" {
-                self?.pollForToken(deviceCode: deviceCode, clientId: clientId, clientSecret: clientSecret,
-                                   interval: interval + 5, completion: completion)
-            } else {
-                let raw = String(data: data, encoding: .utf8) ?? "nil"
-                AppLog.auth("exchangeToken failed: \(raw)")
-                completion(.failure(APIError.decodingFailed))
-            }
-        }.resume()
+    private func parseDeviceCodeResponse(
+        data: Data,
+        clientId: String,
+        clientSecret: String,
+        completion: @escaping (Result<DeviceCodeResponse, Error>) -> Void
+    ) {
+        guard let json = try? JSONSerialization.jsonObject(
+            with: data
+        ) as? [String: Any],
+              let deviceCode = json["device_code"] as? String,
+              let userCode = json["user_code"] as? String,
+              let verURL = json["verification_url"] as? String,
+              let interval = json["interval"] as? Int
+        else {
+            let raw = String(data: data, encoding: .utf8) ?? "nil"
+            AppLog.auth("requestDeviceCode failed: \(raw)")
+            completion(.failure(APIError.decodingFailed))
+            return
+        }
+        let response = DeviceCodeResponse(
+            deviceCode: deviceCode,
+            userCode: userCode,
+            verificationURL: verURL,
+            interval: interval,
+            clientId: clientId,
+            clientSecret: clientSecret
+        )
+        completion(.success(response))
     }
+}
 
-    // MARK: - Token management
-
-    func validToken(completion: @escaping (Result<String, Error>) -> Void) {
-        guard let tokens = tokens else {
+extension OAuthClient {
+    func validToken(
+        completion: @escaping (Result<String, Error>) -> Void
+    ) {
+        guard let tokens else {
             if !isAnonymous {
-                NotificationCenter.default.post(name: .authorizationRequired, object: nil)
+                NotificationCenter.default.post(
+                    name: .authorizationRequired,
+                    object: nil
+                )
             }
             completion(.failure(APIError.unauthorized))
             return
         }
         if !tokens.isExpired {
-            AppLog.auth("Using cached token: \(tokens.accessToken.prefix(16))...")
-            completion(.success(tokens.accessToken)); return
+            AppLog.auth(
+                "Using cached token: " +
+                "\(tokens.accessToken.prefix(16))..."
+            )
+            completion(.success(tokens.accessToken))
+            return
         }
         doRefresh(tokens: tokens, completion: completion)
     }
-
-    private func doRefresh(tokens: OAuthTokens, completion: @escaping (Result<String, Error>) -> Void) {
-        guard let url = URL(string: tokenURL) else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue(HTTPHeaderValue.contentTypeJSON, forHTTPHeaderField: HTTPHeader.contentType)
+    private func doRefresh(
+        tokens: OAuthTokens,
+        completion: @escaping (Result<String, Error>) -> Void
+    ) {
         let body: [String: Any] = [
             "client_id": tokens.clientId,
             "client_secret": tokens.clientSecret,
             "refresh_token": tokens.refreshToken,
             "grant_type": "refresh_token"
         ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
-            if let error = error { completion(.failure(error)); return }
-            guard let data = data,
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let accessToken = json["access_token"] as? String,
-                  let expiresIn = json["expires_in"] as? Int
-            else { completion(.failure(APIError.decodingFailed)); return }
-            var updated = tokens
-            updated.accessToken = accessToken
-            updated.expiryDate = Date().addingTimeInterval(TimeInterval(expiresIn))
-            self?.tokens = updated
-            self?.saveToKeychain(updated)
-            AppLog.auth("Token refreshed: \(accessToken.prefix(16))...")
-            completion(.success(accessToken))
-        }.resume()
+        guard let request = makePostRequest(
+            urlString: tokenURL,
+            body: body
+        ) else {
+            return
+        }
+        performRequest(request) { [weak self] result in
+            switch result {
+            case .failure(let error):
+                completion(.failure(error))
+            case .success(let data):
+                self?.handleRefreshResponse(
+                    data: data,
+                    tokens: tokens,
+                    completion: completion
+                )
+            }
+        }
     }
-
+    private func handleRefreshResponse(
+        data: Data,
+        tokens: OAuthTokens,
+        completion: @escaping (Result<String, Error>) -> Void
+    ) {
+        guard let json = try? JSONSerialization.jsonObject(
+            with: data
+        ) as? [String: Any],
+              let accessToken = json["access_token"] as? String,
+              let expiresIn = json["expires_in"] as? Int
+        else {
+            completion(.failure(APIError.decodingFailed))
+            return
+        }
+        var updated = tokens
+        updated.accessToken = accessToken
+        updated.expiryDate = Date().addingTimeInterval(
+            TimeInterval(expiresIn)
+        )
+        self.tokens = updated
+        saveToKeychain(updated)
+        AppLog.auth(
+            "Token refreshed: \(accessToken.prefix(16))..."
+        )
+        completion(.success(accessToken))
+    }
     func signOut() {
         tokens = nil
         isAnonymous = false
         deleteFromKeychain()
-    }
-
-    // MARK: - Fetch client credentials from YouTube TV page
-
-    private func fetchClientCredentials(completion: @escaping (Result<(String, String), Error>) -> Void) {
-        guard let url = URL(string: AppURLs.YouTube.tv) else { return }
-        var request = URLRequest(url: url)
-        request.setValue(UserAgent.cobaltTV, forHTTPHeaderField: HTTPHeader.userAgent)
-        request.setValue(AppURLs.YouTube.tv, forHTTPHeaderField: HTTPHeader.referer)
-        request.setValue("en-US", forHTTPHeaderField: HTTPHeader.acceptLanguage)
-        URLSession.shared.dataTask(with: request) { data, _, error in
-            if let error = error { completion(.failure(error)); return }
-            guard let data = data, let html = String(data: data, encoding: .utf8) else {
-                completion(.failure(APIError.decodingFailed)); return
-            }
-            // Find base-js script URL
-            guard let scriptURL = OAuthClient.match(pattern: #"<script\s+id="base-js"\s+src="([^"]+)""#,
-                                                     in: html, group: 1)
-            else {
-                AppLog.auth("Could not find base-js script URL")
-                completion(.failure(APIError.decodingFailed)); return
-            }
-            let fullScriptURL = scriptURL.hasPrefix("http") ? scriptURL : "https://www.youtube.com\(scriptURL)"
-            guard let jsURL = URL(string: fullScriptURL) else {
-                completion(.failure(APIError.decodingFailed)); return
-            }
-            URLSession.shared.dataTask(with: jsURL) { data, _, error in
-                if let error = error { completion(.failure(error)); return }
-                guard let data = data, let js = String(data: data, encoding: .utf8) else {
-                    completion(.failure(APIError.decodingFailed)); return
-                }
-                guard let clientId = OAuthClient.match(pattern: #"clientId:"([^"]+)""#, in: js, group: 1),
-                      let clientSecret = OAuthClient.match(pattern: #"clientId:"[^"]+",\s*\w+:"([^"]+)""#, in: js, group: 1)
-                else {
-                    AppLog.auth("Could not extract client credentials from TV script")
-                    completion(.failure(APIError.decodingFailed)); return
-                }
-                AppLog.auth("Got client credentials (id=\(clientId.prefix(20))...)")
-                completion(.success((clientId, clientSecret)))
-            }.resume()
-        }.resume()
-    }
-
-    private static func match(pattern: String, in string: String, group: Int) -> String? {
-        guard let regex = try? NSRegularExpression(pattern: pattern),
-              let match = regex.firstMatch(in: string, range: NSRange(string.startIndex..., in: string)),
-              let range = Range(match.range(at: group), in: string)
-        else { return nil }
-        return String(string[range])
-    }
-
-    // MARK: - Keychain
-
-    private let keychainService = "com.ytvlite.oauth"
-    private let keychainAccount = "youtube"
-
-    private func saveToKeychain(_ tokens: OAuthTokens) {
-        guard let data = try? JSONEncoder().encode(tokens) else { return }
-        let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
-                                    kSecAttrService as String: keychainService,
-                                    kSecAttrAccount as String: keychainAccount]
-        SecItemDelete(query as CFDictionary)
-        var add = query; add[kSecValueData as String] = data
-        SecItemAdd(add as CFDictionary, nil)
-    }
-
-    private func loadFromKeychain() -> OAuthTokens? {
-        let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
-                                    kSecAttrService as String: keychainService,
-                                    kSecAttrAccount as String: keychainAccount,
-                                    kSecReturnData as String: true,
-                                    kSecMatchLimit as String: kSecMatchLimitOne]
-        var result: AnyObject?
-        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
-              let data = result as? Data else { return nil }
-        return try? JSONDecoder().decode(OAuthTokens.self, from: data)
-    }
-
-    private func deleteFromKeychain() {
-        let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
-                                    kSecAttrService as String: keychainService,
-                                    kSecAttrAccount as String: keychainAccount]
-        SecItemDelete(query as CFDictionary)
     }
 }

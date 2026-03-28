@@ -1,6 +1,7 @@
 import UIKit
 
 final class PlaylistVideosViewController: UIViewController {
+    private static let skeletonCount = 6
 
     private let playlist: Playlist
     private var videos: [Video] = []
@@ -8,7 +9,6 @@ final class PlaylistVideosViewController: UIViewController {
     private let tableView = UITableView()
     private let spinner = UIActivityIndicatorView(style: .white)
     private let emptyLabel = UILabel()
-    private static let skeletonCount = 6
 
     init(playlist: Playlist) {
         self.playlist = playlist
@@ -16,7 +16,10 @@ final class PlaylistVideosViewController: UIViewController {
         title = playlist.title
     }
 
-    required init?(coder: NSCoder) { fatalError() }
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -24,16 +27,22 @@ final class PlaylistVideosViewController: UIViewController {
         setupSpinner()
         setupEmpty()
         applyTheme()
-        NotificationCenter.default.addObserver(self, selector: #selector(applyTheme),
-                                               name: ThemeManager.didChangeNotification, object: nil)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(applyTheme),
+            name: ThemeManager.didChangeNotification,
+            object: nil
+        )
         loadVideos()
     }
 
     // MARK: - Setup
 
     private func setupTableView() {
-        tableView.register(SubscriptionVideoCell.self,
-                           forCellReuseIdentifier: SubscriptionVideoCell.reuseId)
+        tableView.register(
+            SubscriptionVideoCell.self,
+            forCellReuseIdentifier: SubscriptionVideoCell.reuseId
+        )
         tableView.dataSource = self
         tableView.delegate = self
         tableView.rowHeight = 220
@@ -45,7 +54,7 @@ final class PlaylistVideosViewController: UIViewController {
             tableView.topAnchor.constraint(equalTo: view.topAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
         let refresh = UIRefreshControl()
         refresh.addTarget(self, action: #selector(handleRefresh), for: .valueChanged)
@@ -57,7 +66,7 @@ final class PlaylistVideosViewController: UIViewController {
         view.addSubview(spinner)
         NSLayoutConstraint.activate([
             spinner.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            spinner.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            spinner.centerYAnchor.constraint(equalTo: view.centerYAnchor)
         ])
         spinner.startAnimating()
     }
@@ -74,19 +83,20 @@ final class PlaylistVideosViewController: UIViewController {
             emptyLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             emptyLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             emptyLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 32),
-            emptyLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -32),
+            emptyLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -32)
         ])
     }
 
     // MARK: - Theme
 
-    @objc private func applyTheme() {
-        let t = ThemeManager.shared
-        view.backgroundColor = t.background
-        tableView.backgroundColor = t.background
-        tableView.separatorColor = t.separator
+    @objc
+    private func applyTheme() {
+        let theme = ThemeManager.shared
+        view.backgroundColor = theme.background
+        tableView.backgroundColor = theme.background
+        tableView.separatorColor = theme.separator
         if let rc = tableView.refreshControl {
-            rc.tintColor = t.secondaryText
+            rc.tintColor = theme.secondaryText
         }
         tableView.reloadData()
     }
@@ -97,7 +107,9 @@ final class PlaylistVideosViewController: UIViewController {
         isLoading = true
         ServiceContainer.playlists.fetchPlaylistVideos(playlistId: playlist.id) { [weak self] result in
             DispatchQueue.main.async {
-                guard let self = self else { return }
+                guard let self else {
+                    return
+                }
                 self.isLoading = false
                 self.spinner.stopAnimating()
                 self.tableView.refreshControl?.endRefreshing()
@@ -119,7 +131,8 @@ final class PlaylistVideosViewController: UIViewController {
         }
     }
 
-    @objc private func handleRefresh() {
+    @objc
+    private func handleRefresh() {
         loadVideos()
     }
 }
@@ -131,9 +144,16 @@ extension PlaylistVideosViewController: UITableViewDataSource, UITableViewDelega
         isLoading ? PlaylistVideosViewController.skeletonCount : videos.count
     }
 
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: SubscriptionVideoCell.reuseId,
-                                                 for: indexPath) as! SubscriptionVideoCell
+    func tableView(
+        _ tableView: UITableView,
+        cellForRowAt indexPath: IndexPath
+    ) -> UITableViewCell {
+        guard let cell = tableView.dequeueReusableCell(
+            withIdentifier: SubscriptionVideoCell.reuseId,
+            for: indexPath
+        ) as? SubscriptionVideoCell else {
+            return UITableViewCell()
+        }
         if isLoading {
             cell.configureSkeleton()
             return cell
@@ -141,17 +161,26 @@ extension PlaylistVideosViewController: UITableViewDataSource, UITableViewDelega
         let video = videos[indexPath.row]
         cell.configure(with: video)
         cell.onChannelTap = { [weak self] in
-            guard let channelId = video.channelId else { return }
-            let targetNav = self?.navigationController?.parent?.navigationController ?? self?.navigationController
+            guard let channelId = video.channelId else {
+                return
+            }
+            let parentNav = self?.navigationController?.parent?.navigationController
+            let targetNav = parentNav ?? self?.navigationController
             targetNav?.pushViewController(
-                ChannelViewController(channelId: channelId, channelName: video.channelName),
-                animated: true)
+                ChannelViewController(
+                    channelId: channelId,
+                    channelName: video.channelName
+                ),
+                animated: true
+            )
         }
         return cell
     }
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        guard !isLoading else { return }
+        guard !isLoading else {
+            return
+        }
         let video = videos[indexPath.row]
         VideoRouter.shared.open(video: video, from: self)
     }

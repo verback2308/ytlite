@@ -1,3 +1,4 @@
+// swiftlint:disable:this file_name
 import Foundation
 
 // MARK: - Innertube JSON key constants
@@ -48,7 +49,7 @@ enum RendererKey {
     static let videoMetadata        = "videoMetadataRenderer"
 
     // Playlist / library
-    static let playlistVideoList    = "playlistVideoListRenderer"
+    static let playlistVideoList = "playlistVideoListRenderer"
 
     // Engagement / UI
     static let likeButton           = "likeButtonRenderer"

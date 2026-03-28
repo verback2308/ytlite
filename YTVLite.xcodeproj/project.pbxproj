@@ -86,29 +86,6 @@
 		};
 /* End PBXNativeTarget section */
 
-/* Begin PBXShellScriptBuildPhase section */
-		49A8C3012FA4B10000A1B2C3 /* SwiftLint */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"$(SRCROOT)/.swiftlint.yml",
-			);
-			name = SwiftLint;
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "export PATH=\"/opt/homebrew/bin:/usr/local/bin:$PATH\"\ncd \"$SRCROOT\" || exit 1\n\nif command -v swiftlint >/dev/null 2>&1; then\n  swiftlint lint --config \"$SRCROOT/.swiftlint.yml\" --strict YTVLite\nelse\n  echo \"error: SwiftLint is not installed or not available to Xcode.\"\n  echo \"error: Expected it in /opt/homebrew/bin or /usr/local/bin.\"\n  echo \"error: Install with: brew install swiftlint\"\n  exit 1\nfi\n";
-		};
-/* End PBXShellScriptBuildPhase section */
-
 /* Begin PBXProject section */
 		4940A7172F6AD27900E6C599 /* Project object */ = {
 			isa = PBXProject;
@@ -152,6 +129,29 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		49A8C3012FA4B10000A1B2C3 /* SwiftLint */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/.swiftlint.yml",
+			);
+			name = SwiftLint;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "export PATH=\"/opt/homebrew/bin:/usr/local/bin:$PATH\"\ncd \"$SRCROOT\" || exit 1\n\nif command -v swiftlint >/dev/null 2>&1; then\n  swiftlint lint --config \"$SRCROOT/.swiftlint.yml\" --strict YTVLite\nelse\n  echo \"error: SwiftLint is not installed or not available to Xcode.\"\n  echo \"error: Expected it in /opt/homebrew/bin or /usr/local/bin.\"\n  echo \"error: Install with: brew install swiftlint\"\n  exit 1\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		4940A71B2F6AD27900E6C599 /* Sources */ = {

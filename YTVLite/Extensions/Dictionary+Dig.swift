@@ -3,12 +3,13 @@ import Foundation
 // MARK: - Keypath traversal for Innertube JSON responses
 //
 // Replaces deeply-nested optional chains like:
-//   (json["ownerText"] as? [String: Any]).flatMap { ($0["runs"] as? [[String: Any]])?.first?["text"] as? String }
+//   (json["ownerText"] as? [String: Any])
+//     .flatMap { ($0["runs"] as? [[String: Any]])?
+//       .first?["text"] as? String }
 // with:
 //   json.dig("ownerText", "runs", 0, "text") as? String
 
 extension Dictionary where Key == String, Value == Any {
-
     /// Traverses a mixed keypath (string keys + integer array indices).
     /// Returns `nil` if any step is missing or has the wrong type.
     func dig(_ keys: Any...) -> Any? {
@@ -16,11 +17,17 @@ extension Dictionary where Key == String, Value == Any {
     }
 
     private func dig(keys: ArraySlice<Any>) -> Any? {
-        guard let first = keys.first else { return self as Any }
+        guard let first = keys.first else {
+            return self as Any
+        }
         let rest = keys.dropFirst()
 
-        guard let key = first as? String, let value = self[key] else { return nil }
-        if rest.isEmpty { return value }
+        guard let key = first as? String, let value = self[key] else {
+            return nil
+        }
+        if rest.isEmpty {
+            return value
+        }
 
         if let dict = value as? [String: Any] {
             return dict.dig(keys: rest)
@@ -61,9 +68,13 @@ extension Dictionary where Key == String, Value == Any {
 
     /// Extracts `simpleText` or first `runs[].text`, whichever is present.
     func innertubeText(_ key: String) -> String? {
-        guard let node = self[key] as? [String: Any] else { return nil }
+        guard let node = self[key] as? [String: Any] else {
+            return nil
+        }
         return node["simpleText"] as? String
-            ?? (node["runs"] as? [[String: Any]])?.compactMap { $0["text"] as? String }.joined()
+            ?? (node["runs"] as? [[String: Any]])?
+                .compactMap { $0["text"] as? String }
+                .joined()
     }
 
     /// Returns the last thumbnail URL from a `thumbnails` array keyed by `key`.

@@ -1,6 +1,7 @@
 import UIKit
 
 class SubscriptionsViewController: UIViewController {
+    private static let skeletonCount = 6
 
     private let service: FeedService = ServiceContainer.video
     private let cache = AppCache.shared
@@ -11,7 +12,7 @@ class SubscriptionsViewController: UIViewController {
     private let tableView = UITableView()
     private let spinner = UIActivityIndicatorView(style: .white)
     private var isLoadingInitial = true
-    private static let skeletonCount = 6
+    private var signInPrompt: SignInEmptyStateView?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -21,8 +22,12 @@ class SubscriptionsViewController: UIViewController {
         setupSpinner()
         setupSignInPrompt()
         applyTheme()
-        NotificationCenter.default.addObserver(self, selector: #selector(applyTheme),
-                                               name: ThemeManager.didChangeNotification, object: nil)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(applyTheme),
+            name: ThemeManager.didChangeNotification,
+            object: nil
+        )
         ToolbarManager.shared.install(in: self)
 
         if OAuthClient.shared.isAnonymous {
@@ -43,20 +48,18 @@ class SubscriptionsViewController: UIViewController {
         }
     }
 
-    private var signInPrompt: SignInEmptyStateView?
-
     private func setupSignInPrompt() {
-        let v = SignInEmptyStateView(message: "Sign in to see your subscriptions")
-        v.isHidden = true
-        v.onSignIn = { [weak self] in self?.toolbarOpenProfile() }
-        view.addSubview(v)
+        let prompt = SignInEmptyStateView(message: "Sign in to see your subscriptions")
+        prompt.isHidden = true
+        prompt.onSignIn = { [weak self] in self?.toolbarOpenProfile() }
+        view.addSubview(prompt)
         NSLayoutConstraint.activate([
-            v.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            v.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -40),
-            v.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 40),
-            v.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -40),
+            prompt.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            prompt.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -40),
+            prompt.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 40),
+            prompt.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -40)
         ])
-        signInPrompt = v
+        signInPrompt = prompt
     }
 
     private func showSignInPrompt(_ show: Bool) {
@@ -65,7 +68,10 @@ class SubscriptionsViewController: UIViewController {
     }
 
     private func setupTableView() {
-        tableView.register(SubscriptionVideoCell.self, forCellReuseIdentifier: SubscriptionVideoCell.reuseId)
+        tableView.register(
+            SubscriptionVideoCell.self,
+            forCellReuseIdentifier: SubscriptionVideoCell.reuseId
+        )
         tableView.dataSource = self
         tableView.delegate = self
         tableView.rowHeight = UITableView.automaticDimension
@@ -82,7 +88,7 @@ class SubscriptionsViewController: UIViewController {
             tableView.topAnchor.constraint(equalTo: view.topAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
     }
 
@@ -91,20 +97,22 @@ class SubscriptionsViewController: UIViewController {
         view.addSubview(spinner)
         NSLayoutConstraint.activate([
             spinner.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            spinner.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            spinner.centerYAnchor.constraint(equalTo: view.centerYAnchor)
         ])
         spinner.startAnimating()
     }
 
-    @objc private func applyTheme() {
-        let t = ThemeManager.shared
-        view.backgroundColor = t.background
-        tableView.backgroundColor = t.background
-        tableView.separatorColor = t.separator
+    @objc
+    private func applyTheme() {
+        let theme = ThemeManager.shared
+        view.backgroundColor = theme.background
+        tableView.backgroundColor = theme.background
+        tableView.separatorColor = theme.separator
         tableView.reloadData()
     }
 
-    @objc private func handleRefresh() {
+    @objc
+    private func handleRefresh() {
         cache.clearSubscriptionsFeed()
         loadFeed()
     }
@@ -114,7 +122,7 @@ class SubscriptionsViewController: UIViewController {
         AppLog.subs("network fetch start")
         service.fetchSubscriptionFeed { [weak self] result in
             DispatchQueue.main.async {
-                let ms = Int(Date().timeIntervalSince(t0) * 1000)
+                let ms = Int(Date().timeIntervalSince(t0) * 1_000)
                 self?.spinner.stopAnimating()
                 self?.tableView.refreshControl?.endRefreshing()
                 switch result {
@@ -165,10 +173,14 @@ class SubscriptionsViewController: UIViewController {
     private func appendPage(_ page: FeedPage) {
         let newVideos = page.videos.filter { seenVideoIds.insert($0.id).inserted }
         videos.append(contentsOf: newVideos)
-        videos.sort { a, b in
-            let da = a.publishedAt.flatMap { VideoFormatters.approximateDate(fromRelative: $0) } ?? .distantPast
-            let db = b.publishedAt.flatMap { VideoFormatters.approximateDate(fromRelative: $0) } ?? .distantPast
-            return da > db
+        videos.sort { lhs, rhs in
+            let lhsDate = lhs.publishedAt.flatMap {
+                VideoFormatters.approximateDate(fromRelative: $0)
+            } ?? .distantPast
+            let rhsDate = rhs.publishedAt.flatMap {
+                VideoFormatters.approximateDate(fromRelative: $0)
+            } ?? .distantPast
+            return lhsDate > rhsDate
         }
         continuationToken = page.continuation
         isLoadingMore = false
@@ -186,7 +198,12 @@ extension SubscriptionsViewController: UITableViewDataSource {
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: SubscriptionVideoCell.reuseId, for: indexPath) as! SubscriptionVideoCell
+        guard let cell = tableView.dequeueReusableCell(
+            withIdentifier: SubscriptionVideoCell.reuseId,
+            for: indexPath
+        ) as? SubscriptionVideoCell else {
+            return UITableViewCell()
+        }
         if isLoadingInitial {
             cell.configureSkeleton()
             return cell
@@ -194,10 +211,16 @@ extension SubscriptionsViewController: UITableViewDataSource {
         let video = videos[indexPath.row]
         cell.configure(with: video)
         cell.onChannelTap = { [weak self] in
-            guard let channelId = video.channelId else { return }
-            self?.navigationController?.pushViewController(ChannelViewController(channelId: channelId,
-                                                                                channelName: video.channelName),
-                                                           animated: true)
+            guard let channelId = video.channelId else {
+                return
+            }
+            self?.navigationController?.pushViewController(
+                ChannelViewController(
+                    channelId: channelId,
+                    channelName: video.channelName
+                ),
+                animated: true
+            )
         }
         return cell
     }
@@ -205,12 +228,18 @@ extension SubscriptionsViewController: UITableViewDataSource {
 
 extension SubscriptionsViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        guard !isLoadingInitial else { return }
+        guard !isLoadingInitial else {
+            return
+        }
         let video = videos[indexPath.row]
         VideoRouter.shared.open(video: video, from: self)
     }
 
-    func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+    func tableView(
+        _ tableView: UITableView,
+        willDisplay cell: UITableViewCell,
+        forRowAt indexPath: IndexPath
+    ) {
         guard !isLoadingInitial,
               !isLoadingMore,
               continuationToken != nil,

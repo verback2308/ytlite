@@ -30,7 +30,7 @@ final class UserProfileStore {
         }
     }
 
-    private func handleAccountInfo(_ info: AccountInfo) {
+    private func handleAccountInfo(_ info: (name: String, avatarURL: String?)) {
         displayName = info.name
         guard let urlStr = info.avatarURL,
               let avatarURL = URL(string: urlStr)

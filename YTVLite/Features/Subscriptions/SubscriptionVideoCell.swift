@@ -1,7 +1,6 @@
 import UIKit
 
 class SubscriptionVideoCell: UITableViewCell {
-
     static let reuseId = "SubscriptionVideoCell"
 
     private let thumbnail = ThumbnailImageView(frame: .zero)
@@ -16,11 +15,18 @@ class SubscriptionVideoCell: UITableViewCell {
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         setupUI()
-        NotificationCenter.default.addObserver(self, selector: #selector(applyTheme),
-                                               name: ThemeManager.didChangeNotification, object: nil)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(applyTheme),
+            name: ThemeManager.didChangeNotification,
+            object: nil
+        )
     }
 
-    required init?(coder: NSCoder) { fatalError() }
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
 
     private func setupUI() {
         selectionStyle = .none
@@ -65,45 +71,46 @@ class SubscriptionVideoCell: UITableViewCell {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        let w = contentView.bounds.width
-        if w > 500 {
-            layoutHorizontal(w: w)
+        let width = contentView.bounds.width
+        if width > 500 {
+            layoutHorizontal(width: width)
         } else {
-            layoutVertical(w: w)
+            layoutVertical(width: width)
         }
     }
 
     override func sizeThatFits(_ size: CGSize) -> CGSize {
-        let w = size.width
-        if w > 500 {
-            return CGSize(width: w, height: 220)
+        let width = size.width
+        if width > 500 {
+            return CGSize(width: width, height: 220)
         } else {
-            let thumbH = (w * 9.0 / 16.0).rounded()
-            let textW = w - 12 - 36 - 10 - 12
+            let thumbH = (width * 9.0 / 16.0).rounded()
+            let textW = width - 12 - 36 - 10 - 12
             let titleH = min(titleLabel.sizeThatFits(CGSize(width: textW, height: 52)).height, 40)
-            return CGSize(width: w, height: thumbH + 10 + titleH + 4 + 16 + 2 + 16 + 12)
+            return CGSize(width: width, height: thumbH + 10 + titleH + 4 + 16 + 2 + 16 + 12)
         }
     }
 
     /// iPad / wide: thumbnail left, text right — matches original subscriptions style
-    private func layoutHorizontal(w: CGFloat) {
-        let h: CGFloat = 220
+    private func layoutHorizontal(width: CGFloat) {
+        let height: CGFloat = 220
         let vPad: CGFloat = 10
         let hPad: CGFloat = 12
-        let thumbH: CGFloat = h - vPad * 2
+        let thumbH: CGFloat = height - vPad * 2
         let thumbW: CGFloat = (thumbH * 16.0 / 9.0).rounded()
 
         thumbnail.frame = CGRect(x: hPad, y: vPad, width: thumbW, height: thumbH)
 
         if !durationLabel.isHidden {
             let dW = max(36, durationLabel.intrinsicContentSize.width + 8)
-            durationLabel.frame = CGRect(x: thumbnail.bounds.width - dW - 4,
-                                         y: thumbnail.bounds.height - 22, width: dW, height: 18)
+            let dx = thumbnail.bounds.width - dW - 4
+            let dy = thumbnail.bounds.height - 22
+            durationLabel.frame = CGRect(x: dx, y: dy, width: dW, height: 18)
         }
 
         let avatarSz: CGFloat = 36
         let textX = thumbnail.frame.maxX + hPad
-        let textW = w - textX - hPad
+        let textW = width - textX - hPad
 
         let titleH = min(titleLabel.sizeThatFits(CGSize(width: textW, height: 52)).height, 40)
         titleLabel.frame = CGRect(x: textX, y: vPad, width: textW, height: titleH)
@@ -112,30 +119,34 @@ class SubscriptionVideoCell: UITableViewCell {
         channelAvatarView.isHidden = false
         channelAvatarView.frame = CGRect(x: textX, y: afterTitle, width: avatarSz, height: avatarSz)
         let labelX = textX + avatarSz + 10
-        let labelW = w - labelX - hPad
-        channelLabel.frame = CGRect(x: labelX, y: afterTitle + (avatarSz - 15) / 2, width: labelW, height: 15)
-        dateLabel.frame = CGRect(x: textX, y: channelAvatarView.frame.maxY + 6, width: textW, height: 15)
+        let labelW = width - labelX - hPad
+        let chanY = afterTitle + (avatarSz - 15) / 2
+        channelLabel.frame = CGRect(x: labelX, y: chanY, width: labelW, height: 15)
+        let dateY = channelAvatarView.frame.maxY + 6
+        dateLabel.frame = CGRect(x: textX, y: dateY, width: textW, height: 15)
     }
 
     /// iPhone / slide-over / narrow: thumbnail full-width on top, text below
-    private func layoutVertical(w: CGFloat) {
-        let thumbH = (w * 9.0 / 16.0).rounded()
-        thumbnail.frame = CGRect(x: 0, y: 0, width: w, height: thumbH)
+    private func layoutVertical(width: CGFloat) {
+        let thumbH = (width * 9.0 / 16.0).rounded()
+        thumbnail.frame = CGRect(x: 0, y: 0, width: width, height: thumbH)
 
         if !durationLabel.isHidden {
             let dW = max(36, durationLabel.intrinsicContentSize.width + 8)
-            durationLabel.frame = CGRect(x: thumbnail.bounds.width - dW - 6,
-                                         y: thumbnail.bounds.height - 24, width: dW, height: 18)
+            let dx = thumbnail.bounds.width - dW - 6
+            let dy = thumbnail.bounds.height - 24
+            durationLabel.frame = CGRect(x: dx, y: dy, width: dW, height: 18)
         }
 
         let avatarSz: CGFloat = 36
         let hPad: CGFloat = 12
         let avatarX: CGFloat = hPad
         let textX = avatarX + avatarSz + 10
-        let textW = w - textX - hPad
+        let textW = width - textX - hPad
 
         channelAvatarView.isHidden = false
-        channelAvatarView.frame = CGRect(x: avatarX, y: thumbH + 10, width: avatarSz, height: avatarSz)
+        let avatarY = thumbH + 10
+        channelAvatarView.frame = CGRect(x: avatarX, y: avatarY, width: avatarSz, height: avatarSz)
 
         let titleH = min(titleLabel.sizeThatFits(CGSize(width: textW, height: 52)).height, 40)
         titleLabel.frame = CGRect(x: textX, y: thumbH + 10, width: textW, height: titleH)
@@ -145,15 +156,17 @@ class SubscriptionVideoCell: UITableViewCell {
         dateLabel.frame = CGRect(x: textX, y: channelLabel.frame.maxY + 2, width: textW, height: 16)
     }
 
-    @objc private func handleChannelTap() { onChannelTap?() }
+    @objc
+    private func handleChannelTap() { onChannelTap?() }
 
-    @objc private func applyTheme() {
-        let t = ThemeManager.shared
-        backgroundColor = t.background
-        contentView.backgroundColor = t.background
-        titleLabel.textColor = t.primaryText
-        channelLabel.textColor = t.secondaryText
-        dateLabel.textColor = t.secondaryText
+    @objc
+    private func applyTheme() {
+        let theme = ThemeManager.shared
+        backgroundColor = theme.background
+        contentView.backgroundColor = theme.background
+        titleLabel.textColor = theme.primaryText
+        channelLabel.textColor = theme.secondaryText
+        dateLabel.textColor = theme.secondaryText
     }
 
     func configureSkeleton() {
@@ -169,13 +182,20 @@ class SubscriptionVideoCell: UITableViewCell {
         representedChannelId = video.channelId
         titleLabel.text = video.title
         channelLabel.text = video.channelName
-        dateLabel.text = VideoCardHelper.metaText(viewCount: video.viewCount, publishedAt: video.publishedAt,
-                                                  separator: " · ")
+        dateLabel.text = VideoCardHelper.metaText(
+            viewCount: video.viewCount,
+            publishedAt: video.publishedAt,
+            separator: " · "
+        )
 
         VideoCardHelper.loadChannelAvatar(for: video, into: channelAvatarView) { [weak self] in
             self?.representedChannelId == video.channelId
         }
-        VideoCardHelper.configureBadges(video: video, durationLabel: durationLabel, liveBadgeView: nil)
+        VideoCardHelper.configureBadges(
+            video: video,
+            durationLabel: durationLabel,
+            liveBadgeView: nil
+        )
 
         if let url = URL(string: video.thumbnailURL) {
             thumbnail.setImage(url: url)
@@ -196,5 +216,4 @@ class SubscriptionVideoCell: UITableViewCell {
         channelAvatarView.isHidden = false
         onChannelTap = nil
     }
-
 }

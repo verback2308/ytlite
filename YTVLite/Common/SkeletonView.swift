@@ -1,12 +1,13 @@
+// swiftlint:disable:this file_name
 import UIKit
 
 /// Adds a shimmering skeleton overlay to any UIView.
 extension UIView {
-
     private static let skeletonTag = 99_001
 
     func showSkeleton() {
-        guard viewWithTag(UIView.skeletonTag) == nil else { return }
+        guard viewWithTag(UIView.skeletonTag) == nil
+        else { return }
         let overlay = SkeletonOverlayView(frame: bounds)
         overlay.tag = UIView.skeletonTag
         overlay.autoresizingMask = [.flexibleWidth, .flexibleHeight]
@@ -23,17 +24,16 @@ extension UIView {
 // MARK: - Skeleton Overlay
 
 private final class SkeletonOverlayView: UIView {
-
     private let gradientLayer = CAGradientLayer()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        let t = ThemeManager.shared
-        backgroundColor = t.skeletonBase
+        let theme = ThemeManager.shared
+        backgroundColor = theme.skeletonBase
         gradientLayer.colors = [
-            t.skeletonBase.cgColor,
-            t.skeletonShimmer.cgColor,
-            t.skeletonBase.cgColor,
+            theme.skeletonBase.cgColor,
+            theme.skeletonShimmer.cgColor,
+            theme.skeletonBase.cgColor
         ]
         gradientLayer.startPoint = CGPoint(x: 0, y: 0.5)
         gradientLayer.endPoint   = CGPoint(x: 1, y: 0.5)
@@ -41,7 +41,8 @@ private final class SkeletonOverlayView: UIView {
         layer.addSublayer(gradientLayer)
     }
 
-    required init?(coder: NSCoder) { fatalError() }
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("Not implemented") }
 
     override func layoutSubviews() {
         super.layoutSubviews()
@@ -51,7 +52,7 @@ private final class SkeletonOverlayView: UIView {
     func startAnimating() {
         let anim = CABasicAnimation(keyPath: "locations")
         anim.fromValue = [-1.0, -0.5, 0.0]
-        anim.toValue   = [1.0,  1.5,  2.0]
+        anim.toValue   = [1.0, 1.5, 2.0]
         anim.duration  = 1.3
         anim.repeatCount = .infinity
         gradientLayer.add(anim, forKey: "shimmer")
@@ -62,7 +63,6 @@ private final class SkeletonOverlayView: UIView {
 
 /// A plain rounded rectangle used as a placeholder inside skeleton cells.
 final class SkeletonBlockView: UIView {
-
     init(cornerRadius: CGFloat = 4) {
         super.init(frame: .zero)
         backgroundColor = ThemeManager.shared.skeletonBlock
@@ -70,5 +70,6 @@ final class SkeletonBlockView: UIView {
         translatesAutoresizingMaskIntoConstraints = false
     }
 
-    required init?(coder: NSCoder) { fatalError() }
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("Not implemented") }
 }

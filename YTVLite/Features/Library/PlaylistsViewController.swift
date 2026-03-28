@@ -1,7 +1,6 @@
 import UIKit
 
 final class PlaylistsViewController: UIViewController {
-
     private let service: PlaylistService = ServiceContainer.video
     private var playlists: [Playlist] = []
     private let tableView = UITableView()
@@ -15,8 +14,12 @@ final class PlaylistsViewController: UIViewController {
         setupSpinner()
         setupEmpty()
         applyTheme()
-        NotificationCenter.default.addObserver(self, selector: #selector(applyTheme),
-                                               name: ThemeManager.didChangeNotification, object: nil)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(applyTheme),
+            name: ThemeManager.didChangeNotification,
+            object: nil
+        )
         if OAuthClient.shared.isSignedIn {
             loadPlaylists()
         } else {
@@ -26,7 +29,10 @@ final class PlaylistsViewController: UIViewController {
     }
 
     private func setupTableView() {
-        tableView.register(PlaylistCell.self, forCellReuseIdentifier: PlaylistCell.reuseId)
+        tableView.register(
+            PlaylistCell.self,
+            forCellReuseIdentifier: PlaylistCell.reuseId
+        )
         tableView.dataSource = self
         tableView.delegate = self
         tableView.rowHeight = 72
@@ -34,9 +40,15 @@ final class PlaylistsViewController: UIViewController {
         view.addSubview(tableView)
         NSLayoutConstraint.activate([
             tableView.topAnchor.constraint(equalTo: view.topAnchor),
-            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            tableView.leadingAnchor.constraint(
+                equalTo: view.leadingAnchor
+            ),
+            tableView.trailingAnchor.constraint(
+                equalTo: view.trailingAnchor
+            ),
+            tableView.bottomAnchor.constraint(
+                equalTo: view.bottomAnchor
+            )
         ])
     }
 
@@ -44,8 +56,12 @@ final class PlaylistsViewController: UIViewController {
         spinner.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(spinner)
         NSLayoutConstraint.activate([
-            spinner.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            spinner.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            spinner.centerXAnchor.constraint(
+                equalTo: view.centerXAnchor
+            ),
+            spinner.centerYAnchor.constraint(
+                equalTo: view.centerYAnchor
+            )
         ])
         spinner.startAnimating()
     }
@@ -59,10 +75,20 @@ final class PlaylistsViewController: UIViewController {
         emptyLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(emptyLabel)
         NSLayoutConstraint.activate([
-            emptyLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            emptyLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            emptyLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 32),
-            emptyLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -32),
+            emptyLabel.centerXAnchor.constraint(
+                equalTo: view.centerXAnchor
+            ),
+            emptyLabel.centerYAnchor.constraint(
+                equalTo: view.centerYAnchor
+            ),
+            emptyLabel.leadingAnchor.constraint(
+                equalTo: view.leadingAnchor,
+                constant: 32
+            ),
+            emptyLabel.trailingAnchor.constraint(
+                equalTo: view.trailingAnchor,
+                constant: -32
+            )
         ])
     }
 
@@ -72,11 +98,12 @@ final class PlaylistsViewController: UIViewController {
         emptyLabel.isHidden = false
     }
 
-    @objc private func applyTheme() {
-        let t = ThemeManager.shared
-        view.backgroundColor = t.background
-        tableView.backgroundColor = t.background
-        tableView.separatorColor = t.separator
+    @objc
+    private func applyTheme() {
+        let theme = ThemeManager.shared
+        view.backgroundColor = theme.background
+        tableView.backgroundColor = theme.background
+        tableView.separatorColor = theme.separator
         tableView.reloadData()
     }
 
@@ -104,22 +131,39 @@ final class PlaylistsViewController: UIViewController {
 // MARK: - DataSource / Delegate
 
 extension PlaylistsViewController: UITableViewDataSource, UITableViewDelegate {
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int { playlists.count }
+    func tableView(
+        _ tableView: UITableView,
+        numberOfRowsInSection section: Int
+    ) -> Int {
+        playlists.count
+    }
 
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: PlaylistCell.reuseId, for: indexPath) as! PlaylistCell
+    func tableView(
+        _ tableView: UITableView,
+        cellForRowAt indexPath: IndexPath
+    ) -> UITableViewCell {
+        guard let cell = tableView.dequeueReusableCell(
+            withIdentifier: PlaylistCell.reuseId,
+            for: indexPath
+        ) as? PlaylistCell else {
+            return UITableViewCell()
+        }
         cell.configure(with: playlists[indexPath.row])
         return cell
     }
 
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+    func tableView(
+        _ tableView: UITableView,
+        didSelectRowAt indexPath: IndexPath
+    ) {
         tableView.deselectRow(at: indexPath, animated: true)
         let playlist = playlists[indexPath.row]
-        // Push on the outer RotatingNavigationController (the child nav's bar is hidden,
-        // so using the parent nav ensures the system back button is visible).
-        let targetNav = navigationController?.parent?.navigationController ?? navigationController
+        let targetNav = navigationController?.parent?
+            .navigationController ?? navigationController
         targetNav?.pushViewController(
-            PlaylistVideosViewController(playlist: playlist), animated: true)
+            PlaylistVideosViewController(playlist: playlist),
+            animated: true
+        )
     }
 }
 
@@ -132,53 +176,83 @@ final class PlaylistCell: UITableViewCell {
     private let titleLabel = UILabel()
     private let countLabel = UILabel()
 
-    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+    override init(
+        style: UITableViewCell.CellStyle,
+        reuseIdentifier: String?
+    ) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         setupUI()
-        NotificationCenter.default.addObserver(self, selector: #selector(applyTheme),
-                                               name: ThemeManager.didChangeNotification, object: nil)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(applyTheme),
+            name: ThemeManager.didChangeNotification,
+            object: nil
+        )
     }
 
-    required init?(coder: NSCoder) { fatalError() }
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
 
     private func setupUI() {
         thumb.layer.cornerRadius = 6
         thumb.layer.masksToBounds = true
         thumb.translatesAutoresizingMaskIntoConstraints = false
-
-        titleLabel.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+        titleLabel.font = UIFont.systemFont(
+            ofSize: 14,
+            weight: .medium
+        )
         titleLabel.numberOfLines = 2
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
-
         countLabel.font = UIFont.systemFont(ofSize: 12)
         countLabel.translatesAutoresizingMaskIntoConstraints = false
-
         contentView.addSubview(thumb)
         contentView.addSubview(titleLabel)
         contentView.addSubview(countLabel)
-
-        NSLayoutConstraint.activate([
-            thumb.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
-            thumb.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-            thumb.widthAnchor.constraint(equalToConstant: 90),
-            thumb.heightAnchor.constraint(equalToConstant: 56),
-
-            titleLabel.leadingAnchor.constraint(equalTo: thumb.trailingAnchor, constant: 12),
-            titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
-            titleLabel.topAnchor.constraint(equalTo: thumb.topAnchor),
-
-            countLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
-            countLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
-        ])
+        setupCellConstraints()
         applyTheme()
     }
 
-    @objc func applyTheme() {
-        let t = ThemeManager.shared
-        backgroundColor = t.background
-        contentView.backgroundColor = t.background
-        titleLabel.textColor = t.primaryText
-        countLabel.textColor = t.secondaryText
+    private func setupCellConstraints() {
+        NSLayoutConstraint.activate([
+            thumb.leadingAnchor.constraint(
+                equalTo: contentView.leadingAnchor,
+                constant: 12
+            ),
+            thumb.centerYAnchor.constraint(
+                equalTo: contentView.centerYAnchor
+            ),
+            thumb.widthAnchor.constraint(equalToConstant: 90),
+            thumb.heightAnchor.constraint(equalToConstant: 56),
+            titleLabel.leadingAnchor.constraint(
+                equalTo: thumb.trailingAnchor,
+                constant: 12
+            ),
+            titleLabel.trailingAnchor.constraint(
+                equalTo: contentView.trailingAnchor,
+                constant: -12
+            ),
+            titleLabel.topAnchor.constraint(
+                equalTo: thumb.topAnchor
+            ),
+            countLabel.leadingAnchor.constraint(
+                equalTo: titleLabel.leadingAnchor
+            ),
+            countLabel.topAnchor.constraint(
+                equalTo: titleLabel.bottomAnchor,
+                constant: 4
+            )
+        ])
+    }
+
+    @objc
+    func applyTheme() {
+        let theme = ThemeManager.shared
+        backgroundColor = theme.background
+        contentView.backgroundColor = theme.background
+        titleLabel.textColor = theme.primaryText
+        countLabel.textColor = theme.secondaryText
     }
 
     func configure(with playlist: Playlist) {
@@ -189,7 +263,8 @@ final class PlaylistCell: UITableViewCell {
         } else {
             countLabel.text = nil
         }
-        if let urlString = playlist.thumbnailURL, let url = URL(string: urlString) {
+        if let urlString = playlist.thumbnailURL,
+           let url = URL(string: urlString) {
             thumb.setImage(url: url)
         }
     }

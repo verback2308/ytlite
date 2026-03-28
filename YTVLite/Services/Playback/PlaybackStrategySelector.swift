@@ -7,12 +7,11 @@ import Foundation
 ///   3. Progressive with background adaptive upgrade (360p fast start → 720p)
 ///   4. Adaptive only (video + audio, no progressive)
 enum PlaybackStrategySelector {
-
     private static let strategies: [PlaybackStrategy] = [
         HLSPlaybackStrategy(),
         GeneratedHLSPlaybackStrategy(),
-        ProgressiveWithUpgradePlaybackStrategy(),
-        AdaptiveOnlyPlaybackStrategy(),
+        ProgressiveUpgradeStrategy(),
+        AdaptiveOnlyPlaybackStrategy()
     ]
 
     /// Returns the first strategy that can handle the given info, or nil if none apply.

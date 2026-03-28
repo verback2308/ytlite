@@ -1,44 +1,54 @@
 import UIKit
 
 private func resized(_ name: String, size: CGFloat) -> UIImage? {
-    guard let img = UIImage(named: name) else { return nil }
+    guard let img = UIImage(named: name) else {
+        return nil
+    }
     let renderer = UIGraphicsImageRenderer(size: CGSize(width: size, height: size))
     return renderer.image { _ in
         img.draw(in: CGRect(origin: .zero, size: CGSize(width: size, height: size)))
-    }.withRenderingMode(.alwaysTemplate)
+    }
+    .withRenderingMode(.alwaysTemplate)
 }
 
 /// Builds and manages the shared navigation bar buttons (Search + Settings + Profile/Avatar).
 /// Call `install(in:)` from any UIViewController that needs them.
 final class ToolbarManager {
-
     static let shared = ToolbarManager()
-    private init() {}
 
     var searchViewController: SearchViewController?
+
+    private init() {}
 
     // MARK: - Install buttons in a view controller
 
     func install(in vc: UIViewController) {
         let searchBtn = UIBarButtonItem(
             image: resized("icon_Magnifyingglass", size: 22),
-            style: .plain, target: vc,
-            action: #selector(UIViewController.toolbarOpenSearch))
+            style: .plain,
+            target: vc,
+            action: #selector(UIViewController.toolbarOpenSearch)
+        )
 
         let settingsBtn = UIBarButtonItem(
             image: resized("icon_Gear", size: 22),
-            style: .plain, target: vc,
-            action: #selector(UIViewController.toolbarOpenSettings))
+            style: .plain,
+            target: vc,
+            action: #selector(UIViewController.toolbarOpenSettings)
+        )
 
-        let profileBtn = makeProfileButton(target: vc,
-                                           action: #selector(UIViewController.toolbarOpenProfile))
+        let profileBtn = makeProfileButton(
+            target: vc,
+            action: #selector(UIViewController.toolbarOpenProfile)
+        )
 
         vc.navigationItem.rightBarButtonItems = [profileBtn, settingsBtn, searchBtn]
         NotificationCenter.default.addObserver(
             vc,
             selector: #selector(UIViewController.toolbarRefreshProfileButton),
             name: UserProfileStore.didUpdateNotification,
-            object: nil)
+            object: nil
+        )
     }
 
     private func makeProfileButton(target: AnyObject, action: Selector) -> UIBarButtonItem {
@@ -52,14 +62,15 @@ final class ToolbarManager {
 // MARK: - UIViewController extension for toolbar actions
 
 extension UIViewController {
-
-    @objc func toolbarOpenSearch() {
-        let vc = ToolbarManager.shared.searchViewController ?? SearchViewController()
-        ToolbarManager.shared.searchViewController = vc
-        navigationController?.pushViewController(vc, animated: true)
+    @objc
+    func toolbarOpenSearch() {
+        let searchVC = ToolbarManager.shared.searchViewController ?? SearchViewController()
+        ToolbarManager.shared.searchViewController = searchVC
+        navigationController?.pushViewController(searchVC, animated: true)
     }
 
-    @objc func toolbarOpenSettings() {
+    @objc
+    func toolbarOpenSettings() {
         let nav = UINavigationController(rootViewController: SettingsViewController())
         nav.modalPresentationStyle = .pageSheet
         if #available(iOS 15, *) {
@@ -71,34 +82,59 @@ extension UIViewController {
         present(nav, animated: true)
     }
 
-    @objc func toolbarOpenProfile() {
+    @objc
+    func toolbarOpenProfile() {
         if OAuthClient.shared.isSignedIn {
-            let name = UserProfileStore.shared.displayName ?? "Account"
-            let sheet = UIAlertController(title: name, message: nil,
-                                          preferredStyle: .actionSheet)
-            sheet.addAction(UIAlertAction(title: "Sign Out", style: .destructive) { [weak self] _ in
-                OAuthClient.shared.signOut()
-                UserProfileStore.shared.clear()
-                AppCache.shared.clearHomeFeed()
-                NotificationCenter.default.post(name: .userDidSignOut, object: nil)
-                (UIApplication.shared.delegate as? AppDelegate)?.showAuth()
-            })
-            sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-            configurePopover(sheet)
-            present(sheet, animated: true)
+            showSignedInSheet()
         } else {
-            let sheet = UIAlertController(title: "Not signed in", message: nil,
-                                          preferredStyle: .actionSheet)
-            sheet.addAction(UIAlertAction(title: "Sign In", style: .default) { _ in
-                (UIApplication.shared.delegate as? AppDelegate)?.showAuth()
-            })
-            sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-            configurePopover(sheet)
-            present(sheet, animated: true)
+            showSignedOutSheet()
         }
     }
 
-    @objc func toolbarRefreshProfileButton() {
+    private func showSignedInSheet() {
+        let name = UserProfileStore.shared.displayName ?? "Account"
+        let sheet = UIAlertController(
+            title: name,
+            message: nil,
+            preferredStyle: .actionSheet
+        )
+        sheet.addAction(UIAlertAction(
+            title: "Sign Out",
+            style: .destructive
+        ) { [weak self] _ in
+            OAuthClient.shared.signOut()
+            UserProfileStore.shared.clear()
+            AppCache.shared.clearHomeFeed()
+            NotificationCenter.default.post(
+                name: .userDidSignOut,
+                object: nil
+            )
+            (UIApplication.shared.delegate as? AppDelegate)?.showAuth()
+        })
+        sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        configurePopover(sheet)
+        present(sheet, animated: true)
+    }
+
+    private func showSignedOutSheet() {
+        let sheet = UIAlertController(
+            title: "Not signed in",
+            message: nil,
+            preferredStyle: .actionSheet
+        )
+        sheet.addAction(UIAlertAction(
+            title: "Sign In",
+            style: .default
+        ) { _ in
+            (UIApplication.shared.delegate as? AppDelegate)?.showAuth()
+        })
+        sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        configurePopover(sheet)
+        present(sheet, animated: true)
+    }
+
+    @objc
+    func toolbarRefreshProfileButton() {
         for item in navigationItem.rightBarButtonItems ?? [] {
             (item.customView as? ProfileAvatarButton)?.refresh()
         }
@@ -106,15 +142,18 @@ extension UIViewController {
 
     private func configurePopover(_ alert: UIAlertController) {
         if let pop = alert.popoverPresentationController {
-            // Anchor to the profile button if found, otherwise to the view
             if let btn = navigationItem.rightBarButtonItems?.first(where: {
                 $0.customView is ProfileAvatarButton
             }) {
                 pop.barButtonItem = btn
             } else {
                 pop.sourceView = view
-                pop.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY,
-                                        width: 0, height: 0)
+                pop.sourceRect = CGRect(
+                    x: view.bounds.midX,
+                    y: view.bounds.midY,
+                    width: 0,
+                    height: 0
+                )
                 pop.permittedArrowDirections = []
             }
         }
@@ -124,9 +163,12 @@ extension UIViewController {
 // MARK: - AppDelegate helpers
 
 extension AppDelegate {
-    @objc func showAuth() {
+    @objc
+    func showAuth() {
         DispatchQueue.main.async { [weak self] in
-            guard let window = self?.window else { return }
+            guard let window = self?.window else {
+                return
+            }
             let auth = AuthViewController()
             auth.onAuthorized = { [weak self] in
                 UserProfileStore.shared.load()
@@ -136,7 +178,9 @@ extension AppDelegate {
                 self?.showMain()
             }
             if let presented = window.rootViewController?.presentedViewController {
-                presented.dismiss(animated: false) { window.rootViewController = auth }
+                presented.dismiss(animated: false) {
+                    window.rootViewController = auth
+                }
             } else {
                 window.rootViewController = auth
             }
@@ -147,7 +191,6 @@ extension AppDelegate {
 // MARK: - Profile Avatar Button
 
 final class ProfileAvatarButton: UIButton {
-
     private let size: CGFloat = 30
 
     override init(frame: CGRect) {
@@ -163,7 +206,10 @@ final class ProfileAvatarButton: UIButton {
         heightAnchor.constraint(equalToConstant: size).isActive = true
     }
 
-    required init?(coder: NSCoder) { fatalError() }
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
 
     func refresh() {
         tintColor = ThemeManager.shared.isDark ? .white : .darkGray
@@ -175,36 +221,50 @@ final class ProfileAvatarButton: UIButton {
     }
 
     private func defaultImage() -> UIImage? {
-        // Asset is set to template rendering — UIButton.tintColor colors it automatically
         if let asset = UIImage(named: "icon_person_fill") {
             return asset
         }
         if #available(iOS 13, *) {
             let config = UIImage.SymbolConfiguration(pointSize: size, weight: .light)
-            return UIImage(systemName: "person.circle.fill", withConfiguration: config)
+            return UIImage(
+                systemName: "person.circle.fill",
+                withConfiguration: config
+            )
         }
         let color = ThemeManager.shared.isDark ? UIColor.white : UIColor.darkGray
         return drawPersonPlaceholder(color: color)
     }
 
     private func drawPersonPlaceholder(color: UIColor) -> UIImage {
-        let s = size
-        let renderer = UIGraphicsImageRenderer(size: CGSize(width: s, height: s))
+        let side = size
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: side, height: side))
         return renderer.image { ctx in
             let cgCtx = ctx.cgContext
             color.setStroke()
             color.withAlphaComponent(0.25).setFill()
             cgCtx.setLineWidth(1.5)
-            cgCtx.addEllipse(in: CGRect(x: 1, y: 1, width: s - 2, height: s - 2))
+            cgCtx.addEllipse(in: CGRect(x: 1, y: 1, width: side - 2, height: side - 2))
             cgCtx.drawPath(using: .fillStroke)
             color.setFill()
-            let headR = s * 0.22
-            let headRect = CGRect(x: s / 2 - headR, y: s * 0.2, width: headR * 2, height: headR * 2)
+            let headR = side * 0.22
+            let headRect = CGRect(
+                x: side / 2 - headR,
+                y: side * 0.2,
+                width: headR * 2,
+                height: headR * 2
+            )
             cgCtx.fillEllipse(in: headRect)
-            let bodyR = s * 0.32
-            cgCtx.addEllipse(in: CGRect(x: s / 2 - bodyR, y: s * 0.52, width: bodyR * 2, height: bodyR * 2))
+            let bodyR = side * 0.32
+            let bodyRect = CGRect(
+                x: side / 2 - bodyR,
+                y: side * 0.52,
+                width: bodyR * 2,
+                height: bodyR * 2
+            )
+            cgCtx.addEllipse(in: bodyRect)
             cgCtx.clip()
-            cgCtx.fill(CGRect(x: 0, y: 0, width: s, height: s))
-        }.withRenderingMode(.alwaysOriginal)
+            cgCtx.fill(CGRect(x: 0, y: 0, width: side, height: side))
+        }
+        .withRenderingMode(.alwaysOriginal)
     }
 }

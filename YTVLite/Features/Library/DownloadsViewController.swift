@@ -1,13 +1,16 @@
 import UIKit
 
 final class DownloadsViewController: UIViewController {
-
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Downloads"
         applyTheme()
-        NotificationCenter.default.addObserver(self, selector: #selector(applyTheme),
-                                               name: ThemeManager.didChangeNotification, object: nil)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(applyTheme),
+            name: ThemeManager.didChangeNotification,
+            object: nil
+        )
         setupUI()
     }
 
@@ -41,11 +44,12 @@ final class DownloadsViewController: UIViewController {
             iconView.heightAnchor.constraint(equalToConstant: 60),
 
             label.topAnchor.constraint(equalTo: iconView.bottomAnchor, constant: 12),
-            label.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            label.centerXAnchor.constraint(equalTo: view.centerXAnchor)
         ])
     }
 
-    @objc private func applyTheme() {
+    @objc
+    private func applyTheme() {
         view.backgroundColor = ThemeManager.shared.background
     }
 }

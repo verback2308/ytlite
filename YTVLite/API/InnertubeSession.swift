@@ -3,13 +3,13 @@ import Foundation
 // MARK: - InnertubeSession
 //
 // Holds all immutable configuration for the Innertube API client.
-// Mirrors the responsibility of YouTube.js Session — separating client config from request execution.
+// Mirrors the responsibility of YouTube.js Session — separating
+// client config from request execution.
 //
 // InnertubeClient should depend on InnertubeSession for all config lookups,
 // not store raw strings or inline context dictionaries.
 
 final class InnertubeSession {
-
     // MARK: - Endpoints
 
     let baseURL: String = AppURLs.YouTube.innertube
@@ -46,20 +46,28 @@ final class InnertubeSession {
     // Keeps base contexts immutable; callers never mutate the shared dicts.
 
     /// Returns a TV context, optionally appending a continuation token or browseId.
-    func tvBrowseBody(browseId: String? = nil, continuation: String? = nil, params: String? = nil) -> [String: Any] {
+    func tvBrowseBody(
+        browseId: String? = nil,
+        continuation: String? = nil,
+        params: String? = nil
+    ) -> [String: Any] {
         var body = tvContext
-        if let id = browseId      { body[JSONKey.browseId]    = id }
+        if let id = browseId { body[JSONKey.browseId] = id }
         if let cont = continuation { body[JSONKey.continuation] = cont }
-        if let p = params          { body[JSONKey.params]       = p }
+        if let param = params { body[JSONKey.params] = param }
         return body
     }
 
     /// Returns a web context, optionally appending a continuation token or browseId.
-    func webBrowseBody(browseId: String? = nil, continuation: String? = nil, params: String? = nil) -> [String: Any] {
+    func webBrowseBody(
+        browseId: String? = nil,
+        continuation: String? = nil,
+        params: String? = nil
+    ) -> [String: Any] {
         var body = webContext
-        if let id = browseId      { body[JSONKey.browseId]    = id }
+        if let id = browseId { body[JSONKey.browseId] = id }
         if let cont = continuation { body[JSONKey.continuation] = cont }
-        if let p = params          { body[JSONKey.params]       = p }
+        if let param = params { body[JSONKey.params] = param }
         return body
     }
 }

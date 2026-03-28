@@ -1,7 +1,6 @@
 import Foundation
 
-struct InnertubeContexts {
-
+enum InnertubeContexts {
     /// Full web client context matching YouTube.js Session.#buildContext for WEB client.
     static let web: [String: Any] = [
         "context": [
@@ -18,14 +17,14 @@ struct InnertubeContexts {
                 "timeZone": "UTC",
                 "utcOffsetMinutes": 0,
                 "screenDensityFloat": 1,
-                "screenHeightPoints": 1440,
+                "screenHeightPoints": 1_440,
                 "screenPixelDensity": 1,
-                "screenWidthPoints": 2560,
+                "screenWidthPoints": 2_560,
                 "deviceMake": "",
                 "deviceModel": "",
                 "browserName": "Chrome",
                 "browserVersion": "140.0.0.0",
-                "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36,gzip(gfe)",
+                "userAgent": UserAgent.chromeDesktop,
                 "originalUrl": "https://www.youtube.com",
                 "memoryTotalKbytes": "8000000",
                 "mainAppWebInfo": [
@@ -54,18 +53,24 @@ struct InnertubeContexts {
         ]
     ]
     static let androidVR: [String: Any] = [
-        "context": ["client": [
-            "clientName": "ANDROID_VR",
-            "clientVersion": "1.71.26",
-            "hl": "en",
-            "timeZone": "UTC",
-            "utcOffsetMinutes": 0,
-            "deviceMake": "Oculus",
-            "deviceModel": "Quest 3",
-            "androidSdkVersion": 32,
-            "osName": "Android",
-            "osVersion": "12L",
-            "userAgent": "com.google.android.apps.youtube.vr.oculus/1.71.26 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip"
-        ]]
+        "context": [
+            "client": [
+                "clientName": "ANDROID_VR",
+                "clientVersion": "1.71.26",
+                "hl": "en",
+                "timeZone": "UTC",
+                "utcOffsetMinutes": 0,
+                "deviceMake": "Oculus",
+                "deviceModel": "Quest 3",
+                "androidSdkVersion": 32,
+                "osName": "Android",
+                "osVersion": "12L",
+                "userAgent": [
+                    "com.google.android.apps.youtube.vr.oculus/1.71.26",
+                    "(Linux; U; Android 12L;",
+                    "eureka-user Build/SQ3A.220605.009.A1) gzip"
+                ].joined(separator: " ")
+            ]
+        ]
     ]
 }

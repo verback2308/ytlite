@@ -8,7 +8,6 @@ import Foundation
 ///   apiClient.fetch(..., cancellationToken: token) { result in ... }
 ///   token.cancel()  // all registered tasks are cancelled, callbacks are silenced
 final class CancellationToken {
-
     private let lock = NSLock()
     private var tasks: [URLSessionDataTask] = []
     private(set) var isCancelled = false

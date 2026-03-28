@@ -3,7 +3,6 @@ import UIKit
 /// Library screen with a UISegmentedControl in the nav bar titleView.
 /// Three embedded child nav controllers — no push/pop, instant switching.
 final class LibraryViewController: UIViewController {
-
     // MARK: - Segments
 
     private enum Segment: Int, CaseIterable {
@@ -13,9 +12,12 @@ final class LibraryViewController: UIViewController {
 
         var title: String {
             switch self {
-            case .history:   return "History"
-            case .downloads: return "Downloads"
-            case .playlists: return "Playlists"
+            case .history:
+                return "History"
+            case .downloads:
+                return "Downloads"
+            case .playlists:
+                return "Playlists"
             }
         }
     }
@@ -26,7 +28,7 @@ final class LibraryViewController: UIViewController {
         let navs = [
             UINavigationController(rootViewController: HistoryViewController()),
             UINavigationController(rootViewController: DownloadsViewController()),
-            UINavigationController(rootViewController: PlaylistsViewController()),
+            UINavigationController(rootViewController: PlaylistsViewController())
         ]
         navs.forEach { $0.setNavigationBarHidden(true, animated: false) }
         return navs
@@ -49,8 +51,12 @@ final class LibraryViewController: UIViewController {
         setupContentView()
         ToolbarManager.shared.install(in: self)
         applyTheme()
-        NotificationCenter.default.addObserver(self, selector: #selector(applyTheme),
-                                               name: ThemeManager.didChangeNotification, object: nil)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(applyTheme),
+            name: ThemeManager.didChangeNotification,
+            object: nil
+        )
         show(segment: .history, animated: false)
     }
 
@@ -72,20 +78,23 @@ final class LibraryViewController: UIViewController {
             contentView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             contentView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             contentView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            contentView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            contentView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
     }
 
     // MARK: - Segment switching
 
-    @objc private func segmentChanged() {
+    @objc
+    private func segmentChanged() {
         let segment = Segment(rawValue: segmentedControl.selectedSegmentIndex) ?? .history
         show(segment: segment, animated: false)
     }
 
     private func show(segment: Segment, animated: Bool) {
         let newChild = childNavVCs[segment.rawValue]
-        guard newChild !== currentChild else { return }
+        guard newChild !== currentChild else {
+            return
+        }
 
         // Remove old child
         if let old = currentChild {
@@ -105,14 +114,21 @@ final class LibraryViewController: UIViewController {
 
     // MARK: - Theme
 
-    @objc private func applyTheme() {
-        let t = ThemeManager.shared
-        view.backgroundColor = t.background
-        contentView.backgroundColor = t.background
+    @objc
+    private func applyTheme() {
+        let theme = ThemeManager.shared
+        view.backgroundColor = theme.background
+        contentView.backgroundColor = theme.background
         if #available(iOS 13, *) {
-            segmentedControl.selectedSegmentTintColor = t.accent
-            segmentedControl.setTitleTextAttributes([.foregroundColor: t.primaryText], for: .normal)
-            segmentedControl.setTitleTextAttributes([.foregroundColor: UIColor.white], for: .selected)
+            segmentedControl.selectedSegmentTintColor = theme.accent
+            segmentedControl.setTitleTextAttributes(
+                [.foregroundColor: theme.primaryText],
+                for: .normal
+            )
+            segmentedControl.setTitleTextAttributes(
+                [.foregroundColor: UIColor.white],
+                for: .selected
+            )
         }
     }
 }

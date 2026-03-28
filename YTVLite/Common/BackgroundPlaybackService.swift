@@ -1,10 +1,14 @@
 import AVFoundation
 
 enum BackgroundPlaybackService {
-
     static var isEnabled: Bool {
         get { UserDefaults.standard.bool(forKey: UserDefaultsKeys.Player.backgroundPlayback) }
-        set { UserDefaults.standard.set(newValue, forKey: UserDefaultsKeys.Player.backgroundPlayback) }
+        set {
+            UserDefaults.standard.set(
+                newValue,
+                forKey: UserDefaultsKeys.Player.backgroundPlayback
+            )
+        }
     }
 
     /// Call on app launch and whenever the setting changes.

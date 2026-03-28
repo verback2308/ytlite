@@ -1,13 +1,19 @@
 import UIKit
 
-/// Shared helpers for video card cells (VideoCell, SubscriptionVideoCell).
+/// Shared helpers for video card cells
+/// (VideoCell, SubscriptionVideoCell).
 enum VideoCardHelper {
-
-    /// Loads channel avatar into the given image view, using inline URL, ChannelInfoStore, or hiding it.
-    /// The `isStillValid` closure is called on main thread to check cell hasn't been reused.
-    static func loadChannelAvatar(for video: Video, into imageView: ThumbnailImageView,
-                                  isStillValid: @escaping () -> Bool) {
-        if let channelAvatarURL = video.channelAvatarURL, let url = URL(string: channelAvatarURL) {
+    /// Loads channel avatar into the given image view,
+    /// using inline URL, ChannelInfoStore, or hiding it.
+    /// The `isStillValid` closure is called on main
+    /// thread to check cell hasn't been reused.
+    static func loadChannelAvatar(
+        for video: Video,
+        into imageView: ThumbnailImageView,
+        isStillValid: @escaping () -> Bool
+    ) {
+        if let avatarStr = video.channelAvatarURL,
+           let url = URL(string: avatarStr) {
             imageView.isHidden = false
             imageView.setImage(url: url)
         } else if let channelId = video.channelId {
@@ -18,7 +24,9 @@ enum VideoCardHelper {
                       case .success(let info) = result,
                       let avatarURL = info.avatarURL,
                       let url = URL(string: avatarURL)
-                else { return }
+                else {
+                    return
+                }
                 imageView.setImage(url: url)
             }
         } else {
@@ -43,7 +51,11 @@ enum VideoCardHelper {
     }
 
     /// Formats view count + date into a meta string.
-    static func metaText(viewCount: String?, publishedAt: String?, separator: String = " • ") -> String {
+    static func metaText(
+        viewCount: String?,
+        publishedAt: String?,
+        separator: String = " • "
+    ) -> String {
         let views = viewCount ?? ""
         let date = publishedAt.map(VideoFormatters.formatRelativeDate) ?? ""
         return [views, date].filter { !$0.isEmpty }.joined(separator: separator)
