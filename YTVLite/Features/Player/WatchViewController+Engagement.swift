@@ -8,11 +8,9 @@ extension WatchViewController {
     func appDidEnterBackground() {
         let bgEnabled = BackgroundPlaybackService.isEnabled
         let hasVideo = videoPlayerView?.player != nil
-        let hasPVC = playerViewController?.player != nil
         AppLog.player(
             "appDidEnterBackground: bgEnabled=\(bgEnabled)"
             + " videoPlayer=\(hasVideo)"
-            + " pvcPlayer=\(hasPVC)"
         )
         if let player = videoPlayerView?.player {
             AppLog.player(
@@ -23,7 +21,6 @@ extension WatchViewController {
             )
         }
         guard bgEnabled else {
-            playerViewController?.player?.pause()
             videoPlayerView?.player?.pause()
             return
         }

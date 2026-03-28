@@ -21,7 +21,6 @@ final class WatchViewController: UIViewController {
     var commentsContinuation: String?
     var visibleCommentsCount = 10
     let commentsPageSize = 10
-    var playerViewController: AVPlayerViewController?
     var videoPlayerView: VideoPlayerView?
     var statusObservation: NSKeyValueObservation?
     var descriptionExpanded = false
@@ -180,7 +179,6 @@ final class WatchViewController: UIViewController {
             || navigationController?.isBeingDismissed == true
         if isDismissing {
             pageLoadToken.cancel()
-            playerViewController?.player?.pause()
             videoPlayerView?.player?.pause()
         }
     }
@@ -215,16 +213,9 @@ final class WatchViewController: UIViewController {
         statusObservation?.invalidate()
         statusObservation = nil
         if let item =
-            playerViewController?.player?.currentItem {
-            stopObservingPlayerItem(item)
-        }
-        if let item =
             videoPlayerView?.player?.currentItem {
             stopObservingPlayerItem(item)
         }
-        playerViewController?.player?.pause()
-        playerViewController?.player?
-            .replaceCurrentItem(with: nil)
         videoPlayerView?.detach()
         playbackFacade.reset()
     }

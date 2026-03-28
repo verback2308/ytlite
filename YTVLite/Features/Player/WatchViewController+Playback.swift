@@ -85,7 +85,6 @@ extension WatchViewController {
         quality: String
     ) {
         let player = videoPlayerView?.player
-            ?? playerViewController?.player
         guard let player else {
             return
         }
@@ -252,15 +251,6 @@ extension WatchViewController {
         }
     }
     func resetPlaybackSurfaces() {
-        if let existingItem =
-            playerViewController?.player?.currentItem {
-            stopObservingPlayerItem(existingItem)
-        }
-        playerViewController?.player?.pause()
-        playerViewController?.willMove(toParent: nil)
-        playerViewController?.view.removeFromSuperview()
-        playerViewController?.removeFromParent()
-        playerViewController = nil
         if let existing =
             videoPlayerView?.player?.currentItem {
             stopObservingPlayerItem(existing)

@@ -155,17 +155,6 @@ extension WatchViewController {
     }
 
     @objc
-    func handlePlayerTap() {
-        guard let playerVC = playerViewController else {
-            return
-        }
-        playerVC.showsPlaybackControls = false
-        DispatchQueue.main.async {
-            playerVC.showsPlaybackControls = true
-        }
-    }
-
-    @objc
     func closeTapped() {
         exitFullscreenIfNeeded()
         VideoRouter.shared.clearCurrentWatch()
