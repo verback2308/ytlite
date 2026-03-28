@@ -175,7 +175,10 @@ final class WatchViewController: UIViewController {
         _ animated: Bool
     ) {
         super.viewWillDisappear(animated)
-        if isMovingFromParent || isBeingDismissed {
+        let isDismissing = isMovingFromParent
+            || isBeingDismissed
+            || navigationController?.isBeingDismissed == true
+        if isDismissing {
             pageLoadToken.cancel()
             playerViewController?.player?.pause()
             videoPlayerView?.player?.pause()
@@ -219,5 +222,10 @@ final class WatchViewController: UIViewController {
             videoPlayerView?.player?.currentItem {
             stopObservingPlayerItem(item)
         }
+        playerViewController?.player?.pause()
+        playerViewController?.player?
+            .replaceCurrentItem(with: nil)
+        videoPlayerView?.detach()
+        playbackFacade.reset()
     }
 }

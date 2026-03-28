@@ -168,6 +168,7 @@ extension WatchViewController {
     @objc
     func closeTapped() {
         exitFullscreenIfNeeded()
+        VideoRouter.shared.clearCurrentWatch()
         dismiss(animated: true)
     }
 
