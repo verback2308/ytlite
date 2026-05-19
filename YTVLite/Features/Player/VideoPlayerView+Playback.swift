@@ -7,6 +7,7 @@ import UIKit
 extension VideoPlayerView {
     func attach(player newPlayer: AVPlayer) {
         player = newPlayer
+        playerLayer.isHidden = false
         playerLayer.player = newPlayer
         addPeriodicObserver()
         addPlayerObservers()
@@ -17,6 +18,7 @@ extension VideoPlayerView {
     func detach() {
         removePeriodicObserver()
         removePlayerObservers()
+        playerLayer.isHidden = false
         playerLayer.player = nil
         player = nil
         hideSkipButton()

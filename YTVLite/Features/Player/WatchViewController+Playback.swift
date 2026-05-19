@@ -146,6 +146,8 @@ extension WatchViewController {
             self.playbackFacade
                 .hlsPlaylistLoader =
                 result.loader
+            self.playbackFacade
+                .prepareBackgroundAudioItem()
             self.attachPlayer(
                 item: result.playerItem
             )

@@ -1,3 +1,4 @@
+import AVFoundation
 import Foundation
 
 // MARK: - PlaybackContext
@@ -43,6 +44,8 @@ protocol PlaybackContext: AnyObject {
         client: DirectPlaybackClient,
         poToken: String?
     ) -> URL
+    func startObservingPlayerItem(_ item: AVPlayerItem)
+    func stopObservingPlayerItem(_ item: AVPlayerItem)
 }
 
 // MARK: - PlaybackStrategy

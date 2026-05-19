@@ -1,4 +1,5 @@
 import AVFoundation
+import UIKit
 
 enum PlaybackBufferPolicy {
     static let defaultForwardBufferDuration: TimeInterval = 20.0
@@ -34,6 +35,11 @@ struct OnesieContext {
     let contentPlaybackNonce: String
 }
 
+enum BackgroundPlaybackMode {
+    case inline
+    case audioOnlyHLS
+}
+
 /// Owns the playback pipeline: PoToken minting →
 /// fetchDirectPlayback → onesie fallback → strategy
 /// selection.
@@ -44,9 +50,13 @@ final class PlaybackFacade {
     var activePlaybackHeaders: [String: String] = [:]
     var activeVideoFormat: DashFormatInfo?
     var hlsPlaylistLoader: HLSPlaylistLoader?
+    var backgroundAudioItem: AVPlayerItem?
     var backgroundRestoreTime: CMTime = .zero
     var backgroundEnteredAt: Date?
+    var backgroundPlaybackMode: BackgroundPlaybackMode = .inline
+    var playlistSwitchBackgroundTask: UIBackgroundTaskIdentifier = .invalid
     private var activeDirectPlaybackClient: DirectPlaybackClient = .androidVR
+    var backgroundAudioObservation: NSKeyValueObservation?
 
     static func makeContentPlaybackNonce(
         length: Int = 16
@@ -83,124 +93,15 @@ extension PlaybackFacade {
     }
 
     func reset() {
+        backgroundAudioObservation = nil
+        backgroundAudioItem = nil
         hlsPlaylistLoader = nil
         activePlaybackInfo = nil
         activeVideoFormat = nil
         activePlaybackHeaders = [:]
         backgroundRestoreTime = .zero
         backgroundEnteredAt = nil
+        backgroundPlaybackMode = .inline
         activeDirectPlaybackClient = .androidVR
-    }
-}
-
-// MARK: - Background / Foreground
-
-extension PlaybackFacade {
-    func handleAppDidEnterBackground(player: AVPlayer) {
-        guard hlsPlaylistLoader != nil else {
-            return
-        }
-        backgroundRestoreTime = player.currentTime()
-        backgroundEnteredAt = Date()
-        let scheme = HLSGenerator.scheme
-        guard switchToHLSPlaylist(
-            player: player,
-            urlString: "\(scheme)://audio-master.m3u8",
-            bufferDuration: PlaybackBufferPolicy
-                .backgroundBufferDuration
-        ) else {
-            return
-        }
-        let tol = CMTime(
-            seconds: 1,
-            preferredTimescale: 1_000
-        )
-        player.seek(
-            to: backgroundRestoreTime,
-            toleranceBefore: tol,
-            toleranceAfter: tol
-        )
-        player.play()
-        let secs = CMTimeGetSeconds(backgroundRestoreTime)
-        AppLog.player("audio-only HLS at \(secs)s")
-    }
-
-    func handleAppWillEnterForeground(player: AVPlayer) {
-        guard hlsPlaylistLoader != nil else {
-            backgroundEnteredAt = nil
-            return
-        }
-        let elapsed = backgroundEnteredAt
-            .map { Date().timeIntervalSince($0) } ?? 0
-        let base = CMTimeGetSeconds(backgroundRestoreTime)
-        let secs = base + elapsed
-        let time = CMTime(
-            seconds: secs,
-            preferredTimescale: 1_000
-        )
-        backgroundEnteredAt = nil
-        let scheme = HLSGenerator.scheme
-        guard switchToHLSPlaylist(
-            player: player,
-            urlString: "\(scheme)://master.m3u8",
-            bufferDuration: PlaybackBufferPolicy
-                .defaultForwardBufferDuration
-        ) else {
-            return
-        }
-        seekToForeground(player: player, time: time)
-        let fmt = String(format: "%.1f", elapsed)
-        AppLog.player(
-            "restored HLS at \(secs)s"
-                + " (base=\(base)s + elapsed=\(fmt)s)"
-        )
-    }
-
-    private func switchToHLSPlaylist(
-        player: AVPlayer,
-        urlString: String,
-        bufferDuration: Double
-    ) -> Bool {
-        guard let loader = hlsPlaylistLoader,
-              let url = URL(string: urlString) else {
-            return false
-        }
-        let options: [String: Any] = [
-            "AVURLAssetHTTPHeaderFieldsKey":
-                activePlaybackHeaders
-        ]
-        let asset = AVURLAsset(
-            url: url,
-            options: options
-        )
-        asset.resourceLoader.setDelegate(
-            loader,
-            queue: loader.loaderQueue
-        )
-        let item = AVPlayerItem(asset: asset)
-        PlaybackBufferPolicy.configure(
-            item: item,
-            forwardBufferDuration: bufferDuration
-        )
-        PlaybackBufferPolicy.configure(player: player)
-        player.replaceCurrentItem(with: item)
-        return true
-    }
-
-    private func seekToForeground(
-        player: AVPlayer,
-        time: CMTime
-    ) {
-        let tol = CMTime(
-            seconds: 0.5,
-            preferredTimescale: 1_000
-        )
-        player.seek(
-            to: time,
-            toleranceBefore: tol,
-            toleranceAfter: tol
-        ) { [weak player] _ in
-            player?.play()
-        }
     }
 }
