@@ -38,6 +38,7 @@ final class ChannelHeaderView: UIView {
         errorLabel: UILabel
     ) {
         parent.addSubview(self)
+        parent.addSubview(errorLabel)
         addContentSubviews()
         configureCollectionView(cv)
         activateConstraints(parent, cv, errorLabel)
