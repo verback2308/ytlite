@@ -8,7 +8,7 @@ extension InnertubeClient {
     func fetchChannelTab(
         channelId: String,
         params: String,
-        completion: @escaping (Result<FeedPage, Error>) -> Void
+        completion: @escaping (Result<ChannelTabPage, Error>) -> Void
     ) {
         executeChannelTabBrowse(
             channelId: channelId,
@@ -29,13 +29,13 @@ extension InnertubeClient {
             headers: anonHeaders(),
             logTag: "channelTabNext"
         ) { json -> FeedPage? in
-            Self.parsePageJSON(json)
+            Self.parseChannelTabNextPage(json)
         } completion: { completion($0) }
     }
 
     func fetchChannelPlaylists(
         channelId: String,
-        completion: @escaping (Result<[Playlist], Error>) -> Void
+        completion: @escaping (Result<PlaylistsPage, Error>) -> Void
     ) {
         var body = webContext
         body[JSONKey.browseId] = channelId
@@ -45,12 +45,28 @@ extension InnertubeClient {
             body: body,
             headers: anonHeaders(),
             logTag: "channelPlaylists(\(channelId))"
-        ) { json -> [Playlist]? in
+        ) { json -> PlaylistsPage? in
             Self.parseChannelPlaylists(json)
         } completion: { [weak self] result in
             self?.logChannelPlaylistsResult(result, channelId: channelId)
             completion(result)
         }
+    }
+
+    func fetchChannelPlaylistsNextPage(
+        continuation: String,
+        completion: @escaping (Result<PlaylistsPage, Error>) -> Void
+    ) {
+        var body = webContext
+        body[JSONKey.continuation] = continuation
+        execute(
+            urlString: "\(baseURL)\(InnertubeEndpoint.browse)",
+            body: body,
+            headers: anonHeaders(),
+            logTag: "channelPlaylistsNext"
+        ) { json -> PlaylistsPage? in
+            Self.parseChannelPlaylistsNextPage(json)
+        } completion: { completion($0) }
     }
 }
 
@@ -58,7 +74,7 @@ private extension InnertubeClient {
     func executeChannelTabBrowse(
         channelId: String,
         params: String,
-        completion: @escaping (Result<FeedPage, Error>) -> Void
+        completion: @escaping (Result<ChannelTabPage, Error>) -> Void
     ) {
         var body = webContext
         body[JSONKey.browseId] = channelId
@@ -68,7 +84,7 @@ private extension InnertubeClient {
             body: body,
             headers: anonHeaders(),
             logTag: "channelTab(\(channelId))"
-        ) { json -> FeedPage? in
+        ) { json -> ChannelTabPage? in
             Self.parseChannelTabPage(json)
         } completion: { [weak self] result in
             self?.logChannelTabResult(result, label: channelId)
@@ -77,14 +93,15 @@ private extension InnertubeClient {
     }
 
     func logChannelTabResult(
-        _ result: Result<FeedPage, Error>,
+        _ result: Result<ChannelTabPage, Error>,
         label: String
     ) {
         switch result {
-        case .success(let page):
-            let hasMore = page.continuation != nil
+        case .success(let tabPage):
+            let count = tabPage.feedPage.videos.count
+            let hasMore = tabPage.feedPage.continuation != nil
             AppLog.channel(
-                "tab \(label): \(page.videos.count) videos cont=\(hasMore)"
+                "tab \(label): \(count) videos cont=\(hasMore)"
             )
         case .failure(let error):
             AppLog.channel("tab \(label) failed: \(error)")
@@ -92,13 +109,13 @@ private extension InnertubeClient {
     }
 
     func logChannelPlaylistsResult(
-        _ result: Result<[Playlist], Error>,
+        _ result: Result<PlaylistsPage, Error>,
         channelId: String
     ) {
         switch result {
-        case .success(let playlists):
+        case .success(let page):
             AppLog.channel(
-                "playlists \(channelId): \(playlists.count) items"
+                "playlists \(channelId): \(page.playlists.count) items"
             )
         case .failure(let error):
             AppLog.channel("playlists \(channelId) failed: \(error)")

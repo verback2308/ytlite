@@ -9,6 +9,7 @@ final class ChannelViewController: VideosViewController {
     let initialChannelName: String
     let headerView = ChannelHeaderView()
     let tabsView = ChannelTabsView()
+    let filterBar = ChannelFilterBarView()
     let errorLabel = UILabel()
     var isSubscribed: Bool = false
     var currentChannelPage: ChannelPage?
@@ -77,6 +78,7 @@ final class ChannelViewController: VideosViewController {
         setupLayout()
         headerView.applyTheme(isSubscribed: isSubscribed)
         tabsView.applyTheme()
+        filterBar.applyTheme()
         applyErrorLabelTheme()
         restoreFromCache()
         loadChannel()
@@ -86,6 +88,7 @@ final class ChannelViewController: VideosViewController {
         super.applyTheme()
         headerView.applyTheme(isSubscribed: isSubscribed)
         tabsView.applyTheme()
+        filterBar.applyTheme()
         applyErrorLabelTheme()
     }
 
@@ -95,22 +98,14 @@ final class ChannelViewController: VideosViewController {
     }
 
     override func handleLoadMore() {
-        guard currentTab != .playlists,
-              let ct = currentContinuation else {
+        guard let ct = currentContinuation else {
             finishLoadingMore()
             return
         }
-        let expectedTab = currentTab
-        ServiceContainer.channelTabs.fetchChannelTabNextPage(
-            continuation: ct
-        ) { [weak self] result in
-            DispatchQueue.main.async {
-                guard self?.currentTab == expectedTab else {
-                    self?.finishLoadingMore()
-                    return
-                }
-                self?.handlePageResult(result)
-            }
+        if currentTab == .playlists {
+            loadMorePlaylists(continuation: ct)
+        } else {
+            loadMoreVideos(continuation: ct)
         }
     }
 
@@ -188,7 +183,7 @@ final class ChannelViewController: VideosViewController {
         }
     }
 
-    private func handlePageResult(
+    func handlePageResult(
         _ result: Result<FeedPage, Error>
     ) {
         switch result {
@@ -209,13 +204,5 @@ final class ChannelViewController: VideosViewController {
             return
         }
         openPlaylist(playlist)
-    }
-
-    func updateInfoBarButton(for info: ChannelInfo) {
-        let hasAbout = info.description != nil
-            || info.contactInfo != nil
-            || info.videoCountText != nil
-        navigationItem.rightBarButtonItem = hasAbout
-            ? infoBarButton : nil
     }
 }

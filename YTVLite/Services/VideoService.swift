@@ -63,11 +63,26 @@ protocol ChannelService: AnyObject {
     )
 }
 
+struct ChannelFilterChip {
+    let label: String
+    let params: String
+}
+
+struct ChannelTabPage {
+    let feedPage: FeedPage
+    let filterChips: [ChannelFilterChip]
+}
+
+struct PlaylistsPage {
+    let playlists: [Playlist]
+    let continuation: String?
+}
+
 protocol ChannelTabService: AnyObject {
     func fetchChannelTab(
         channelId: String,
         params: String,
-        completion: @escaping (Result<FeedPage, Error>) -> Void
+        completion: @escaping (Result<ChannelTabPage, Error>) -> Void
     )
     func fetchChannelTabNextPage(
         continuation: String,
@@ -75,7 +90,11 @@ protocol ChannelTabService: AnyObject {
     )
     func fetchChannelPlaylists(
         channelId: String,
-        completion: @escaping (Result<[Playlist], Error>) -> Void
+        completion: @escaping (Result<PlaylistsPage, Error>) -> Void
+    )
+    func fetchChannelPlaylistsNextPage(
+        continuation: String,
+        completion: @escaping (Result<PlaylistsPage, Error>) -> Void
     )
 }
 

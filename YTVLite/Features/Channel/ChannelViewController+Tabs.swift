@@ -19,7 +19,21 @@ extension ChannelViewController {
             tabsView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tabsView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
         ])
+        installFilterBar()
         applyCollectionInsets(to: cv)
+    }
+
+    func installFilterBar() {
+        filterBar.isHidden = true
+        filterBar.onChipSelected = { [weak self] chip in
+            self?.loadVideoTab(params: chip.params)
+        }
+        view.addSubview(filterBar)
+        NSLayoutConstraint.activate([
+            filterBar.topAnchor.constraint(equalTo: tabsView.bottomAnchor),
+            filterBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            filterBar.trailingAnchor.constraint(equalTo: view.trailingAnchor)
+        ])
     }
 
     func selectTab(_ tab: ChannelTabsView.Tab) {
@@ -27,6 +41,8 @@ extension ChannelViewController {
             return
         }
         currentTab = tab
+        filterBar.clearChips()
+        filterBar.isHidden = true
         loadCurrentTab()
     }
 
@@ -80,14 +96,15 @@ extension ChannelViewController {
     }
 
     func handleSelectedTabVideos(
-        _ result: Result<FeedPage, Error>
+        _ result: Result<ChannelTabPage, Error>
     ) {
         spinner.stopAnimating()
         endRefreshing()
         switch result {
-        case .success(let page):
-            setPage(page)
+        case .success(let tabPage):
+            setPage(tabPage.feedPage)
             errorLabel.isHidden = !videos.isEmpty
+            applyFilterChips(tabPage.filterChips)
         case .failure(let error):
             AppLog.channel("tab load failed \(channelId): \(error)")
             setPage(FeedPage(videos: [], continuation: nil))
@@ -96,15 +113,15 @@ extension ChannelViewController {
     }
 
     func handleSelectedTabPlaylists(
-        _ result: Result<[Playlist], Error>
+        _ result: Result<PlaylistsPage, Error>
     ) {
         spinner.stopAnimating()
         endRefreshing()
         switch result {
-        case .success(let playlists):
-            let page = playlistFeedPage(from: playlists)
-            setPage(page)
-            errorLabel.isHidden = !playlists.isEmpty
+        case .success(let page):
+            let feedPage = playlistFeedPage(from: page.playlists, continuation: page.continuation)
+            setPage(feedPage)
+            errorLabel.isHidden = !page.playlists.isEmpty
         case .failure(let error):
             AppLog.channel("playlist tab failed \(channelId): \(error)")
             setPage(FeedPage(videos: [], continuation: nil))
@@ -112,66 +129,51 @@ extension ChannelViewController {
         }
     }
 
-    func playlistFeedPage(
-        from playlists: [Playlist]
-    ) -> FeedPage {
-        playlistLookup = Dictionary(
-            uniqueKeysWithValues: playlists.map { ($0.id, $0) }
-        )
-        return FeedPage(
-            videos: playlists.map { self.makePlaylistVideo(from: $0) },
-            continuation: nil
-        )
+    func applyFilterChips(_ chips: [ChannelFilterChip]) {
+        guard !chips.isEmpty else {
+            return
+        }
+        filterBar.setChips(chips, selected: 0)
+        filterBar.isHidden = false
+        adjustCollectionInsetsForFilterBar()
     }
 
-    func makePlaylistVideo(
-        from playlist: Playlist
-    ) -> Video {
-        Video(
-            id: playlist.id,
-            title: playlist.title,
-            channelId: nil,
-            channelName: "Playlist",
-            channelAvatarURL: nil,
-            thumbnailURL: playlist.thumbnailURL ?? "",
-            viewCount: playlist.itemCount.map { "\($0) videos" },
-            publishedAt: nil,
-            duration: nil,
-            isLive: false
-        )
+    func loadMoreVideos(continuation: String) {
+        let expectedTab = currentTab
+        ServiceContainer.channelTabs.fetchChannelTabNextPage(
+            continuation: continuation
+        ) { [weak self] result in
+            DispatchQueue.main.async {
+                guard self?.currentTab == expectedTab else {
+                    self?.finishLoadingMore()
+                    return
+                }
+                self?.handlePageResult(result)
+            }
+        }
     }
 
-    func openPlaylist(
-        _ playlist: Playlist
-    ) {
-        let controller = PlaylistVideosViewController(
-            playlist: playlist,
-            service: ServiceContainer.playlists,
-            channelViewControllerFactory: channelViewControllerFactory,
-            videoRouter: videoRouter
-        )
-        let targetNav = navigationController?.parent?.navigationController
-            ?? navigationController
-        targetNav?.pushViewController(controller, animated: true)
-    }
-
-    func applyCollectionInsets(
-        to collectionView: UICollectionView
-    ) {
-        let topInset = headerView.expandedHeight + ChannelTabsView.preferredHeight
-        collectionView.contentInset.top = topInset
-        collectionView.scrollIndicatorInsets.top = topInset
-        collectionView.setContentOffset(
-            CGPoint(x: 0, y: -topInset),
-            animated: false
-        )
-    }
-
-    func updateScrollInsets(
-        for scrollView: UIScrollView
-    ) {
-        let headerHeight = headerView.heightRef?.constant ?? 0
-        scrollView.scrollIndicatorInsets.top = headerHeight
-            + ChannelTabsView.preferredHeight
+    func loadMorePlaylists(continuation: String) {
+        let expectedTab = currentTab
+        ServiceContainer.channelTabs.fetchChannelPlaylistsNextPage(
+            continuation: continuation
+        ) { [weak self] result in
+            DispatchQueue.main.async {
+                guard self?.currentTab == expectedTab else {
+                    self?.finishLoadingMore()
+                    return
+                }
+                switch result {
+                case .success(let page):
+                    let feedPage = self?.playlistFeedPage(
+                        from: page.playlists,
+                        continuation: page.continuation
+                    ) ?? FeedPage(videos: [], continuation: nil)
+                    self?.appendPage(feedPage)
+                case .failure:
+                    self?.finishLoadingMore()
+                }
+            }
+        }
     }
 }
