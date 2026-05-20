@@ -63,9 +63,26 @@ protocol ChannelService: AnyObject {
     )
 }
 
-struct ChannelFilterChip {
-    let label: String
+struct ChannelBrowseAction {
+    let channelId: String
     let params: String
+}
+
+struct ChannelFilterChip {
+    enum Action {
+        case continuation(token: String)
+        case browse(ChannelBrowseAction)
+    }
+    let label: String
+    let action: Action
+    var params: String {
+        switch action {
+        case .continuation(let token):
+            return token
+        case .browse(let browseAction):
+            return browseAction.params
+        }
+    }
 }
 
 struct ChannelTabPage {
@@ -76,6 +93,7 @@ struct ChannelTabPage {
 struct PlaylistsPage {
     let playlists: [Playlist]
     let continuation: String?
+    var filterChips: [ChannelFilterChip] = []
 }
 
 protocol ChannelTabService: AnyObject {
@@ -90,6 +108,7 @@ protocol ChannelTabService: AnyObject {
     )
     func fetchChannelPlaylists(
         channelId: String,
+        params: String,
         completion: @escaping (Result<PlaylistsPage, Error>) -> Void
     )
     func fetchChannelPlaylistsNextPage(

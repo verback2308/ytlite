@@ -1,6 +1,6 @@
 import Foundation
 
-private enum ChannelTabParams {
+enum ChannelTabParams {
     static let playlists = "EglwbGF5bGlzdHPyBgQKAkIA"
 }
 
@@ -35,11 +35,12 @@ extension InnertubeClient {
 
     func fetchChannelPlaylists(
         channelId: String,
+        params: String = ChannelTabParams.playlists,
         completion: @escaping (Result<PlaylistsPage, Error>) -> Void
     ) {
         var body = webContext
         body[JSONKey.browseId] = channelId
-        body[JSONKey.params] = ChannelTabParams.playlists
+        body[JSONKey.params] = params
         execute(
             urlString: "\(baseURL)\(InnertubeEndpoint.browse)",
             body: body,

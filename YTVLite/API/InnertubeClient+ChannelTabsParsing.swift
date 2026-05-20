@@ -56,12 +56,16 @@ extension InnertubeClient {
         return PlaylistsPage(playlists: [], continuation: nil)
     }
     static func parseChannelTabNextPage(_ json: [String: Any]) -> FeedPage? {
-        // Channel tab continuations: onResponseReceivedActions[0]
-        //   .appendContinuationItemsAction.continuationItems[]
-        if let actions = json["onResponseReceivedActions"] as? [[String: Any]],
-           let action = actions.first,
-           let append = action["appendContinuationItemsAction"] as? [String: Any],
-           let rawItems = append["continuationItems"] as? [[String: Any]] {
+        // Sort response has multiple onResponseReceivedActions:
+        //   [0] chipBarViewModel update, [1] actual video items
+        // Pagination has a single appendContinuationItemsAction.
+        guard let actions = json["onResponseReceivedActions"] as? [[String: Any]]
+        else { return parsePageJSON(json) }
+        var allVideos: [Video] = []
+        var lastContinuation: String?
+        for action in actions {
+            guard let rawItems = channelActionItems(from: action)
+            else { continue }
             let items = rawItems.compactMap { item -> [String: Any]? in
                 if let content = item.digDict("richItemRenderer", JSONKey.content) {
                     return content
@@ -72,9 +76,29 @@ extension InnertubeClient {
                 return nil
             }
             let parsed = VideoRendererParserChain.parse(items: items)
-            return FeedPage(videos: parsed.videos, continuation: parsed.continuation)
+            allVideos.append(contentsOf: parsed.videos)
+            if let cont = parsed.continuation { lastContinuation = cont }
+        }
+        let hasCont = lastContinuation != nil
+        AppLog.innertube("channelTabNextPage: videos=\(allVideos.count) cont=\(hasCont)")
+        if !allVideos.isEmpty || lastContinuation != nil {
+            return FeedPage(videos: allVideos, continuation: lastContinuation)
         }
         return parsePageJSON(json)
+    }
+
+    private static func channelActionItems(
+        from action: [String: Any]
+    ) -> [[String: Any]]? {
+        if let append = action["appendContinuationItemsAction"] as? [String: Any],
+           let items = append["continuationItems"] as? [[String: Any]] {
+            return items
+        }
+        if let reload = action["reloadContinuationItemsCommand"] as? [String: Any],
+           let items = reload["continuationItems"] as? [[String: Any]] {
+            return items
+        }
+        return nil
     }
 
     static func parseChannelPlaylists(
@@ -89,7 +113,12 @@ extension InnertubeClient {
         let continuation = items.lazy.compactMap {
             VideoRendererParserChain.continuation(from: $0)
         }.first
-        return PlaylistsPage(playlists: playlists, continuation: continuation)
+        let chips = extractFilterChips(from: json)
+        return PlaylistsPage(
+            playlists: playlists,
+            continuation: continuation,
+            filterChips: chips
+        )
     }
 
     static func parseLockupPlaylist(
@@ -149,22 +178,60 @@ extension InnertubeClient {
         from json: [String: Any]
     ) -> [ChannelFilterChip] {
         guard let tab = selectedTabRenderer(from: json),
-              let chips = tab.digArray(
-                  JSONKey.content,
-                  "richGridRenderer",
-                  "header",
-                  "feedFilterChipBarRenderer",
-                  JSONKey.contents
-              )
+              let content = tab[JSONKey.content] as? [String: Any]
         else { return [] }
-        return chips.compactMap { item -> ChannelFilterChip? in
-            guard let chip = item["chipCloudChipRenderer"] as? [String: Any],
-                  let label = chip.digString("text", "simpleText"),
-                  let params = chip.digString(
-                      "navigationEndpoint", "browseEndpoint", JSONKey.params
+        if let rich = content["richGridRenderer"] as? [String: Any],
+           let chips = rich.digArray("header", "chipBarViewModel", "chips") {
+            return parseChipBarChips(chips)
+        }
+        if let section = content["sectionListRenderer"] as? [String: Any] {
+            if let chips = section.digArray("header", "chipBarViewModel", "chips") {
+                return parseChipBarChips(chips)
+            }
+            return parseSortSubMenuChips(section)
+        }
+        return []
+    }
+
+    private static func parseChipBarChips(
+        _ chips: [[String: Any]]
+    ) -> [ChannelFilterChip] {
+        chips.compactMap { item -> ChannelFilterChip? in
+            guard let chip = item["chipViewModel"] as? [String: Any],
+                  let label = chip["accessibilityLabel"] as? String,
+                  let token = chip.digString(
+                      "tapCommand",
+                      "innertubeCommand",
+                      "continuationCommand",
+                      "token"
                   )
             else { return nil }
-            return ChannelFilterChip(label: label, params: params)
+            return ChannelFilterChip(label: label, action: .continuation(token: token))
+        }
+    }
+
+    private static func parseSortSubMenuChips(
+        _ section: [String: Any]
+    ) -> [ChannelFilterChip] {
+        guard let items = section.digArray(
+            "subMenu",
+            "channelSubMenuRenderer",
+            "sortSetting",
+            "sortFilterSubMenuRenderer",
+            "subMenuItems"
+        ) else { return [] }
+        return items.compactMap { item -> ChannelFilterChip? in
+            guard let title = item["title"] as? String,
+                  let endpoint = item.digDict(
+                      "navigationEndpoint", "browseEndpoint"
+                  ),
+                  let channelId = endpoint["browseId"] as? String,
+                  let params = endpoint["params"] as? String
+            else { return nil }
+            return ChannelFilterChip(
+                label: title,
+                action: .browse(ChannelBrowseAction(channelId: channelId, params: params))
+            )
         }
     }
 

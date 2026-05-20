@@ -26,7 +26,7 @@ extension ChannelViewController {
     func installFilterBar() {
         filterBar.isHidden = true
         filterBar.onChipSelected = { [weak self] chip in
-            self?.loadVideoTab(params: chip.params)
+            self?.handleChipSelected(chip)
         }
         view.addSubview(filterBar)
         NSLayoutConstraint.activate([
@@ -84,7 +84,8 @@ extension ChannelViewController {
     func loadPlaylistTab() {
         let expectedTab = currentTab
         ServiceContainer.channelTabs.fetchChannelPlaylists(
-            channelId: channelId
+            channelId: channelId,
+            params: ChannelTabParams.playlists
         ) { [weak self] result in
             DispatchQueue.main.async {
                 guard self?.currentTab == expectedTab else {
@@ -121,6 +122,7 @@ extension ChannelViewController {
         case .success(let page):
             let feedPage = playlistFeedPage(from: page.playlists, continuation: page.continuation)
             setPage(feedPage)
+            applyFilterChips(page.filterChips)
             errorLabel.isHidden = !page.playlists.isEmpty
         case .failure(let error):
             AppLog.channel("playlist tab failed \(channelId): \(error)")
@@ -149,6 +151,64 @@ extension ChannelViewController {
                     return
                 }
                 self?.handlePageResult(result)
+            }
+        }
+    }
+
+    func handleChipSelected(_ chip: ChannelFilterChip) {
+        switch chip.action {
+        case .continuation(let token):
+            loadSortedVideoTab(token: token)
+        case .browse(let action):
+            loadSortedBrowseTab(channelId: action.channelId, params: action.params)
+        }
+    }
+
+    func loadSortedVideoTab(token: String) {
+        let expectedTab = currentTab
+        spinner.startAnimating()
+        isLoadingInitial = true
+        collectionView?.reloadData()
+        ServiceContainer.channelTabs.fetchChannelTabNextPage(
+            continuation: token
+        ) { [weak self] result in
+            DispatchQueue.main.async {
+                guard self?.currentTab == expectedTab
+                else { return }
+                self?.spinner.stopAnimating()
+                switch result {
+                case .success(let page):
+                    self?.setPage(page)
+                case .failure(let error):
+                    AppLog.channel("sort failed: \(error)")
+                }
+            }
+        }
+    }
+
+    func loadSortedBrowseTab(channelId: String, params: String) {
+        let expectedTab = currentTab
+        spinner.startAnimating()
+        isLoadingInitial = true
+        collectionView?.reloadData()
+        ServiceContainer.channelTabs.fetchChannelPlaylists(
+            channelId: channelId,
+            params: params
+        ) { [weak self] result in
+            DispatchQueue.main.async {
+                guard self?.currentTab == expectedTab
+                else { return }
+                self?.spinner.stopAnimating()
+                switch result {
+                case .success(let page):
+                    let feedPage = self?.playlistFeedPage(
+                        from: page.playlists,
+                        continuation: page.continuation
+                    )
+                    if let feedPage { self?.setPage(feedPage) }
+                case .failure(let error):
+                    AppLog.channel("sort browse failed: \(error)")
+                }
             }
         }
     }
