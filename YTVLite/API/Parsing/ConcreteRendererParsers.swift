@@ -34,6 +34,17 @@ struct CompactVideoRendererParser: VideoRendererParser {
     }
 }
 
+// MARK: - GridVideoRendererParser
+
+/// Handles {"gridVideoRenderer": {...}} — used by WEB channel tab grids.
+struct GridVideoRendererParser: VideoRendererParser {
+    func video(from item: [String: Any]) -> Video? {
+        guard let vr = item["gridVideoRenderer"] as? [String: Any]
+        else { return nil }
+        return InnertubeClient.parseGridVideoRenderer(vr)
+    }
+}
+
 // MARK: - RichItemVideoRendererParser
 
 /// WEB home/subscription feed richItemRenderer parser.

@@ -8,9 +8,12 @@ final class ChannelViewController: VideosViewController {
     let channelId: String
     let initialChannelName: String
     let headerView = ChannelHeaderView()
+    let tabsView = ChannelTabsView()
     let errorLabel = UILabel()
     var isSubscribed: Bool = false
     var currentChannelPage: ChannelPage?
+    var currentTab: ChannelTabsView.Tab = .videos
+    var playlistLookup: [String: Playlist] = [:]
 
     lazy var infoBarButton: UIBarButtonItem = {
         if #available(iOS 13, *) {
@@ -73,6 +76,7 @@ final class ChannelViewController: VideosViewController {
         title = initialChannelName
         setupLayout()
         headerView.applyTheme(isSubscribed: isSubscribed)
+        tabsView.applyTheme()
         applyErrorLabelTheme()
         restoreFromCache()
         loadChannel()
@@ -81,6 +85,7 @@ final class ChannelViewController: VideosViewController {
     override func applyTheme() {
         super.applyTheme()
         headerView.applyTheme(isSubscribed: isSubscribed)
+        tabsView.applyTheme()
         applyErrorLabelTheme()
     }
 
@@ -90,15 +95,20 @@ final class ChannelViewController: VideosViewController {
     }
 
     override func handleLoadMore() {
-        guard let ct = currentContinuation
-        else {
+        guard currentTab != .playlists,
+              let ct = currentContinuation else {
             finishLoadingMore()
             return
         }
-        feedClient.fetchNextPage(
+        let expectedTab = currentTab
+        ServiceContainer.channelTabs.fetchChannelTabNextPage(
             continuation: ct
         ) { [weak self] result in
             DispatchQueue.main.async {
+                guard self?.currentTab == expectedTab else {
+                    self?.finishLoadingMore()
+                    return
+                }
                 self?.handlePageResult(result)
             }
         }
@@ -106,6 +116,7 @@ final class ChannelViewController: VideosViewController {
 
     override func handleScroll(_ scrollView: UIScrollView) {
         headerView.updateForScroll(scrollView)
+        updateScrollInsets(for: scrollView)
     }
 
     private func setupLayout() {
@@ -118,6 +129,7 @@ final class ChannelViewController: VideosViewController {
             collectionView: cv,
             errorLabel: errorLabel
         )
+        installTabsView()
         headerView.subscribeButton.addTarget(
             self,
             action: #selector(subscribeButtonTapped),
@@ -168,10 +180,11 @@ final class ChannelViewController: VideosViewController {
         switch result {
         case .success(let page):
             applyChannelPage(page)
+            loadCurrentTab()
         case .failure(let error):
             AppLog.channel("load failed \(channelId): \(error)")
             finishLoadingMore()
-            errorLabel.isHidden = false
+            errorLabel.isHidden = !videos.isEmpty
         }
     }
 
@@ -187,6 +200,15 @@ final class ChannelViewController: VideosViewController {
             )
             finishLoadingMore()
         }
+    }
+
+    override func openVideo(_ video: Video) {
+        guard currentTab == .playlists,
+              let playlist = playlistLookup[video.id] else {
+            super.openVideo(video)
+            return
+        }
+        openPlaylist(playlist)
     }
 
     func updateInfoBarButton(for info: ChannelInfo) {

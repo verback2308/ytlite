@@ -48,6 +48,36 @@ extension InnertubeClient {
         )
     }
 
+    static func parseGridVideoRenderer(
+        _ vr: [String: Any]
+    ) -> Video? {
+        guard let videoId = vr[JSONKey.videoId] as? String else {
+            return nil
+        }
+        let title = simpleText(from: vr[JSONKey.title]) ?? ""
+        guard !title.isEmpty else {
+            return nil
+        }
+        let rawURL = vr.thumbnailURL() ?? ""
+        let thumb = preferredThumbnailURL(videoId: videoId, fallbackURL: rawURL)
+        let isLive = checkOverlayLive(vr["thumbnailOverlays"])
+        let channelName = gridChannelName(from: vr)
+        let duration = isLive ? nil : gridDuration(from: vr)
+        logThumbnailChoice(videoId: videoId, chosenURL: thumb, fallbackURL: rawURL)
+        return Video(
+            id: videoId,
+            title: title,
+            channelId: gridChannelId(from: vr),
+            channelName: channelName,
+            channelAvatarURL: nil,
+            thumbnailURL: thumb,
+            viewCount: simpleText(from: vr["viewCountText"]),
+            publishedAt: simpleText(from: vr["publishedTimeText"]),
+            duration: duration,
+            isLive: isLive
+        )
+    }
+
     static func parseRadioRenderer(
         _ rr: [String: Any]
     ) -> Video? {
@@ -162,6 +192,36 @@ private extension InnertubeClient {
                 "accessibilityData",
                 "label"
             )
+    }
+
+    static func gridChannelName(
+        from vr: [String: Any]
+    ) -> String {
+        vr.digString("shortBylineText", JSONKey.runs, 0, JSONKey.text) ?? ""
+    }
+
+    static func gridChannelId(
+        from vr: [String: Any]
+    ) -> String? {
+        vr.digString(
+            "shortBylineText",
+            JSONKey.runs,
+            0,
+            "navigationEndpoint",
+            "browseEndpoint",
+            JSONKey.browseId
+        )
+    }
+
+    static func gridDuration(
+        from vr: [String: Any]
+    ) -> String? {
+        let overlays = vr["thumbnailOverlays"] as? [[String: Any]] ?? []
+        return overlays.compactMap { overlay in
+            let renderer = overlay[RendererKey.thumbnailOverlayTimeStatus]
+                as? [String: Any]
+            return simpleText(from: renderer?[JSONKey.text])
+        }.first
     }
 
     static func radioThumbURL(

@@ -10,6 +10,7 @@ enum ServiceContainer {
     static var search: SearchService { client }
     static var playlists: PlaylistService { client }
     static var channel: ChannelService { client }
+    static var channelTabs: ChannelTabService { client }
     static var watch: WatchService { client }
     static var engagement: EngagementService { client }
     static var account: AccountService { client }

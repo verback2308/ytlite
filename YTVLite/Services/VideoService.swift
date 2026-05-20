@@ -63,6 +63,22 @@ protocol ChannelService: AnyObject {
     )
 }
 
+protocol ChannelTabService: AnyObject {
+    func fetchChannelTab(
+        channelId: String,
+        params: String,
+        completion: @escaping (Result<FeedPage, Error>) -> Void
+    )
+    func fetchChannelTabNextPage(
+        continuation: String,
+        completion: @escaping (Result<FeedPage, Error>) -> Void
+    )
+    func fetchChannelPlaylists(
+        channelId: String,
+        completion: @escaping (Result<[Playlist], Error>) -> Void
+    )
+}
+
 protocol WatchService: AnyObject {
     func fetchWatchPage(
         video: Video,

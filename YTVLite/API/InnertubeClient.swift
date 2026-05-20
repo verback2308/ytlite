@@ -1,6 +1,6 @@
 import Foundation
 
-final class InnertubeClient: VideoService {
+final class InnertubeClient: VideoService, ChannelTabService {
     let api = APIClient()
     let session = InnertubeSession()
 
