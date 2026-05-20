@@ -34,6 +34,9 @@ final class RotatingNavigationController: UINavigationController {
 
 class MainTabBarController: UITabBarController {
     private let dependencies: AppDependencies
+    private weak var playerPanel: PlayerPanelViewController?
+    private var miniPlayerBar: MiniPlayerBar?
+    private var miniPlayerBarBottomConstraint: NSLayoutConstraint?
 
     override var shouldAutorotate: Bool {
         selectedViewController?.shouldAutorotate
@@ -135,5 +138,53 @@ class MainTabBarController: UITabBarController {
                 .foregroundColor: theme.primaryText
             ]
         }
+        miniPlayerBar?.applyTheme()
+    }
+
+    func installPlayerPanel(_ panel: PlayerPanelViewController) {
+        if let existing = playerPanel {
+            removePlayerPanel(existing)
+        }
+        addChild(panel)
+        panel.view.frame = view.bounds
+        panel.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        view.insertSubview(panel.view, aboveSubview: tabBar)
+        panel.didMove(toParent: self)
+        playerPanel = panel
+
+        miniPlayerBar?.removeFromSuperview()
+        let bar = MiniPlayerBar()
+        view.addSubview(bar)
+        // PiP: fixed width = screen / 3, anchored bottom-right
+        let pipWidth = max(160, view.bounds.width / 3)
+        let bottomConstraint = bar.bottomAnchor.constraint(
+            equalTo: tabBar.topAnchor,
+            constant: -12
+        )
+        NSLayoutConstraint.activate([
+            bar.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -12),
+            bar.widthAnchor.constraint(equalToConstant: pipWidth),
+            bottomConstraint
+        ])
+        bar.isHidden = true
+        bar.alpha = 0
+        miniPlayerBar = bar
+        miniPlayerBarBottomConstraint = bottomConstraint
+
+        panel.miniBar = bar
+        panel.view.transform = CGAffineTransform(translationX: 0, y: view.bounds.height)
+        panel.expand(animated: true)
+    }
+
+    func removePlayerPanel(_ panel: PlayerPanelViewController) {
+        if playerPanel === panel {
+            playerPanel = nil
+        }
+        miniPlayerBar?.removeFromSuperview()
+        miniPlayerBar = nil
+        miniPlayerBarBottomConstraint = nil
+        panel.willMove(toParent: nil)
+        panel.view.removeFromSuperview()
+        panel.removeFromParent()
     }
 }

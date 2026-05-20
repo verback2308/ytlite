@@ -8,21 +8,21 @@ enum PlayerIcons {
         let vertical: CGPoint
     }
 
-    static func play() -> UIImage {
+    static func play(color: UIColor = .white) -> UIImage {
         draw(size: CGSize(width: 44, height: 44)) { _ in
             let path = UIBezierPath()
             path.move(to: CGPoint(x: 14, y: 10))
             path.addLine(to: CGPoint(x: 36, y: 22))
             path.addLine(to: CGPoint(x: 14, y: 34))
             path.close()
-            UIColor.white.setFill()
+            color.setFill()
             path.fill()
         }
     }
 
-    static func pause() -> UIImage {
+    static func pause(color: UIColor = .white) -> UIImage {
         draw(size: CGSize(width: 44, height: 44)) { _ in
-            UIColor.white.setFill()
+            color.setFill()
             let bar1 = CGRect(x: 12, y: 10, width: 7, height: 24)
             let bar2 = CGRect(x: 25, y: 10, width: 7, height: 24)
             UIBezierPath(roundedRect: bar1, cornerRadius: 2).fill()

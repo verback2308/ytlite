@@ -4,31 +4,48 @@ final class VideoRouter {
     static let shared = VideoRouter()
 
     var watchViewControllerFactory: ((Video) -> WatchViewController)?
-    private var watchVC: WatchViewController?
+    private var panel: PlayerPanelViewController?
 
     private init() {}
 
     func open(video: Video, from presenter: UIViewController) {
-        if let existing = watchVC,
-           existing.presentingViewController != nil {
-            existing.loadVideo(video)
+        if let panel {
+            panel.watchVC.loadVideo(video)
+            panel.expand(animated: true)
             return
         }
-        guard let watchViewControllerFactory else {
-            assertionFailure("VideoRouter is not configured")
+        guard let factory = watchViewControllerFactory else {
+            assertionFailure("VideoRouter not configured")
             return
         }
-        let vc = watchViewControllerFactory(video)
-        watchVC = vc
-        let nav = UINavigationController(rootViewController: vc)
-        nav.modalPresentationStyle = .fullScreen
-        let root = presenter.view.window?.rootViewController
-            ?? presenter
-        let target = root.presentedViewController ?? root
-        target.present(nav, animated: true)
+        let watchVC = factory(video)
+        let newPanel = PlayerPanelViewController(watchVC: watchVC)
+        newPanel.onClose = { [weak self] in
+            self?.panel = nil
+        }
+        panel = newPanel
+        guard let tabBar = findTabBarController(from: presenter) else {
+            self.panel = nil
+            return
+        }
+        tabBar.installPlayerPanel(newPanel)
+    }
+
+    func minimize() {
+        panel?.collapse(animated: true)
     }
 
     func clearCurrentWatch() {
-        watchVC = nil
+        panel?.close()
+    }
+
+    private func findTabBarController(from vc: UIViewController) -> MainTabBarController? {
+        var root = vc.view.window?.rootViewController
+        while let presented = root?.presentedViewController {
+            root = presented
+        }
+        return root as? MainTabBarController
+            ?? vc.tabBarController as? MainTabBarController
+            ?? vc.navigationController?.tabBarController as? MainTabBarController
     }
 }
