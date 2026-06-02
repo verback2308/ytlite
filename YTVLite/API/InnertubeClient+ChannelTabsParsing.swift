@@ -11,6 +11,9 @@ extension InnertubeClient {
         let items = selectedTabGridItems(from: json)
         let chips = extractFilterChips(from: json)
         let parsed = VideoRendererParserChain.parse(items: items)
+        AppLog.innertube(
+            "parseChannelTabPage videos=\(parsed.videos.count) cont=\(parsed.continuation != nil)"
+        )
         let page = FeedPage(
             videos: parsed.videos,
             continuation: parsed.continuation
@@ -22,38 +25,48 @@ extension InnertubeClient {
     static func parseChannelPlaylistsNextPage(
         _ json: [String: Any]
     ) -> PlaylistsPage? {
-        // Channel tab continuations use onResponseReceivedActions
-        if let actions = json["onResponseReceivedActions"] as? [[String: Any]],
-           let action = actions.first,
-           let append = action["appendContinuationItemsAction"] as? [String: Any],
-           let rawItems = append["continuationItems"] as? [[String: Any]] {
-            let playlists = rawItems.compactMap { item -> Playlist? in
-                guard let lockup = item["lockupViewModel"] as? [String: Any]
-                else { return nil }
-                return parseLockupPlaylist(lockup)
-            }
-            let continuation = rawItems.lazy.compactMap {
-                VideoRendererParserChain.continuation(from: $0)
-            }.first
-            return PlaylistsPage(playlists: playlists, continuation: continuation)
+        if let actions = json["onResponseReceivedActions"] as? [[String: Any]] {
+            return parsePlaylistsFromActions(actions)
         }
-        // Fallback: standard continuationContents
-        if let cc = json["continuationContents"] as? [String: Any],
-           let gc = cc["gridContinuation"] as? [String: Any],
-           let items = gc[JSONKey.items] as? [[String: Any]] {
-            let playlists = items.compactMap { item -> Playlist? in
-                guard let lockup = item["lockupViewModel"] as? [String: Any]
-                else { return nil }
-                return parseLockupPlaylist(lockup)
+        return parsePlaylistsFromContinuationContents(json)
+    }
+
+    private static func parsePlaylistsFromActions(
+        _ actions: [[String: Any]]
+    ) -> PlaylistsPage {
+        var allPlaylists: [Playlist] = []
+        var lastContinuation: String?
+        for action in actions {
+            guard let items = channelActionItems(from: action) else { continue }
+            allPlaylists.append(contentsOf: lockupPlaylists(from: items))
+            if let cont = items.lazy
+                .compactMap({ VideoRendererParserChain.continuation(from: $0) })
+                .first {
+                lastContinuation = cont
             }
-            return PlaylistsPage(
-                playlists: playlists,
-                continuation: VideoRendererParserChain.continuation(
-                    from: items.last ?? [:]
-                )
-            )
         }
-        return PlaylistsPage(playlists: [], continuation: nil)
+        return PlaylistsPage(playlists: allPlaylists, continuation: lastContinuation)
+    }
+
+    private static func parsePlaylistsFromContinuationContents(
+        _ json: [String: Any]
+    ) -> PlaylistsPage? {
+        guard let cc = json["continuationContents"] as? [String: Any],
+              let gc = cc["gridContinuation"] as? [String: Any],
+              let items = gc[JSONKey.items] as? [[String: Any]]
+        else { return PlaylistsPage(playlists: [], continuation: nil) }
+        return PlaylistsPage(
+            playlists: lockupPlaylists(from: items),
+            continuation: VideoRendererParserChain.continuation(from: items.last ?? [:])
+        )
+    }
+
+    private static func lockupPlaylists(from items: [[String: Any]]) -> [Playlist] {
+        items.compactMap { item -> Playlist? in
+            guard let lockup = item["lockupViewModel"] as? [String: Any]
+            else { return nil }
+            return parseLockupPlaylist(lockup)
+        }
     }
     static func parseChannelTabNextPage(_ json: [String: Any]) -> FeedPage? {
         // Sort response has multiple onResponseReceivedActions:

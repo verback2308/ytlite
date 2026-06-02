@@ -58,6 +58,17 @@ struct RichItemVideoRendererParser: VideoRendererParser {
     }
 }
 
+// MARK: - LockupViewModelVideoParser
+
+/// Handles {"lockupViewModel": {...}} — new YouTube channel grid format.
+struct LockupViewModelVideoParser: VideoRendererParser {
+    func video(from item: [String: Any]) -> Video? {
+        guard let lockup = item["lockupViewModel"] as? [String: Any]
+        else { return nil }
+        return InnertubeClient.parseLockupVideo(lockup)
+    }
+}
+
 // MARK: - RadioRendererParser
 
 /// Handles {"radioRenderer": {...}} — radio mix / playlist items.

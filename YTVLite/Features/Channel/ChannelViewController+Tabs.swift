@@ -73,10 +73,11 @@ extension ChannelViewController {
             params: params
         ) { [weak self] result in
             DispatchQueue.main.async {
-                guard self?.currentTab == expectedTab else {
-                    return
-                }
-                self?.handleSelectedTabVideos(result)
+                guard let self
+                else { return }
+                guard self.currentTab == expectedTab
+                else { return }
+                self.handleSelectedTabVideos(result)
             }
         }
     }

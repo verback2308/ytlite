@@ -32,6 +32,7 @@ enum VideoRendererParserChain {
         CompactVideoRendererParser(),
         GridVideoRendererParser(),
         RichItemVideoRendererParser(),
+        LockupViewModelVideoParser(),
         RadioRendererParser(),
         PlaylistRendererParser()
     ]
