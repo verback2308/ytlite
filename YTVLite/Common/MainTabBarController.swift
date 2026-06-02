@@ -157,8 +157,10 @@ class MainTabBarController: UITabBarController {
         view.addSubview(bar)
         // PiP: fixed width = screen / 3, anchored bottom-right
         let pipWidth = max(160, view.bounds.width / 3)
+        // Use safeAreaLayoutGuide to avoid cross-hierarchy constraint crash
+        // (tabBar.topAnchor can be in a different hierarchy on some iOS 12 paths)
         let bottomConstraint = bar.bottomAnchor.constraint(
-            equalTo: tabBar.topAnchor,
+            equalTo: view.safeAreaLayoutGuide.bottomAnchor,
             constant: -12
         )
         NSLayoutConstraint.activate([
