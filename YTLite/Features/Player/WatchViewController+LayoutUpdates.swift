@@ -145,6 +145,9 @@ extension WatchViewController {
 
     private func moveLandscapeRelated() {
         relatedCollectionView.isScrollEnabled = true
+        // Reset any scroll offset carried over from portrait so the first video is
+        // fully visible at the top of the sidebar when entering landscape.
+        relatedCollectionView.setContentOffset(.zero, animated: false)
         sidebarContainer.addSubview(relatedCollectionView)
         let rv = relatedCollectionView
         let sc = sidebarContainer

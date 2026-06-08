@@ -62,8 +62,11 @@ final class PlaylistVideosViewController: UIViewController {
         )
         tableView.dataSource = self
         tableView.delegate = self
-        tableView.rowHeight = 220
-        tableView.estimatedRowHeight = 220
+        // rowHeight = 220 only fits the iPad wide layout; on iPhone the cell uses a
+        // stacked layout whose height depends on the thumbnail aspect ratio.
+        // Use automaticDimension + a generous estimate so cells size themselves.
+        tableView.rowHeight = UITableView.automaticDimension
+        tableView.estimatedRowHeight = 320
         tableView.separatorInset = UIEdgeInsets(top: 0, left: 12, bottom: 0, right: 12)
         tableView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(tableView)

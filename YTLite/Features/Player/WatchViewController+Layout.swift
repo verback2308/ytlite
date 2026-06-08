@@ -9,7 +9,13 @@ extension WatchViewController {
             appearance.backgroundColor = theme.surface
             appearance.titleTextAttributes = [.foregroundColor: theme.primaryText]
             navigationItem.standardAppearance = appearance
-            navigationItem.scrollEdgeAppearance = appearance
+            // UINavigationBar.scrollEdgeAppearance is iOS 13+; without it the bar
+            // becomes transparent when the scroll view is at the top (iOS 15+ default),
+            // which makes the player appear to overlap the Dynamic Island.
+            navigationController?.navigationBar.scrollEdgeAppearance = appearance
+            if #available(iOS 15.0, *) {
+                navigationItem.scrollEdgeAppearance = appearance
+            }
         } else {
             let navBar = navigationController?.navigationBar
             navBar?.barTintColor = theme.surface
@@ -61,7 +67,10 @@ extension WatchViewController {
         scrollTrailingConstraint = sv.trailingAnchor.constraint(equalTo: view.trailingAnchor)
         scrollToSidebarConstraint = sv.trailingAnchor.constraint(equalTo: sc.leadingAnchor)
         playerTopConstraint = pc.topAnchor.constraint(equalTo: safe.topAnchor)
-        playerLeadingConstraint = pc.leadingAnchor.constraint(equalTo: view.leadingAnchor)
+        // Use safe area for leading so content respects rounded corners in iPhone landscape.
+        // In portrait there is no horizontal safe area inset so this is equivalent to
+        // view.leadingAnchor on both iPhone and iPad.
+        playerLeadingConstraint = pc.leadingAnchor.constraint(equalTo: safe.leadingAnchor)
         playerTrailingConstraint = pc.trailingAnchor.constraint(equalTo: view.trailingAnchor)
         playerToSidebarConstraint = pc.trailingAnchor.constraint(equalTo: sc.leadingAnchor)
         playerAspectConstraint = pc.heightAnchor.constraint(
@@ -70,7 +79,8 @@ extension WatchViewController {
         )
         scrollTopToPlayerConstraint = sv.topAnchor.constraint(equalTo: pc.bottomAnchor)
         sidebarTopConstraint = sc.topAnchor.constraint(equalTo: safe.topAnchor)
-        sidebarTrailingConstraint = sc.trailingAnchor.constraint(equalTo: view.trailingAnchor)
+        // Respect right safe area so sidebar content clears the rounded corner on iPhone landscape.
+        sidebarTrailingConstraint = sc.trailingAnchor.constraint(equalTo: safe.trailingAnchor)
         sidebarBottomConstraint = sc.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         sidebarWidthConstraint = sc.widthAnchor.constraint(equalToConstant: 340)
         activateScrollConstraints()
@@ -83,7 +93,9 @@ extension WatchViewController {
                 playerTopConstraint, playerLeadingConstraint,
                 playerTrailingConstraint, playerAspectConstraint,
                 scrollTopToPlayerConstraint, scrollTrailingConstraint,
-                sv.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                // Use safe area for leading to match playerLeadingConstraint so the
+                // scroll content aligns with the player edge on iPhone landscape.
+                sv.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
                 sv.bottomAnchor.constraint(equalTo: view.bottomAnchor),
                 cv.topAnchor.constraint(equalTo: cl.topAnchor),
                 cv.leadingAnchor.constraint(equalTo: cl.leadingAnchor),
@@ -252,6 +264,11 @@ extension WatchViewController {
         rv.delegate = self
         rv.translatesAutoresizingMaskIntoConstraints = false
         rv.isScrollEnabled = false
+        // Disable automatic inset adjustment: in portrait the outer scroll view manages
+        // all scrolling; in landscape the sidebar is already positioned below the nav bar
+        // via safeAreaLayoutGuide, so automatic adjustment would add a redundant top inset
+        // that pushes the first related video down or off-screen.
+        rv.contentInsetAdjustmentBehavior = .never
         contentView.addSubview(rv)
         relatedHeightConstraint = rv.heightAnchor.constraint(equalToConstant: 0)
     }

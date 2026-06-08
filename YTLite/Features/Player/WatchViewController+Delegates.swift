@@ -53,6 +53,9 @@ extension WatchViewController: VideoPlayerViewDelegate {
         )
         playerView.removeFromSuperview()
         playerView.translatesAutoresizingMaskIntoConstraints = true
+        // Allow the player to resize with the window when the device rotates while
+        // in fullscreen, so the video fills the screen in the new orientation.
+        playerView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         playerView.frame = frameInWindow
         window.addSubview(playerView)
         playerView.isFullscreen = true
@@ -97,6 +100,7 @@ extension WatchViewController: VideoPlayerViewDelegate {
         playerView.removeFromSuperview()
         let sv = snapshot.superview
         playerView.translatesAutoresizingMaskIntoConstraints = false
+        playerView.autoresizingMask = []
         sv.addSubview(playerView)
         NSLayoutConstraint.activate([
             playerView.leadingAnchor.constraint(
@@ -114,6 +118,9 @@ extension WatchViewController: VideoPlayerViewDelegate {
         ])
         playerView.isFullscreen = false
         fullscreenSnapshot = nil
+        // Re-run layout so all content (metaLabel, related list, etc.) reflows
+        // correctly for the current orientation after exiting fullscreen.
+        updateLayoutForSize()
     }
 
     func showQualityPicker() {

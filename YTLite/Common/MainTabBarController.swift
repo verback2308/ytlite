@@ -149,17 +149,15 @@ class MainTabBarController: UITabBarController {
         miniPlayerBar?.removeFromSuperview()
         let bar = MiniPlayerBar()
         view.addSubview(bar)
-        // PiP: fixed width = screen / 3, anchored bottom-right
-        let pipWidth = max(160, view.bounds.width / 3)
-        // Use safeAreaLayoutGuide to avoid cross-hierarchy constraint crash
-        // (tabBar.topAnchor can be in a different hierarchy on some iOS 12 paths)
+        // Use a proportional width (1/3 of the parent) so the bar stays correctly
+        // sized after device rotation without needing to recreate the constraint.
         let bottomConstraint = bar.bottomAnchor.constraint(
             equalTo: view.safeAreaLayoutGuide.bottomAnchor,
             constant: -12
         )
         NSLayoutConstraint.activate([
             bar.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -12),
-            bar.widthAnchor.constraint(equalToConstant: pipWidth),
+            bar.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 1.0 / 3.0),
             bottomConstraint
         ])
         bar.isHidden = true

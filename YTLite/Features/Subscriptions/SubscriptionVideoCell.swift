@@ -91,6 +91,16 @@ class SubscriptionVideoCell: UITableViewCell {
         }
     }
 
+    // Called by UITableView when rowHeight = .automaticDimension.
+    // The cell uses manual layout so we delegate to sizeThatFits.
+    override func systemLayoutSizeFitting(
+        _ targetSize: CGSize,
+        withHorizontalFittingPriority horizontalFittingPriority: UILayoutPriority,
+        verticalFittingPriority: UILayoutPriority
+    ) -> CGSize {
+        sizeThatFits(CGSize(width: targetSize.width, height: 0))
+    }
+
     /// iPad / wide: thumbnail left, text right — matches original subscriptions style
     private func layoutHorizontal(width: CGFloat) {
         let height: CGFloat = 220
