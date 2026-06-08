@@ -69,6 +69,7 @@
 				4940A71B2F6AD27900E6C599 /* Sources */,
 				4940A71C2F6AD27900E6C599 /* Frameworks */,
 				4940A71D2F6AD27900E6C599 /* Resources */,
+				49B1D1002FA4B10000A1B299 /* Set Build Number */,
 			);
 			buildRules = (
 			);
@@ -151,6 +152,25 @@
 			shellPath = /bin/sh;
 			shellScript = "export PATH=\"/opt/homebrew/bin:/usr/local/bin:$PATH\"\ncd \"$SRCROOT\" || exit 1\n\nif command -v swiftlint >/dev/null 2>&1; then\n  swiftlint lint --config \"$SRCROOT/.swiftlint.yml\" --strict YTVLite\nelse\n  echo \"error: SwiftLint is not installed or not available to Xcode.\"\n  echo \"error: Expected it in /opt/homebrew/bin or /usr/local/bin.\"\n  echo \"error: Install with: brew install swiftlint\"\n  exit 1\nfi\n";
 		};
+		49B1D1002FA4B10000A1B299 /* Set Build Number */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Set Build Number";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "BUILD=$(git -C \"$SRCROOT\" rev-list --count HEAD 2>/dev/null || echo 1)\nif [ -f \"${TARGET_BUILD_DIR}/${INFOPLIST_PATH}\" ]; then\n  /usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $BUILD\" \"${TARGET_BUILD_DIR}/${INFOPLIST_PATH}\"\n  echo \"Build number set to $BUILD\"\nfi\n";
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -184,7 +204,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.verback.YTVLite;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -217,7 +237,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.verback.YTVLite;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
