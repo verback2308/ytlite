@@ -334,6 +334,7 @@ private extension InnertubeClient {
             as? String
         let wt = extractWatchtimeURL(json)
         let ptURLs = extractWatchtimeURLs(json)
+        let captions = extractCaptionTracks(json)
         return DirectPlaybackInfo(
             hlsManifestURL: urls.hls,
             dashManifestURL: urls.dash,
@@ -363,11 +364,51 @@ private extension InnertubeClient {
             dashAudioFormat: dA,
             allDashVideoFormats: allDash,
             duration: dur,
-            playbackTrackingURLs: ptURLs
+            playbackTrackingURLs: ptURLs,
+            captionTracks: captions
         )
     }
     // swiftlint:enable function_body_length
     // swiftlint:enable function_parameter_count
+
+    static func extractCaptionTracks(
+        _ json: [String: Any]
+    ) -> [SubtitleTrack] {
+        guard let renderer = (json["captions"]
+            as? [String: Any])?[
+                "playerCaptionsTracklistRenderer"
+            ] as? [String: Any],
+              let tracks = renderer["captionTracks"]
+                as? [[String: Any]]
+        else {
+            return []
+        }
+        return tracks.compactMap(buildSubtitleTrack)
+    }
+
+    private static func buildSubtitleTrack(
+        _ track: [String: Any]
+    ) -> SubtitleTrack? {
+        guard let raw = track["baseUrl"] as? String,
+              let url = URL(string: raw)
+        else {
+            return nil
+        }
+        let nameKeys = (track["name"] as? [String: Any])?.keys
+            .sorted().joined(separator: ",") ?? "nil"
+        let name = (track["name"]
+            as? [String: Any])?["simpleText"]
+            as? String
+            ?? ((track["name"] as? [String: Any])?["runs"]
+                as? [[String: Any]])?.first?["text"] as? String
+            ?? (track["name"] as? String)
+            ?? "Unknown"
+        let lang = track["languageCode"] as? String ?? "und"
+        let isAsr = (track["kind"] as? String) == "asr"
+        return SubtitleTrack(
+            name: name, languageCode: lang, url: url, isAsr: isAsr
+        )
+    }
 
     static func extractWatchtimeURL(
         _ json: [String: Any]

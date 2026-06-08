@@ -139,4 +139,15 @@ extension WatchViewController: PlaybackContext {
     func updateStatusLabel(_ text: String) {
         playerStatusLabel.text = text
     }
+
+    func setCaptionTracks(_ tracks: [SubtitleTrack]) {
+        captionTracks = tracks
+        videoPlayerView?.setCaptionTracks(
+            tracks,
+            activeLanguage: activeSubtitleLanguage
+        )
+        videoPlayerView?.onCCTapped = { [weak self] in
+            self?.showSubtitlePicker()
+        }
+    }
 }

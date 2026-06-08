@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import AVFoundation
 import AVKit
 import UIKit
@@ -142,6 +143,7 @@ extension VideoPlayerView {
         )
         controlsView.addSubview(settingsButton)
         configurePipButton()
+        configureCCButton()
         activateTopBarConstraints()
     }
 
@@ -163,36 +165,94 @@ extension VideoPlayerView {
         controlsView.addSubview(pipButton)
     }
 
+    private func configureCCButton() {
+        styleCCButton()
+        ccButton.translatesAutoresizingMaskIntoConstraints = false
+        ccButton.isHidden = true
+        ccButton.addTarget(
+            self,
+            action: #selector(ccTapped),
+            for: .touchUpInside
+        )
+        controlsView.addSubview(ccButton)
+        setupSubtitleLabel()
+    }
+
+    private func styleCCButton() {
+        ccButton.setTitle("CC", for: .normal)
+        ccButton.titleLabel?.font = UIFont.systemFont(
+            ofSize: 12, weight: .bold
+        )
+        ccButton.tintColor = .white
+        ccButton.setTitleColor(.white, for: .normal)
+        ccButton.setTitleColor(
+            UIColor(red: 1, green: 0.84, blue: 0, alpha: 1),
+            for: .selected
+        )
+        ccButton.layer.borderColor = UIColor.white
+            .withAlphaComponent(0.6).cgColor
+        ccButton.layer.borderWidth = 1
+        ccButton.layer.cornerRadius = 4
+    }
+
+    private func setupSubtitleLabel() {
+        addSubview(subtitleLabel)
+        NSLayoutConstraint.activate([
+            subtitleLabel.leadingAnchor.constraint(
+                equalTo: leadingAnchor, constant: 16
+            ),
+            subtitleLabel.trailingAnchor.constraint(
+                equalTo: trailingAnchor, constant: -16
+            ),
+            subtitleLabel.bottomAnchor.constraint(
+                equalTo: bottomAnchor, constant: -56
+            )
+        ])
+    }
+
     private func activateTopBarConstraints() {
+        activateSettingsConstraints()
+        activatePipConstraints()
+        activateCCConstraints()
+    }
+
+    private func activateSettingsConstraints() {
         let safeArea = controlsView.safeAreaLayoutGuide
         NSLayoutConstraint.activate([
             settingsButton.topAnchor.constraint(
-                equalTo: safeArea.topAnchor,
-                constant: 10
+                equalTo: safeArea.topAnchor, constant: 10
             ),
             settingsButton.trailingAnchor.constraint(
-                equalTo: safeArea.trailingAnchor,
-                constant: -12
+                equalTo: safeArea.trailingAnchor, constant: -12
             ),
-            settingsButton.widthAnchor.constraint(
-                equalToConstant: 36
-            ),
-            settingsButton.heightAnchor.constraint(
-                equalToConstant: 36
-            ),
+            settingsButton.widthAnchor.constraint(equalToConstant: 36),
+            settingsButton.heightAnchor.constraint(equalToConstant: 36)
+        ])
+    }
+
+    private func activatePipConstraints() {
+        NSLayoutConstraint.activate([
             pipButton.centerYAnchor.constraint(
                 equalTo: settingsButton.centerYAnchor
             ),
             pipButton.trailingAnchor.constraint(
-                equalTo: settingsButton.leadingAnchor,
-                constant: -4
+                equalTo: settingsButton.leadingAnchor, constant: -4
             ),
-            pipButton.widthAnchor.constraint(
-                equalToConstant: 36
+            pipButton.widthAnchor.constraint(equalToConstant: 36),
+            pipButton.heightAnchor.constraint(equalToConstant: 36)
+        ])
+    }
+
+    private func activateCCConstraints() {
+        NSLayoutConstraint.activate([
+            ccButton.centerYAnchor.constraint(
+                equalTo: settingsButton.centerYAnchor
             ),
-            pipButton.heightAnchor.constraint(
-                equalToConstant: 36
-            )
+            ccButton.trailingAnchor.constraint(
+                equalTo: pipButton.leadingAnchor, constant: -4
+            ),
+            ccButton.widthAnchor.constraint(equalToConstant: 32),
+            ccButton.heightAnchor.constraint(equalToConstant: 22)
         ])
     }
 

@@ -62,6 +62,8 @@ final class WatchViewController: UIViewController {
     var pageLoadToken = CancellationToken()
     var isOuterScrollViewDragging = false
     var didSeekToSavedPosition = false
+    var captionTracks: [SubtitleTrack] = []
+    var activeSubtitleLanguage: String?
 
     // MARK: - UI Elements
 

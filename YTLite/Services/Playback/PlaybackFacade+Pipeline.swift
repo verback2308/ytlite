@@ -63,11 +63,9 @@ extension PlaybackFacade {
         pipelineContext ctx: PlaybackPipelineContext
     ) {
         logStartPlayback(info, client: ctx.client)
+        notifyCaptionTracks(info.captionTracks)
         if hasDirectStreams(info) {
-            playDirectStream(
-                info,
-                client: ctx.client
-            )
+            playDirectStream(info, client: ctx.client)
             return
         }
         logSabrInfo(info, client: ctx.client)
@@ -88,6 +86,17 @@ extension PlaybackFacade {
             visitorData: visitorData,
             pipelineContext: ctx
         )
+    }
+
+    private func notifyCaptionTracks(
+        _ tracks: [SubtitleTrack]
+    ) {
+        guard let ctx = context else {
+            return
+        }
+        DispatchQueue.main.async {
+            ctx.setCaptionTracks(tracks)
+        }
     }
 
     private func fetchOnesieBootstrap(
@@ -263,7 +272,8 @@ extension PlaybackFacade {
             allDashVideoFormats: refreshed.allDashVideoFormats,
             duration: refreshed.duration,
             playbackTrackingURLs: refreshed.playbackTrackingURLs
-                ?? original.playbackTrackingURLs
+                ?? original.playbackTrackingURLs,
+            captionTracks: original.captionTracks
         )
     }
     // swiftlint:enable function_parameter_count

@@ -57,6 +57,7 @@ final class VideoPlayerView: UIView {
     )
     let settingsButton = UIButton(type: .system)
     let pipButton = UIButton(type: .system)
+    let ccButton = UIButton(type: .system)
     var pipController: AVPictureInPictureController?
     let rewindButton = UIButton(type: .system)
     let playPauseButton = UIButton(type: .system)
@@ -104,6 +105,28 @@ final class VideoPlayerView: UIView {
         button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()
+
+    // MARK: - Subtitles
+
+    let subtitleLabel: UILabel = {
+        let label = UILabel()
+        label.textColor = .white
+        label.font = UIFont.systemFont(
+            ofSize: 16, weight: .semibold
+        )
+        label.numberOfLines = 0
+        label.textAlignment = .center
+        label.backgroundColor = UIColor.black
+            .withAlphaComponent(0.6)
+        label.layer.cornerRadius = 4
+        label.layer.masksToBounds = true
+        label.isHidden = true
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+
+    var subtitleCues: [SubtitleCue] = []
+    var onCCTapped: (() -> Void)?
 
     // MARK: - State
 

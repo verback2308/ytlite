@@ -46,6 +46,7 @@ protocol PlaybackContext: AnyObject {
     ) -> URL
     func startObservingPlayerItem(_ item: AVPlayerItem)
     func stopObservingPlayerItem(_ item: AVPlayerItem)
+    func setCaptionTracks(_ tracks: [SubtitleTrack])
 }
 
 // MARK: - PlaybackStrategy

@@ -72,7 +72,7 @@ extension VideoPlayerView {
             return
         }
         let interval = CMTime(
-            seconds: 0.5,
+            seconds: 0.1,
             preferredTimescale: 600
         )
         timeObserver = player.addPeriodicTimeObserver(

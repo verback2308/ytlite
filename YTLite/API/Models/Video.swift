@@ -128,6 +128,7 @@ struct DirectPlaybackInfo {
     let allDashVideoFormats: [DashFormatInfo]
     let duration: Double?
     let playbackTrackingURLs: WatchtimeURLs?
+    let captionTracks: [SubtitleTrack]
 }
 
 struct WatchtimeURLs {

@@ -236,6 +236,15 @@ extension WatchViewController {
         playerContainer.addSubview(playerView)
         applyEdgeConstraints(playerView, to: playerContainer)
         videoPlayerView = playerView
+        if !captionTracks.isEmpty {
+            playerView.setCaptionTracks(
+                captionTracks,
+                activeLanguage: activeSubtitleLanguage
+            )
+            playerView.onCCTapped = { [weak self] in
+                self?.showSubtitlePicker()
+            }
+        }
         return playerView
     }
     func configureSponsorBlock(
@@ -245,6 +254,7 @@ extension WatchViewController {
         playerView.onTimeUpdate = { [weak self] time in
             self?.sponsorBlock.checkTime(time)
             NowPlayingService.shared.updatePosition(time)
+            self?.videoPlayerView?.updateSubtitle(at: time)
         }
         playerView.onSkipTapped = { [weak self] in
             self?.sponsorBlock.skipCurrentSegment()
