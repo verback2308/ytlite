@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import AVFoundation
 
 extension PlaybackFacade {
@@ -223,7 +224,24 @@ extension PlaybackFacade {
         let hasVpuc = refreshed
             .hasPlaybackUstreamerConfig
             || original.hasPlaybackUstreamerConfig
-        return DirectPlaybackInfo(
+        return buildMergedInfo(
+            refreshed: refreshed,
+            vpuc: vpuc,
+            ouc: ouc,
+            hasVpuc: hasVpuc,
+            original: original
+        )
+    }
+
+    // swiftlint:disable function_parameter_count
+    private func buildMergedInfo(
+        refreshed: DirectPlaybackInfo,
+        vpuc: String?,
+        ouc: String?,
+        hasVpuc: Bool,
+        original: DirectPlaybackInfo
+    ) -> DirectPlaybackInfo {
+        DirectPlaybackInfo(
             hlsManifestURL: refreshed.hlsManifestURL,
             dashManifestURL: refreshed.dashManifestURL,
             progressiveURL: refreshed.progressiveURL,
@@ -243,9 +261,12 @@ extension PlaybackFacade {
             dashVideoFormat: refreshed.dashVideoFormat,
             dashAudioFormat: refreshed.dashAudioFormat,
             allDashVideoFormats: refreshed.allDashVideoFormats,
-            duration: refreshed.duration
+            duration: refreshed.duration,
+            playbackTrackingURLs: refreshed.playbackTrackingURLs
+                ?? original.playbackTrackingURLs
         )
     }
+    // swiftlint:enable function_parameter_count
 
     private func playDirectStream(
         _ info: DirectPlaybackInfo,
@@ -261,6 +282,7 @@ extension PlaybackFacade {
         }
         activePlaybackInfo = info
         activePlaybackClient = client
+        fetchWatchtimeAndTrack()
         DispatchQueue.main.async { [weak self] in
             guard let self,
                   let ctx = self.context else {
@@ -296,5 +318,21 @@ extension PlaybackFacade {
         info.hlsManifestURL != nil
             || info.progressiveURL != nil
             || (info.videoURL != nil && info.audioURL != nil)
+    }
+
+    private func fetchWatchtimeAndTrack() {
+        guard let videoId = currentVideoId,
+              let apiClient = currentApiClient
+        else {
+            return
+        }
+        apiClient.fetchWatchtimeURLs(
+            videoId: videoId
+        ) { [weak self] urls in
+            guard let urls else {
+                return
+            }
+            self?.watchtimeTracker.start(urls: urls)
+        }
     }
 }

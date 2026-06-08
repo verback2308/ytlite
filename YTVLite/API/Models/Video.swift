@@ -127,6 +127,13 @@ struct DirectPlaybackInfo {
     let dashAudioFormat: DashFormatInfo?
     let allDashVideoFormats: [DashFormatInfo]
     let duration: Double?
+    let playbackTrackingURLs: WatchtimeURLs?
+}
+
+struct WatchtimeURLs {
+    let playbackURL: String
+    let watchtimeURL: String
+    let duration: Double?
 }
 
 struct SabrFormatInfo {

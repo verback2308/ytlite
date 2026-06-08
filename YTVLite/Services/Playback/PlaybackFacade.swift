@@ -57,6 +57,9 @@ final class PlaybackFacade {
     var playlistSwitchBackgroundTask: UIBackgroundTaskIdentifier = .invalid
     private var activeDirectPlaybackClient: DirectPlaybackClient = .androidVR
     var backgroundAudioObservation: NSKeyValueObservation?
+    let watchtimeTracker = WatchtimeTracker()
+    var currentVideoId: String?
+    weak var currentApiClient: WatchService?
 
     static func makeContentPlaybackNonce(
         length: Int = 16
@@ -80,6 +83,8 @@ extension PlaybackFacade {
         cancellationToken: CancellationToken,
         client: DirectPlaybackClient = .androidVR
     ) {
+        currentVideoId = videoId
+        currentApiClient = apiClient
         activeDirectPlaybackClient = client
         context?.updateStatusLabel("Minting PoToken...")
         fetchPoTokenAndPlay(
@@ -103,5 +108,8 @@ extension PlaybackFacade {
         backgroundEnteredAt = nil
         backgroundPlaybackMode = .inline
         activeDirectPlaybackClient = .androidVR
+        watchtimeTracker.stop()
+        currentVideoId = nil
+        currentApiClient = nil
     }
 }

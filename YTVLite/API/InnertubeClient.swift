@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import Foundation
 
 final class InnertubeClient: VideoService, ChannelTabService {
@@ -7,6 +8,7 @@ final class InnertubeClient: VideoService, ChannelTabService {
     var baseURL: String { session.baseURL }
     var webContext: [String: Any] { session.webContext }
     var tvContext: [String: Any] { session.tvContext }
+    var androidContext: [String: Any] { session.androidContext }
 }
 
 // MARK: - VideoService
@@ -273,6 +275,28 @@ extension InnertubeClient {
                 cancellation: cancellationToken,
                 completion: completion
             )
+        }
+    }
+
+    func fetchWatchtimeURLs(
+        videoId: String,
+        completion: @escaping (WatchtimeURLs?) -> Void
+    ) {
+        OAuthClient.shared.validToken { [weak self] result in
+            guard let self,
+                  case .success(let token) = result
+            else {
+                completion(nil)
+                return
+            }
+            SignatureTimestampService.shared.fetch { ts in
+                self.executeWatchtimeURLs(
+                    videoId: videoId,
+                    token: token,
+                    signatureTimestamp: ts,
+                    completion: completion
+                )
+            }
         }
     }
 }

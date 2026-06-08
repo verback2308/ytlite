@@ -19,6 +19,7 @@ final class InnertubeSession {
     var webContext: [String: Any] { InnertubeContexts.web }
     var tvContext: [String: Any] { InnertubeContexts.tv }
     var androidVRContext: [String: Any] { InnertubeContexts.androidVR }
+    var androidContext: [String: Any] { InnertubeContexts.android }
 
     // MARK: - Mutable session state
     //

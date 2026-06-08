@@ -137,6 +137,10 @@ protocol WatchService: AnyObject {
         cancellationToken: CancellationToken?,
         completion: @escaping (Result<CommentsPage, Error>) -> Void
     )
+    func fetchWatchtimeURLs(
+        videoId: String,
+        completion: @escaping (WatchtimeURLs?) -> Void
+    )
 }
 
 protocol EngagementService: AnyObject {

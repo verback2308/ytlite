@@ -332,6 +332,8 @@ private extension InnertubeClient {
         let vis = (json["responseContext"]
             as? [String: Any])?["visitorData"]
             as? String
+        let wt = extractWatchtimeURL(json)
+        let ptURLs = extractWatchtimeURLs(json)
         return DirectPlaybackInfo(
             hlsManifestURL: urls.hls,
             dashManifestURL: urls.dash,
@@ -360,11 +362,27 @@ private extension InnertubeClient {
             dashVideoFormat: dV,
             dashAudioFormat: dA,
             allDashVideoFormats: allDash,
-            duration: dur
+            duration: dur,
+            playbackTrackingURLs: ptURLs
         )
     }
     // swiftlint:enable function_body_length
     // swiftlint:enable function_parameter_count
+
+    static func extractWatchtimeURL(
+        _ json: [String: Any]
+    ) -> String? {
+        let pt = json["playbackTracking"]
+            as? [String: Any]
+        let wt = pt?["videostatsWatchtimeUrl"]
+            as? [String: Any]
+        let url = wt?["baseUrl"] as? String
+        AppLog.innertube(
+            "playbackTracking watchtime="
+                + (url != nil ? "present" : "nil")
+        )
+        return url
+    }
 
     static func extractURLs(
         sd: [String: Any],
@@ -506,5 +524,52 @@ extension InnertubeClient {
                 || (video != nil && audio != nil)
                 || sabr != nil
         }
+    }
+
+    static func extractWatchtimeURLs(
+        _ json: [String: Any]
+    ) -> WatchtimeURLs? {
+        let pt = json["playbackTracking"]
+            as? [String: Any]
+        if pt == nil {
+            let ps = (json["playabilityStatus"]
+                as? [String: Any])?["status"]
+                ?? "nil"
+            AppLog.innertube(
+                "watchtimeURLs: no playbackTracking"
+                    + " playabilityStatus=\(ps)"
+            )
+        }
+        guard let pbURL = (pt?["videostatsPlaybackUrl"]
+            as? [String: Any])?["baseUrl"] as? String,
+              let wtURL = (pt?["videostatsWatchtimeUrl"]
+            as? [String: Any])?["baseUrl"] as? String
+        else {
+            return nil
+        }
+        let dur = extractDurationFromJSON(json)
+        return WatchtimeURLs(
+            playbackURL: pbURL,
+            watchtimeURL: wtURL,
+            duration: dur
+        )
+    }
+
+    static func extractDurationFromJSON(
+        _ json: [String: Any]
+    ) -> Double? {
+        let sd = json["streamingData"]
+            as? [String: Any]
+        let fmts = (sd?["formats"]
+            as? [[String: Any]] ?? [])
+            + (sd?["adaptiveFormats"]
+                as? [[String: Any]] ?? [])
+        return fmts
+            .compactMap {
+                ($0["approxDurationMs"] as? String)
+                    .flatMap(Double.init)
+            }
+            .first
+            .map { $0 / 1_000.0 }
     }
 }

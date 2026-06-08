@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import Foundation
 
 // MARK: - Playback & Subscriptions
@@ -174,6 +175,37 @@ extension InnertubeClient {
         ) { _ -> Void? in
             ()
         } completion: { completion($0) }
+    }
+
+    func executeWatchtimeURLs(
+        videoId: String,
+        token: String,
+        signatureTimestamp: Int?,
+        completion: @escaping (WatchtimeURLs?) -> Void
+    ) {
+        var body = tvContext
+        body["videoId"] = videoId
+        body["racyCheckOk"] = true
+        body["contentCheckOk"] = true
+        if let sts = signatureTimestamp {
+            body["playbackContext"] = [
+                "contentPlaybackContext": [
+                    "signatureTimestamp": sts
+                ]
+            ]
+        }
+        let playerURL =
+            "\(baseURL)\(InnertubeEndpoint.player)"
+        execute(
+            urlString: playerURL,
+            body: body,
+            headers: authHeaders(token: token),
+            logTag: "watchtimeURLs(\(videoId))"
+        ) { json -> WatchtimeURLs? in
+            InnertubeClient.extractWatchtimeURLs(json)
+        } completion: { result in
+            completion(try? result.get())
+        }
     }
 }
 
