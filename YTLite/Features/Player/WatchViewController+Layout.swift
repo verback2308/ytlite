@@ -19,26 +19,7 @@ extension WatchViewController {
         let bar = navigationController?.navigationBar
         bar?.tintColor = theme.isDark ? .white : theme.accent
         navigationController?.setNavigationBarHidden(false, animated: false)
-        navigationItem.leftBarButtonItem = makeBackButton()
-    }
-    func makeBackButton() -> UIBarButtonItem {
-        if #available(iOS 13.0, *) {
-            let cfg = UIImage.SymbolConfiguration(weight: .semibold)
-            let img = UIImage(systemName: "chevron.down", withConfiguration: cfg)
-            return UIBarButtonItem(
-                image: img,
-                style: .plain,
-                target: self,
-                action: #selector(closeTapped)
-            )
-        } else {
-            let btn = UIButton(type: .system)
-            btn.setTitle("⌄", for: .normal)
-            btn.titleLabel?.font = UIFont.systemFont(ofSize: 26, weight: .semibold)
-            btn.sizeToFit()
-            btn.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
-            return UIBarButtonItem(customView: btn)
-        }
+        updateLeftBarButton()
     }
     func addNotificationObservers() {
         let nc = NotificationCenter.default

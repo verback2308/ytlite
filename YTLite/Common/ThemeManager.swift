@@ -87,6 +87,11 @@ class ThemeManager {
         nav.barStyle = barStyle
         nav.tintColor = isDark ? .white : accent
         nav.titleTextAttributes = [.foregroundColor: primaryText]
+        if #available(iOS 13.0, *) {
+            let chevron = UIImage(systemName: "chevron.left")
+            nav.backIndicatorImage = chevron
+            nav.backIndicatorTransitionMaskImage = chevron
+        }
 
         let tab = UITabBar.appearance()
         tab.barStyle = barStyle

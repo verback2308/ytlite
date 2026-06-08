@@ -75,10 +75,7 @@ extension WatchViewController: UICollectionViewDelegate {
             return
         }
         let video = visibleRelatedVideos[indexPath.item]
-        videoRouter.open(
-            video: video,
-            from: self
-        )
+        navigateTo(video)
     }
 }
 

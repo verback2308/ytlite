@@ -14,20 +14,14 @@ final class RotatingNavigationController: UINavigationController {
         _ viewController: UIViewController,
         animated: Bool
     ) {
-        topViewController?.navigationItem.backBarButtonItem =
-            UIBarButtonItem(
-                title: "",
-                style: .plain,
-                target: nil,
-                action: nil
-            )
-        viewController.navigationItem.backBarButtonItem =
-            UIBarButtonItem(
-                title: "",
-                style: .plain,
-                target: nil,
-                action: nil
-            )
+        let backItem = UIBarButtonItem(
+            title: "",
+            style: .plain,
+            target: nil,
+            action: nil
+        )
+        topViewController?.navigationItem.backBarButtonItem = backItem
+        viewController.navigationItem.backBarButtonItem = backItem
         super.pushViewController(viewController, animated: animated)
     }
 }
