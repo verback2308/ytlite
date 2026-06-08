@@ -329,10 +329,15 @@ extension PlaybackFacade {
         apiClient.fetchWatchtimeURLs(
             videoId: videoId
         ) { [weak self] urls in
-            guard let urls else {
+            guard let urls,
+                  let self
+            else {
                 return
             }
-            self?.watchtimeTracker.start(urls: urls)
+            self.watchtimeTracker.start(
+                videoId: videoId,
+                urls: urls
+            )
         }
     }
 }

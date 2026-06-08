@@ -5,6 +5,9 @@ import UIKit
 // MARK: - Playback
 extension WatchViewController {
     func startPlayback() {
+        playbackFacade.watchtimeTracker.timeProvider = { [weak self] in
+            self?.videoPlayerView?.player?.currentTime().seconds ?? 0
+        }
         playbackFacade.start(
             videoId: initialVideo.id,
             apiClient: client,

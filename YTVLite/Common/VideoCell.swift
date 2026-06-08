@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import UIKit
 
 class VideoCell: UICollectionViewCell {
@@ -11,6 +12,9 @@ class VideoCell: UICollectionViewCell {
     private let thumbnail = ThumbnailImageView(frame: .zero)
     private let durationLabel = UILabel()
     private let liveBadgeView = UILabel()
+    private let progressTrack = UIView()
+    private let progressFill = UIView()
+    private var watchFraction: CGFloat = 0
     private let channelAvatarView = ThumbnailImageView(frame: .zero)
     private let titleLabel = UILabel()
     private let channelLabel = UILabel()
@@ -49,6 +53,19 @@ class VideoCell: UICollectionViewCell {
         } else {
             layoutGrid(cellWidth: cellWidth)
         }
+        layoutProgress()
+    }
+
+    private func layoutProgress() {
+        let barH: CGFloat = 3
+        let thumbW = thumbnail.bounds.width
+        let thumbH = thumbnail.bounds.height
+        guard thumbW > 0, thumbH > 0 else {
+            return
+        }
+        let barY = thumbH - barH
+        progressTrack.frame = CGRect(x: 0, y: barY, width: thumbW, height: barH)
+        progressFill.frame = CGRect(x: 0, y: barY, width: thumbW * watchFraction, height: barH)
     }
 
     override func prepareForReuse() {
@@ -64,6 +81,9 @@ class VideoCell: UICollectionViewCell {
         durationLabel.isHidden = true
         liveBadgeView.isHidden = true
         channelAvatarView.isHidden = false
+        watchFraction = 0
+        progressTrack.isHidden = true
+        progressFill.isHidden = true
         onChannelTap = nil
     }
 }
@@ -75,6 +95,14 @@ extension VideoCell {
         thumbnail.layer.cornerRadius = 4
         thumbnail.layer.masksToBounds = true
         contentView.addSubview(thumbnail)
+
+        progressTrack.backgroundColor = UIColor.black.withAlphaComponent(0.3)
+        progressTrack.isHidden = true
+        thumbnail.addSubview(progressTrack)
+        progressFill.backgroundColor = UIColor(
+            red: 1, green: 0, blue: 0, alpha: 1
+        )
+        thumbnail.addSubview(progressFill)
 
         durationLabel.font = UIFont.systemFont(ofSize: 11, weight: .semibold)
         durationLabel.textColor = .white
@@ -277,6 +305,21 @@ extension VideoCell {
         if let url = URL(string: video.thumbnailURL) {
             thumbnail.setImage(url: url)
         }
+        applyWatchProgress(videoId: video.id)
         setNeedsLayout()
+    }
+
+    private func applyWatchProgress(videoId: String) {
+        if let prog = WatchProgressStore.shared.progress(
+            forVideoId: videoId
+        ), prog.shouldShow {
+            watchFraction = CGFloat(prog.fraction)
+            progressTrack.isHidden = false
+            progressFill.isHidden = false
+        } else {
+            watchFraction = 0
+            progressTrack.isHidden = true
+            progressFill.isHidden = true
+        }
     }
 }
