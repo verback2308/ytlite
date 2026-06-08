@@ -91,6 +91,14 @@ extension WatchViewController {
                 + " tracks=[\(tracks)]"
         )
         seekToSavedPositionIfNeeded()
+        if let player = videoPlayerView?.player {
+            NowPlayingService.shared.beginSession(
+                player: player,
+                title: initialVideo.title,
+                channelName: initialVideo.channelName,
+                duration: duration
+            )
+        }
     }
 
     private func seekToSavedPositionIfNeeded() {

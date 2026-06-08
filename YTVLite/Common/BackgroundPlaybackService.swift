@@ -15,11 +15,9 @@ enum BackgroundPlaybackService {
     static func apply() {
         let session = AVAudioSession.sharedInstance()
         do {
-            if isEnabled {
-                try session.setCategory(.playback, mode: .moviePlayback)
-            } else {
-                try session.setCategory(.soloAmbient)
-            }
+            // Always use .playback so Now Playing / remote controls work.
+            // Background pause (when isEnabled=false) is handled in appDidEnterBackground.
+            try session.setCategory(.playback, mode: .moviePlayback)
             try session.setActive(true)
         } catch {
             AppLog.player("AVAudioSession error: \(error)")

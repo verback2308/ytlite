@@ -244,6 +244,7 @@ extension WatchViewController {
         sponsorBlock.attach(to: playerView)
         playerView.onTimeUpdate = { [weak self] time in
             self?.sponsorBlock.checkTime(time)
+            NowPlayingService.shared.updatePosition(time)
         }
         playerView.onSkipTapped = { [weak self] in
             self?.sponsorBlock.skipCurrentSegment()
@@ -260,5 +261,6 @@ extension WatchViewController {
             stopObservingPlayerItem(existing)
         }
         videoPlayerView?.detach()
+        NowPlayingService.shared.endSession()
     }
 }
