@@ -90,6 +90,29 @@ extension WatchViewController {
                 + " duration=\(duration)s"
                 + " tracks=[\(tracks)]"
         )
+        seekToSavedPositionIfNeeded()
+    }
+
+    private func seekToSavedPositionIfNeeded() {
+        guard !didSeekToSavedPosition,
+              let prog = WatchProgressStore.shared.progress(
+                  forVideoId: initialVideo.id
+              ),
+              prog.shouldShow,
+              let player = videoPlayerView?.player
+        else {
+            return
+        }
+        didSeekToSavedPosition = true
+        let target = CMTime(
+            seconds: prog.position,
+            preferredTimescale: 1_000
+        )
+        player.seek(
+            to: target,
+            toleranceBefore: .zero,
+            toleranceAfter: .zero
+        )
     }
 
     func logPlaybackFailure(_ item: AVPlayerItem) {

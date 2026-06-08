@@ -61,6 +61,7 @@ final class WatchViewController: UIViewController {
     let playbackFacade = PlaybackFacade()
     var pageLoadToken = CancellationToken()
     var isOuterScrollViewDragging = false
+    var didSeekToSavedPosition = false
 
     // MARK: - UI Elements
 
