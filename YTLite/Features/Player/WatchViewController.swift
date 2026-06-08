@@ -43,6 +43,7 @@ final class WatchViewController: UIViewController {
 
     // MARK: - State
 
+    var videoHistory: [Video] = []
     var watchPage: WatchPage?
     var isSubscribed: Bool = false
     var allRelatedVideos: [Video] = []

@@ -225,7 +225,7 @@ extension WatchViewController {
         overlay.alpha = 0
         overlay.onPlay = { [weak self] in
             self?.dismissAutoplayOverlay()
-            self?.loadVideo(video)
+            self?.navigateTo(video)
         }
         overlay.onCancel = { [weak self] in
             self?.dismissAutoplayOverlay()

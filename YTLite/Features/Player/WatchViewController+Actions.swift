@@ -157,7 +157,68 @@ extension WatchViewController {
     @objc
     func closeTapped() {
         exitFullscreenIfNeeded()
-        videoRouter.minimize()
+        if videoHistory.isEmpty {
+            videoRouter.minimize()
+        } else {
+            goBack()
+        }
+    }
+
+    func updateLeftBarButton() {
+        navigationItem.leftBarButtonItem = videoHistory.isEmpty
+            ? makeMinimizeButton()
+            : makeBackButton()
+    }
+
+    func makeMinimizeButton() -> UIBarButtonItem {
+        if #available(iOS 13.0, *) {
+            let cfg = UIImage.SymbolConfiguration(weight: .semibold)
+            let img = UIImage(
+                systemName: "chevron.down",
+                withConfiguration: cfg
+            )
+            return UIBarButtonItem(
+                image: img,
+                style: .plain,
+                target: self,
+                action: #selector(closeTapped)
+            )
+        } else {
+            return makeTextBarButton(title: "⌄")
+        }
+    }
+
+    func makeBackButton() -> UIBarButtonItem {
+        if #available(iOS 13.0, *) {
+            let cfg = UIImage.SymbolConfiguration(weight: .semibold)
+            let img = UIImage(
+                systemName: "chevron.left",
+                withConfiguration: cfg
+            )
+            return UIBarButtonItem(
+                image: img,
+                style: .plain,
+                target: self,
+                action: #selector(closeTapped)
+            )
+        } else {
+            return makeTextBarButton(title: "‹")
+        }
+    }
+
+    private func makeTextBarButton(
+        title: String
+    ) -> UIBarButtonItem {
+        let btn = UIButton(type: .system)
+        btn.setTitle(title, for: .normal)
+        btn.titleLabel?.font = .systemFont(ofSize: 26, weight: .semibold)
+        btn.sizeToFit()
+        btn.addTarget(
+            self,
+            action: #selector(closeTapped),
+            for: .touchUpInside
+        )
+        return UIBarButtonItem(customView: btn)
     }
 
     func exitFullscreenIfNeeded() {

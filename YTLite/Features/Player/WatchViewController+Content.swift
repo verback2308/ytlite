@@ -285,7 +285,30 @@ extension WatchViewController {
 // MARK: - Load Video
 
 extension WatchViewController {
+    /// Fresh open from grid/search/external — clears history.
     func loadVideo(_ video: Video) {
+        videoHistory.removeAll()
+        loadVideoInternal(video)
+        updateLeftBarButton()
+    }
+
+    /// Navigate within player (related, autoplay) — pushes current to history.
+    func navigateTo(_ video: Video) {
+        let current = watchPage?.video ?? initialVideo
+        videoHistory.append(current)
+        loadVideoInternal(video)
+        updateLeftBarButton()
+    }
+
+    /// Go back to previous video in history stack.
+    func goBack() {
+        guard let previous = videoHistory.popLast()
+        else { return }
+        loadVideoInternal(previous)
+        updateLeftBarButton()
+    }
+
+    private func loadVideoInternal(_ video: Video) {
         dismissAutoplayOverlay()
         pageLoadToken.cancel()
         pageLoadToken = CancellationToken()

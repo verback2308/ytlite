@@ -266,6 +266,7 @@ extension WatchViewController {
         }
     }
     func resetPlaybackSurfaces() {
+        videoPlayerView?.player?.pause()
         if let existing =
             videoPlayerView?.player?.currentItem {
             stopObservingPlayerItem(existing)
