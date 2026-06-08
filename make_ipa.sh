@@ -6,7 +6,7 @@
 set -e
 
 APP_NAME="YTLite"
-PROJECT="YTVLite.xcodeproj"
+PROJECT="YTLite.xcodeproj"
 SCHEME="YTVLite"
 
 echo "▶ Building Release for device..."

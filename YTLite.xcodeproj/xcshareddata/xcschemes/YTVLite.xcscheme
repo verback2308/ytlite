@@ -17,8 +17,8 @@
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "4940A71E2F6AD27900E6C599"
                BuildableName = "YTLite.app"
-               BlueprintName = "YTVLite"
-               ReferencedContainer = "container:YTVLite.xcodeproj">
+               BlueprintName = "YTLite"
+               ReferencedContainer = "container:YTLite.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -46,8 +46,8 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "4940A71E2F6AD27900E6C599"
             BuildableName = "YTLite.app"
-            BlueprintName = "YTVLite"
-            ReferencedContainer = "container:YTVLite.xcodeproj">
+            BlueprintName = "YTLite"
+            ReferencedContainer = "container:YTLite.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -63,8 +63,8 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "4940A71E2F6AD27900E6C599"
             BuildableName = "YTLite.app"
-            BlueprintName = "YTVLite"
-            ReferencedContainer = "container:YTVLite.xcodeproj">
+            BlueprintName = "YTLite"
+            ReferencedContainer = "container:YTLite.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

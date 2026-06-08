@@ -7,26 +7,26 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		4940A71F2F6AD27900E6C599 /* YTVLite.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = YTVLite.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4940A71F2F6AD27900E6C599 /* YTLite.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = YTLite.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		4940A7312F6AD27A00E6C599 /* Exceptions for "YTVLite" folder in "YTVLite" target */ = {
+		4940A7312F6AD27A00E6C599 /* Exceptions for "YTLite" folder in "YTLite" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = 4940A71E2F6AD27900E6C599 /* YTVLite */;
+			target = 4940A71E2F6AD27900E6C599 /* YTLite */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		4940A7212F6AD27900E6C599 /* YTVLite */ = {
+		4940A7212F6AD27900E6C599 /* YTLite */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				4940A7312F6AD27A00E6C599 /* Exceptions for "YTVLite" folder in "YTVLite" target */,
+				4940A7312F6AD27A00E6C599 /* Exceptions for "YTLite" folder in "YTLite" target */,
 			);
-			path = YTVLite;
+			path = YTLite;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -45,7 +45,7 @@
 		4940A7162F6AD27900E6C599 = {
 			isa = PBXGroup;
 			children = (
-				4940A7212F6AD27900E6C599 /* YTVLite */,
+				4940A7212F6AD27900E6C599 /* YTLite */,
 				4940A7202F6AD27900E6C599 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -53,7 +53,7 @@
 		4940A7202F6AD27900E6C599 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				4940A71F2F6AD27900E6C599 /* YTVLite.app */,
+				4940A71F2F6AD27900E6C599 /* YTLite.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -61,9 +61,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		4940A71E2F6AD27900E6C599 /* YTVLite */ = {
+		4940A71E2F6AD27900E6C599 /* YTLite */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 4940A7322F6AD27A00E6C599 /* Build configuration list for PBXNativeTarget "YTVLite" */;
+			buildConfigurationList = 4940A7322F6AD27A00E6C599 /* Build configuration list for PBXNativeTarget "YTLite" */;
 			buildPhases = (
 				49A8C3012FA4B10000A1B2C3 /* SwiftLint */,
 				4940A71B2F6AD27900E6C599 /* Sources */,
@@ -76,13 +76,13 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				4940A7212F6AD27900E6C599 /* YTVLite */,
+				4940A7212F6AD27900E6C599 /* YTLite */,
 			);
-			name = YTVLite;
+			name = YTLite;
 			packageProductDependencies = (
 			);
 			productName = YTVLite;
-			productReference = 4940A71F2F6AD27900E6C599 /* YTVLite.app */;
+			productReference = 4940A71F2F6AD27900E6C599 /* YTLite.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -100,7 +100,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 4940A71A2F6AD27900E6C599 /* Build configuration list for PBXProject "YTVLite" */;
+			buildConfigurationList = 4940A71A2F6AD27900E6C599 /* Build configuration list for PBXProject "YTLite" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -116,7 +116,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				4940A71E2F6AD27900E6C599 /* YTVLite */,
+				4940A71E2F6AD27900E6C599 /* YTLite */,
 			);
 		};
 /* End PBXProject section */
@@ -150,7 +150,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "export PATH=\"/opt/homebrew/bin:/usr/local/bin:$PATH\"\ncd \"$SRCROOT\" || exit 1\n\nif command -v swiftlint >/dev/null 2>&1; then\n  swiftlint lint --config \"$SRCROOT/.swiftlint.yml\" --strict YTVLite\nelse\n  echo \"error: SwiftLint is not installed or not available to Xcode.\"\n  echo \"error: Expected it in /opt/homebrew/bin or /usr/local/bin.\"\n  echo \"error: Install with: brew install swiftlint\"\n  exit 1\nfi\n";
+			shellScript = "export PATH=\"/opt/homebrew/bin:/usr/local/bin:$PATH\"\ncd \"$SRCROOT\" || exit 1\n\nif command -v swiftlint >/dev/null 2>&1; then\n  swiftlint lint --config \"$SRCROOT/.swiftlint.yml\" --strict YTLite\nelse\n  echo \"error: SwiftLint is not installed or not available to Xcode.\"\n  echo \"error: Expected it in /opt/homebrew/bin or /usr/local/bin.\"\n  echo \"error: Install with: brew install swiftlint\"\n  exit 1\nfi\n";
 		};
 		49B1D1002FA4B10000A1B299 /* Set Build Number */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -194,7 +194,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 4RAT6786W6;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = YTVLite/Info.plist;
+				INFOPLIST_FILE = YTLite/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = YTLite;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -207,7 +208,6 @@
 				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.verback.YTLite;
 				PRODUCT_NAME = YTLite;
-				INFOPLIST_KEY_CFBundleDisplayName = YTLite;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -228,7 +228,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 4RAT6786W6;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = YTVLite/Info.plist;
+				INFOPLIST_FILE = YTLite/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = YTLite;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -241,7 +242,6 @@
 				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.verback.YTLite;
 				PRODUCT_NAME = YTLite;
-				INFOPLIST_KEY_CFBundleDisplayName = YTLite;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -374,7 +374,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		4940A71A2F6AD27900E6C599 /* Build configuration list for PBXProject "YTVLite" */ = {
+		4940A71A2F6AD27900E6C599 /* Build configuration list for PBXProject "YTLite" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				4940A7352F6AD27A00E6C599 /* Debug */,
@@ -383,7 +383,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		4940A7322F6AD27A00E6C599 /* Build configuration list for PBXNativeTarget "YTVLite" */ = {
+		4940A7322F6AD27A00E6C599 /* Build configuration list for PBXNativeTarget "YTLite" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				4940A7332F6AD27A00E6C599 /* Debug */,
