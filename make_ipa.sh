@@ -1,14 +1,13 @@
 #!/bin/bash
 # make_ipa.sh — builds a distributable IPA for jailbroken devices (AppSync + Filza)
 # Usage: ./make_ipa.sh
-# Output: YTVLite.ipa in the project root
+# Output: YTLite_<version>_<build>.ipa in the project root
 
 set -e
 
-APP_NAME="YTVLite"
+APP_NAME="YTLite"
 PROJECT="YTVLite.xcodeproj"
 SCHEME="YTVLite"
-OUTPUT="$APP_NAME.ipa"
 
 echo "▶ Building Release for device..."
 xcodebuild \
@@ -20,13 +19,17 @@ xcodebuild \
   build \
   2>&1 | grep -E "error:|warning:|Build succeeded|Build FAILED" | tail -5
 
-BUILD_DIR=$(xcodebuild \
+BUILD_SETTINGS=$(xcodebuild \
   -project "$PROJECT" \
   -scheme "$SCHEME" \
   -sdk iphoneos \
   -configuration Release \
-  -showBuildSettings 2>/dev/null \
-  | grep "^ *BUILT_PRODUCTS_DIR" | head -1 | awk -F' = ' '{print $2}')
+  -showBuildSettings 2>/dev/null)
+
+BUILD_DIR=$(echo "$BUILD_SETTINGS" | grep "^ *BUILT_PRODUCTS_DIR" | head -1 | awk -F' = ' '{print $2}')
+VERSION=$(echo "$BUILD_SETTINGS" | grep "^ *MARKETING_VERSION" | head -1 | awk -F' = ' '{print $2}')
+BUILD=$(git -C "$(dirname "$0")" rev-list --count HEAD 2>/dev/null || echo "0")
+OUTPUT="${APP_NAME}_${VERSION}_${BUILD}.ipa"
 
 APP_PATH="$BUILD_DIR/$APP_NAME.app"
 
@@ -36,7 +39,6 @@ if [ ! -d "$APP_PATH" ]; then
 fi
 
 echo "▶ Replacing dev cert with ad-hoc signature..."
-# Ad-hoc ("-") works with AppSync on any jailbroken device without certificate expiry
 codesign -f -s - --deep --preserve-metadata=entitlements "$APP_PATH" 2>/dev/null \
   && echo "  codesign: ok" \
   || echo "  codesign: skipped (app will still install via AppSync)"

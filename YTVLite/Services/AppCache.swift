@@ -30,7 +30,7 @@ final class AppCache {
     let feedTTL: TimeInterval = 24 * 60 * 60
     private let watchPageTTL: TimeInterval = 60 * 60
     private let channelInfoTTL: TimeInterval = 24 * 60 * 60
-    let diskQueue = DispatchQueue(label: "com.verback.YTVLite.AppCache.disk")
+    let diskQueue = DispatchQueue(label: "com.verback.YTLite.AppCache.disk")
     var homeFeed: FeedPage?
     var subscriptionsFeed: FeedPage?
     var historyFeed: FeedPage?
