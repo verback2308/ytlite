@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import UIKit
 
 /// Settings popup presented as a sheet from the toolbar.
@@ -33,8 +34,16 @@ final class SettingsViewController: UIViewController {
             Section(header: "Playback", footer: nil, rows: [.quality, .backgroundPlayback]),
             Section(header: "Cache", footer: nil, rows: [.persistCache, .clearCache]),
             Section(header: "Return YouTube Dislike", footer: rydFooter, rows: [.rydEnabled]),
-            Section(header: "SponsorBlock", footer: sbFooter, rows: sponsorBlockRows)
+            Section(header: "SponsorBlock", footer: sbFooter, rows: sponsorBlockRows),
+            Section(header: nil, footer: appVersionFooter, rows: [])
         ]
+    }
+
+    private var appVersionFooter: String {
+        let info = Bundle.main.infoDictionary
+        let version = info?["CFBundleShortVersionString"] as? String ?? "?"
+        let build = info?["CFBundleVersion"] as? String ?? "?"
+        return "YTLite v\(version) (\(build))"
     }
 
     override func viewDidLoad() {
