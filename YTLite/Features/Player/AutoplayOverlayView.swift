@@ -5,7 +5,6 @@ final class AutoplayOverlayView: UIView {
     var onCancel: (() -> Void)?
 
     private let thumbnailView = ThumbnailImageView(frame: .zero)
-    private let blurView = UIVisualEffectView(effect: UIBlurEffect(style: .dark))
     private let dimView = UIView()
 
     private let ringTrack = CAShapeLayer()
@@ -61,10 +60,7 @@ final class AutoplayOverlayView: UIView {
         thumbnailView.translatesAutoresizingMaskIntoConstraints = false
         addSubview(thumbnailView)
 
-        blurView.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(blurView)
-
-        dimView.backgroundColor = UIColor.black.withAlphaComponent(0.55)
+        dimView.backgroundColor = UIColor.black.withAlphaComponent(0.45)
         dimView.translatesAutoresizingMaskIntoConstraints = false
         addSubview(dimView)
     }
@@ -128,11 +124,6 @@ final class AutoplayOverlayView: UIView {
             thumbnailView.leadingAnchor.constraint(equalTo: leadingAnchor),
             thumbnailView.trailingAnchor.constraint(equalTo: trailingAnchor),
             thumbnailView.bottomAnchor.constraint(equalTo: bottomAnchor),
-
-            blurView.topAnchor.constraint(equalTo: topAnchor),
-            blurView.leadingAnchor.constraint(equalTo: leadingAnchor),
-            blurView.trailingAnchor.constraint(equalTo: trailingAnchor),
-            blurView.bottomAnchor.constraint(equalTo: bottomAnchor),
 
             dimView.topAnchor.constraint(equalTo: topAnchor),
             dimView.leadingAnchor.constraint(equalTo: leadingAnchor),

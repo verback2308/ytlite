@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import UIKit
 
 // MARK: - Vote Formatting
@@ -238,14 +239,45 @@ extension WatchViewController {
     }
 
     func applyRelatedVideos(from page: WatchPage) {
-        allRelatedVideos = page.relatedVideos
+        var related = page.relatedVideos
+        if let next = page.nextVideo {
+            related.removeAll { $0.id == next.id }
+            let enriched = enrichWithChannelId(next, from: related)
+            related.insert(enriched, at: 0)
+        }
+        allRelatedVideos = related
         visibleRelatedVideos = Array(
-            page.relatedVideos.prefix(relatedBatchSize)
+            related.prefix(relatedBatchSize)
         )
         relatedCollectionView.reloadData()
         channelInfoStore.preload(
-            channelIds: page.relatedVideos
-                .compactMap(\.channelId)
+            channelIds: related.compactMap(\.channelId)
+        )
+    }
+
+    private func enrichWithChannelId(
+        _ video: Video,
+        from pool: [Video]
+    ) -> Video {
+        guard video.channelId == nil
+        else { return video }
+        let match = pool.first {
+            $0.channelId != nil
+            && $0.channelName == video.channelName
+        }
+        guard let chId = match?.channelId
+        else { return video }
+        return Video(
+            id: video.id,
+            title: video.title,
+            channelId: chId,
+            channelName: video.channelName,
+            channelAvatarURL: video.channelAvatarURL,
+            thumbnailURL: video.thumbnailURL,
+            viewCount: video.viewCount,
+            publishedAt: video.publishedAt,
+            duration: video.duration,
+            isLive: video.isLive
         )
     }
 }

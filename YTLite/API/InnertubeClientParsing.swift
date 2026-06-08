@@ -180,6 +180,9 @@ private extension InnertubeClient {
         let thumbURL = thumbs?.last?["url"] as? String
             ?? thumbs?.first?["url"] as? String
             ?? AppURLs.YouTube.thumbnailURL(videoId: videoId)
+        let viewCount = simpleText(from: ar["shortViewCountText"])
+        let publishedAt = simpleText(from: ar["publishedTimeText"])
+        let duration = extractOverlayDuration(ar["thumbnailOverlays"])
         return Video(
             id: videoId,
             title: title,
@@ -187,10 +190,28 @@ private extension InnertubeClient {
             channelName: channel,
             channelAvatarURL: nil,
             thumbnailURL: thumbURL,
-            viewCount: nil,
-            publishedAt: nil,
-            duration: nil
+            viewCount: viewCount,
+            publishedAt: publishedAt,
+            duration: duration
         )
+    }
+
+    private static func extractOverlayDuration(
+        _ overlays: Any?
+    ) -> String? {
+        guard let arr = overlays as? [Any]
+        else { return nil }
+        for item in arr {
+            guard let overlay = item as? [String: Any],
+                  let renderer = overlay[
+                      "thumbnailOverlayTimeStatusRenderer"
+                  ] as? [String: Any],
+                  let text = simpleText(from: renderer["text"]),
+                  !text.isEmpty
+            else { continue }
+            return text
+        }
+        return nil
     }
 
     static func searchLikeButtons(

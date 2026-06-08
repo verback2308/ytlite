@@ -71,7 +71,7 @@ extension InnertubeClient {
         // Try to extract channelId from owner renderers
         var enriched = fallbackVideo
         if enriched.channelId == nil,
-           let chId = extractOwnerChannelId(json) {
+           let chId = extractOwnerInfo(json).channelId {
             enriched = Video(
                 id: fallbackVideo.id,
                 title: fallbackVideo.title,
@@ -88,22 +88,28 @@ extension InnertubeClient {
         return buildFallbackChannel(fallbackVideo: enriched)
     }
 
-    // Extract channelId from slimOwnerRenderer / videoOwnerRenderer
-    private static func extractOwnerChannelId(
+    // Extract channelId + avatarURL from slimOwnerRenderer / videoOwnerRenderer
+    private static func extractOwnerInfo(
         _ json: [String: Any]
-    ) -> String? {
+    ) -> (channelId: String?, avatarURL: String?) {
         for name in [
             "slimOwnerRenderer",
             "videoOwnerRenderer",
             "ownerRenderer"
         ] {
-            if let owner = firstRenderer(in: json, named: name),
-               let chId = firstMatchingBrowseId(in: owner),
-               !chId.isEmpty {
-                return chId
+            guard let owner = firstRenderer(
+                in: json, named: name
+            ) else { continue }
+            let chId = firstMatchingBrowseId(in: owner)
+                .flatMap { $0.isEmpty ? nil : $0 }
+            let avatarURL = extractThumbnailURL(
+                from: owner["thumbnail"]
+            )
+            if chId != nil || avatarURL != nil {
+                return (chId, avatarURL)
             }
         }
-        return nil
+        return (nil, nil)
     }
 }
 
