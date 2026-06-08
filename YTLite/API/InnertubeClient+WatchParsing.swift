@@ -68,9 +68,42 @@ extension InnertubeClient {
         ) {
             return info
         }
-        return buildFallbackChannel(
-            fallbackVideo: fallbackVideo
-        )
+        // Try to extract channelId from owner renderers
+        var enriched = fallbackVideo
+        if enriched.channelId == nil,
+           let chId = extractOwnerChannelId(json) {
+            enriched = Video(
+                id: fallbackVideo.id,
+                title: fallbackVideo.title,
+                channelId: chId,
+                channelName: fallbackVideo.channelName,
+                channelAvatarURL: nil,
+                thumbnailURL: fallbackVideo.thumbnailURL,
+                viewCount: fallbackVideo.viewCount,
+                publishedAt: fallbackVideo.publishedAt,
+                duration: fallbackVideo.duration,
+                isLive: fallbackVideo.isLive
+            )
+        }
+        return buildFallbackChannel(fallbackVideo: enriched)
+    }
+
+    // Extract channelId from slimOwnerRenderer / videoOwnerRenderer
+    private static func extractOwnerChannelId(
+        _ json: [String: Any]
+    ) -> String? {
+        for name in [
+            "slimOwnerRenderer",
+            "videoOwnerRenderer",
+            "ownerRenderer"
+        ] {
+            if let owner = firstRenderer(in: json, named: name),
+               let chId = firstMatchingBrowseId(in: owner),
+               !chId.isEmpty {
+                return chId
+            }
+        }
+        return nil
     }
 }
 

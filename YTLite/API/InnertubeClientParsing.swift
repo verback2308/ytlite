@@ -164,28 +164,26 @@ private extension InnertubeClient {
         _ ar: [String: Any],
         videoId: String
     ) -> Video {
-        let vt = ar["videoTitle"]
-            as? [String: Any]
-        let title = vt?["simpleText"]
-            as? String ?? ""
-        let byline = ar["byline"]
-            as? [String: Any]
-        let channel = byline?["simpleText"]
-            as? String ?? ""
-        let bg = ar["background"]
-            as? [String: Any]
-        let thumbs = bg?["thumbnails"]
-            as? [[String: Any]]
-        let thumbURL =
-            thumbs?.last?["url"] as? String
+        let vt = ar["videoTitle"] as? [String: Any]
+        let title = vt?["simpleText"] as? String ?? ""
+        let byline = ar["byline"] as? [String: Any]
+        let channel = byline?["simpleText"] as? String
+            ?? (byline?["runs"] as? [[String: Any]])?
+                .first?["text"] as? String
+            ?? ""
+        let runs = byline?["runs"] as? [[String: Any]]
+        let nav = runs?.first?["navigationEndpoint"] as? [String: Any]
+        let browse = nav?["browseEndpoint"] as? [String: Any]
+        let channelId = browse?["browseId"] as? String
+        let bg = ar["background"] as? [String: Any]
+        let thumbs = bg?["thumbnails"] as? [[String: Any]]
+        let thumbURL = thumbs?.last?["url"] as? String
             ?? thumbs?.first?["url"] as? String
-            ?? AppURLs.YouTube.thumbnailURL(
-                videoId: videoId
-            )
+            ?? AppURLs.YouTube.thumbnailURL(videoId: videoId)
         return Video(
             id: videoId,
             title: title,
-            channelId: nil,
+            channelId: channelId,
             channelName: channel,
             channelAvatarURL: nil,
             thumbnailURL: thumbURL,

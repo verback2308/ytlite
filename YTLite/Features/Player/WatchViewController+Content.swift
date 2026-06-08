@@ -124,10 +124,29 @@ extension WatchViewController {
         resetComments()
         loadComments()
         view.setNeedsLayout()
+        prefetchNextVideoPoToken(page)
+    }
+
+    // Warm up PoToken for autoplay next video while current is playing
+    private func prefetchNextVideoPoToken(_ page: WatchPage) {
+        guard let nextId = page.nextVideo?.id else {
+            return
+        }
+        WebPoTokenService.shared.fetchSessionToken(
+            identifier: nextId
+        ) { _ in }
     }
 
     func applyChannelInfo(from page: WatchPage) {
         guard let channelInfo = page.channelInfo else {
+            let chId = page.video.channelId ?? "nil"
+            AppLog.channel(
+                "applyChannelInfo: no channelInfo,"
+                + " videoChannelId=\(chId)"
+            )
+            if let chId = page.video.channelId {
+                fetchChannelAvatar(channelId: chId)
+            }
             return
         }
         channelNameLabel.text = channelInfo.title.isEmpty
@@ -138,6 +157,7 @@ extension WatchViewController {
            let url = URL(string: avatarStr) {
             channelAvatarView.setImage(url: url)
         } else if let chId = page.video.channelId {
+            AppLog.channel("applyChannelInfo: avatarURL nil, fetching for \(chId)")
             fetchChannelAvatar(channelId: chId)
         }
     }
