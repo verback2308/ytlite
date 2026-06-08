@@ -259,10 +259,8 @@ extension PlaybackFacade {
             )
             return
         }
-        if info.dashVideoFormat != nil {
-            activePlaybackInfo = info
-            activePlaybackClient = client
-        }
+        activePlaybackInfo = info
+        activePlaybackClient = client
         DispatchQueue.main.async { [weak self] in
             guard let self,
                   let ctx = self.context else {
@@ -279,11 +277,17 @@ extension PlaybackFacade {
     private func hasDirectStreams(
         _ info: DirectPlaybackInfo
     ) -> Bool {
-        info.progressiveURL != nil
-            || info.hlsManifestURL != nil
+        let hasAdaptive = info.hlsManifestURL != nil
             || info.dashManifestURL != nil
-            || (info.videoURL != nil
-                && info.audioURL != nil)
+            || (info.videoURL != nil && info.audioURL != nil)
+        if hasAdaptive {
+            return true
+        }
+        // Prefer SABR adaptive streaming over 360p progressive fallback
+        if info.serverAbrStreamingURL != nil {
+            return false
+        }
+        return info.progressiveURL != nil
     }
 
     private func hasPlayableStreams(
@@ -291,7 +295,6 @@ extension PlaybackFacade {
     ) -> Bool {
         info.hlsManifestURL != nil
             || info.progressiveURL != nil
-            || (info.videoURL != nil
-                && info.audioURL != nil)
+            || (info.videoURL != nil && info.audioURL != nil)
     }
 }

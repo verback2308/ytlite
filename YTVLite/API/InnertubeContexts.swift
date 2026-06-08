@@ -52,11 +52,35 @@ enum InnertubeContexts {
             "request": ["useSsl": true, "internalExperimentFlags": []]
         ]
     ]
+    static let android: [String: Any] = [
+        "context": [
+            "client": [
+                "clientName": "ANDROID",
+                "clientVersion": "21.02.35",
+                "hl": "en",
+                "gl": "US",
+                "androidSdkVersion": 30,
+                "osName": "Android",
+                "osVersion": "11",
+                "userAgent": "com.google.android.youtube/21.02.35"
+                    + " (Linux; U; Android 11) gzip"
+            ],
+            "user": [
+                "enableSafetyMode": false,
+                "lockedSafetyMode": false
+            ],
+            "request": [
+                "useSsl": true,
+                "internalExperimentFlags": []
+            ]
+        ]
+    ]
+
     static let androidVR: [String: Any] = [
         "context": [
             "client": [
                 "clientName": "ANDROID_VR",
-                "clientVersion": "1.71.26",
+                "clientVersion": "1.65.10",
                 "hl": "en",
                 "timeZone": "UTC",
                 "utcOffsetMinutes": 0,
@@ -66,7 +90,7 @@ enum InnertubeContexts {
                 "osName": "Android",
                 "osVersion": "12L",
                 "userAgent": [
-                    "com.google.android.apps.youtube.vr.oculus/1.71.26",
+                    "com.google.android.apps.youtube.vr.oculus/1.65.10",
                     "(Linux; U; Android 12L;",
                     "eureka-user Build/SQ3A.220605.009.A1) gzip"
                 ].joined(separator: " ")
