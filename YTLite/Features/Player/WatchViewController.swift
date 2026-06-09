@@ -199,6 +199,7 @@ final class WatchViewController: UIViewController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         updateLayoutForSize()
+        adjustForFloatingNavBar()
     }
 
     override func viewWillDisappear(
@@ -227,8 +228,19 @@ final class WatchViewController: UIViewController {
         )
         coordinator.animate(
             alongsideTransition: { [weak self] _ in
-                self?.updateLayoutForSize(size)
-                self?.view.layoutIfNeeded()
+                guard let self else {
+                    return
+                }
+                // While in fullscreen the player view lives directly in the
+                // window; keep its frame in sync with the rotating window.
+                if self.fullscreenSnapshot != nil,
+                   let window = self.view.window {
+                    self.videoPlayerView?.frame = window.bounds
+                    self.videoPlayerView?.setNeedsLayout()
+                } else {
+                    self.updateLayoutForSize(size)
+                }
+                self.view.layoutIfNeeded()
             },
             completion: { [weak self] _ in
                 self?.updateLayoutForSize()

@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import UIKit
 
 final class PlayerPanelViewController: UIViewController, UIGestureRecognizerDelegate {
@@ -5,6 +6,12 @@ final class PlayerPanelViewController: UIViewController, UIGestureRecognizerDele
     private let navigationWrapper: RotatingNavigationController
     private lazy var expandedPanGesture: UIPanGestureRecognizer = makeExpandedPanGesture()
     private lazy var miniPanGesture: UIPanGestureRecognizer = makeMiniPanGesture()
+    // Covers the status-bar area above the nav wrapper so the background
+    // colour matches the navigation bar instead of showing through.
+    private let statusBarBackdrop = UIView()
+    // Top constraint for navigationWrapper; updated to window.safeAreaInsets.top
+    // so the nav bar always starts below the status bar / Dynamic Island.
+    private var navWrapperTopConstraint: NSLayoutConstraint?
 
     private(set) var isExpanded = true
     weak var miniBar: MiniPlayerBar? {
@@ -32,10 +39,17 @@ final class PlayerPanelViewController: UIViewController, UIGestureRecognizerDele
         view.clipsToBounds = true
         installNavigationWrapper()
         view.addGestureRecognizer(expandedPanGesture)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleThemeChange),
+            name: ThemeManager.didChangeNotification,
+            object: nil
+        )
     }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        updateNavWrapperTop()
         view.transform = isExpanded ? .identity : collapsedTransform()
     }
 
@@ -116,12 +130,48 @@ final class PlayerPanelViewController: UIViewController, UIGestureRecognizerDele
 }
 
 private extension PlayerPanelViewController {
+    /// UITabBarController does not always forward the full status-bar / Dynamic
+    /// Island safe-area top to child VCs inserted outside the official
+    /// `viewControllers` mechanism.  On iPad (small status bar) this is benign,
+    /// but on iPhone the navigation bar ends up at y=0, overlapping the Dynamic
+    /// Island.
+    ///
+    /// Fix: read the window's safeAreaInsets.top (always authoritative) and use
+    /// it as the explicit top offset for the navigation wrapper.  A backdrop view
+    /// fills the gap with the navigation bar's background colour.
+    func updateNavWrapperTop() {
+        guard let window = view.window else {
+            return
+        }
+        let top = window.safeAreaInsets.top
+        navWrapperTopConstraint?.constant = top
+        statusBarBackdrop.backgroundColor = ThemeManager.shared.surface
+    }
+
     func installNavigationWrapper() {
+        // Backdrop for the status-bar / Dynamic Island region above the nav bar.
+        statusBarBackdrop.translatesAutoresizingMaskIntoConstraints = false
+        statusBarBackdrop.backgroundColor = ThemeManager.shared.surface
+        view.addSubview(statusBarBackdrop)
+
         addChild(navigationWrapper)
         navigationWrapper.view.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(navigationWrapper.view)
+
+        let topConstraint = navigationWrapper.view.topAnchor.constraint(
+            equalTo: view.topAnchor,
+            constant: 0
+        )
+        navWrapperTopConstraint = topConstraint
+
         NSLayoutConstraint.activate([
-            navigationWrapper.view.topAnchor.constraint(equalTo: view.topAnchor),
+            statusBarBackdrop.topAnchor.constraint(equalTo: view.topAnchor),
+            statusBarBackdrop.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            statusBarBackdrop.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            statusBarBackdrop.bottomAnchor.constraint(
+                equalTo: navigationWrapper.view.topAnchor
+            ),
+            topConstraint,
             navigationWrapper.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             navigationWrapper.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             navigationWrapper.view.bottomAnchor.constraint(equalTo: view.bottomAnchor)
@@ -265,5 +315,17 @@ extension PlayerPanelViewController {
                 && !isControlView(touchedView)
         }
         return true
+    }
+}
+
+extension PlayerPanelViewController {
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        updateNavWrapperTop()
+    }
+
+    @objc
+    func handleThemeChange() {
+        statusBarBackdrop.backgroundColor = ThemeManager.shared.surface
     }
 }
