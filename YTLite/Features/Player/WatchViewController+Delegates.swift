@@ -238,3 +238,62 @@ extension WatchViewController: VideoPlayerViewDelegate {
         return "\(height)p"
     }
 }
+
+// MARK: - iPhone landscape fullscreen (no UI rotation)
+extension WatchViewController {
+    /// Rotates the player view inside the window to fill the screen in landscape
+    /// without rotating the portrait-locked UI.
+    func enterLandscapeFullscreen(
+        playerView: VideoPlayerView,
+        orientation: UIDeviceOrientation
+    ) {
+        guard let window = view.window else {
+            return
+        }
+        let frameInWindow = playerView.convert(playerView.bounds, to: window)
+        fullscreenSnapshot = (superview: playerView.superview ?? view, frame: playerView.frame)
+        isLandscapeFullscreen = true
+        setNeedsStatusBarAppearanceUpdate()
+        setNeedsUpdateOfHomeIndicatorAutoHidden()
+
+        playerView.removeFromSuperview()
+        playerView.translatesAutoresizingMaskIntoConstraints = true
+        playerView.autoresizingMask = []
+        playerView.frame = frameInWindow
+        window.addSubview(playerView)
+        playerView.isFullscreen = true
+        let width = window.bounds.width
+        let height = window.bounds.height
+        // Rotate clockwise for landscapeLeft, counterclockwise for landscapeRight,
+        // so the video appears right-side-up from the user's perspective.
+        let angle: CGFloat = orientation == .landscapeLeft ? .pi / 2 : -.pi / 2
+        UIView.animate(withDuration: 0.25, delay: 0, options: .curveEaseInOut) {
+            playerView.transform = CGAffineTransform(rotationAngle: angle)
+            playerView.bounds = CGRect(x: 0, y: 0, width: height, height: width)
+            playerView.center = CGPoint(x: width / 2, y: height / 2)
+        }
+    }
+
+    func exitLandscapeFullscreen(playerView: VideoPlayerView) {
+        guard let window = view.window,
+              let snap = fullscreenSnapshot else {
+            return
+        }
+        isLandscapeFullscreen = false
+        setNeedsStatusBarAppearanceUpdate()
+        setNeedsUpdateOfHomeIndicatorAutoHidden()
+        let target = snap.superview.convert(snap.frame, to: window)
+        UIView.animate(
+            withDuration: 0.25,
+            delay: 0,
+            options: .curveEaseInOut,
+            animations: {
+                playerView.transform = .identity
+                playerView.frame = target
+            },
+            completion: { [weak self] _ in
+                self?.restoreFromFullscreen(playerView: playerView, snapshot: snap)
+            }
+        )
+    }
+}

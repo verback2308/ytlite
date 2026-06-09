@@ -226,6 +226,10 @@ extension WatchViewController {
               let playerView = videoPlayerView else {
             return
         }
-        exitFullscreen(playerView: playerView)
+        if isLandscapeFullscreen {
+            exitLandscapeFullscreen(playerView: playerView)
+        } else {
+            exitFullscreen(playerView: playerView)
+        }
     }
 }

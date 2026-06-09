@@ -27,6 +27,7 @@ private func makeLandscapeRelatedLayout() -> UICollectionViewFlowLayout {
     return layout
 }
 
+// swiftlint:disable:next type_body_length
 final class WatchViewController: UIViewController {
     // MARK: - Dependencies
 
@@ -126,6 +127,7 @@ final class WatchViewController: UIViewController {
         superview: UIView,
         frame: CGRect
     )?
+    var isLandscapeFullscreen = false
     var channelTopToMeta: NSLayoutConstraint?
     var channelTopToDesc: NSLayoutConstraint?
 
@@ -138,6 +140,14 @@ final class WatchViewController: UIViewController {
     override var supportedInterfaceOrientations:
         UIInterfaceOrientationMask {
         .allButUpsideDown
+    }
+
+    override var prefersStatusBarHidden: Bool {
+        isLandscapeFullscreen
+    }
+
+    override var prefersHomeIndicatorAutoHidden: Bool {
+        isLandscapeFullscreen
     }
 
     // MARK: - Initializers
@@ -253,6 +263,9 @@ final class WatchViewController: UIViewController {
     deinit {
         NotificationCenter.default
             .removeObserver(self)
+        if UIDevice.current.userInterfaceIdiom != .pad {
+            UIDevice.current.endGeneratingDeviceOrientationNotifications()
+        }
         statusObservation?.invalidate()
         statusObservation = nil
         if let item =

@@ -319,6 +319,14 @@ extension PlayerPanelViewController {
 }
 
 extension PlayerPanelViewController {
+    override var childForStatusBarHidden: UIViewController? {
+        navigationWrapper
+    }
+
+    override var childForHomeIndicatorAutoHidden: UIViewController? {
+        navigationWrapper
+    }
+
     override func viewSafeAreaInsetsDidChange() {
         super.viewSafeAreaInsetsDidChange()
         updateNavWrapperTop()

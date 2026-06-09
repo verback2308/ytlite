@@ -9,6 +9,18 @@ final class RotatingNavigationController: UINavigationController {
         topViewController?.supportedInterfaceOrientations
             ?? super.supportedInterfaceOrientations
     }
+    override var prefersStatusBarHidden: Bool {
+        topViewController?.prefersStatusBarHidden ?? super.prefersStatusBarHidden
+    }
+    override var childForStatusBarHidden: UIViewController? {
+        topViewController
+    }
+    override var prefersHomeIndicatorAutoHidden: Bool {
+        topViewController?.prefersHomeIndicatorAutoHidden ?? super.prefersHomeIndicatorAutoHidden
+    }
+    override var childForHomeIndicatorAutoHidden: UIViewController? {
+        topViewController
+    }
 
     override func pushViewController(
         _ viewController: UIViewController,
@@ -32,13 +44,26 @@ class MainTabBarController: UITabBarController {
     private var miniPlayerBar: MiniPlayerBar?
     private var miniPlayerBarBottomConstraint: NSLayoutConstraint?
 
+    override var childForStatusBarHidden: UIViewController? {
+        playerPanel ?? selectedViewController
+    }
+
+    override var childForHomeIndicatorAutoHidden: UIViewController? {
+        playerPanel ?? selectedViewController
+    }
+
     override var shouldAutorotate: Bool {
-        selectedViewController?.shouldAutorotate
-            ?? super.shouldAutorotate
+        if UIDevice.current.userInterfaceIdiom != .pad {
+            return false
+        }
+        return selectedViewController?.shouldAutorotate ?? super.shouldAutorotate
     }
 
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
-        selectedViewController?.supportedInterfaceOrientations
+        if UIDevice.current.userInterfaceIdiom != .pad {
+            return .portrait
+        }
+        return selectedViewController?.supportedInterfaceOrientations
             ?? super.supportedInterfaceOrientations
     }
 
@@ -72,10 +97,15 @@ class MainTabBarController: UITabBarController {
         with coordinator: UIViewControllerTransitionCoordinator
     ) {
         super.viewWillTransition(to: size, with: coordinator)
-        coordinator.animate(alongsideTransition: nil) { [weak self] _ in
-            self?.tabBar.setNeedsLayout()
-            self?.tabBar.layoutIfNeeded()
-        }
+        coordinator.animate(
+            alongsideTransition: { [weak self] _ in
+                self?.tabBar.setNeedsLayout()
+            },
+            completion: { [weak self] _ in
+                self?.tabBar.setNeedsLayout()
+                self?.tabBar.layoutIfNeeded()
+            }
+        )
     }
 
     private func buildTabs() -> [UIViewController] {
@@ -191,5 +221,13 @@ class MainTabBarController: UITabBarController {
         panel.willMove(toParent: nil)
         panel.view.removeFromSuperview()
         panel.removeFromParent()
+        // Defer the tab-bar re-layout to the next run-loop cycle so UIKit
+        // finishes all internal hierarchy cleanup before we force a layout.
+        // Without this, item positions can be stale after a
+        // landscape → fullscreen → portrait → close sequence.
+        DispatchQueue.main.async { [weak self] in
+            self?.tabBar.setNeedsLayout()
+            self?.tabBar.layoutIfNeeded()
+        }
     }
 }

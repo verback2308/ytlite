@@ -41,6 +41,17 @@ extension WatchViewController {
         nc.addObserver(self, selector: #selector(applyTheme), name: tn, object: nil)
         nc.addObserver(self, selector: #selector(appDidEnterBackground), name: bg, object: nil)
         nc.addObserver(self, selector: #selector(appWillEnterForeground), name: fg, object: nil)
+        // On iPhone the interface is portrait-locked; handle landscape fullscreen
+        // by observing raw device orientation changes instead of relying on rotation.
+        if UIDevice.current.userInterfaceIdiom != .pad {
+            UIDevice.current.beginGeneratingDeviceOrientationNotifications()
+            nc.addObserver(
+                self,
+                selector: #selector(handleDeviceOrientationChange),
+                name: UIDevice.orientationDidChangeNotification,
+                object: nil
+            )
+        }
     }
     func setupLayout() {
         setupScrollAndPlayer()
@@ -299,6 +310,22 @@ extension WatchViewController {
         let extra = max(0, navBarBottom - systemTop)
         if abs(additionalSafeAreaInsets.top - extra) > 0.5 {
             additionalSafeAreaInsets.top = extra
+        }
+    }
+}
+
+// MARK: - iPhone landscape rotation → auto-fullscreen
+extension WatchViewController {
+    @objc
+    func handleDeviceOrientationChange() {
+        let orientation = UIDevice.current.orientation
+        guard let playerView = videoPlayerView else {
+            return
+        }
+        if orientation.isLandscape, fullscreenSnapshot == nil {
+            enterLandscapeFullscreen(playerView: playerView, orientation: orientation)
+        } else if orientation == .portrait, isLandscapeFullscreen {
+            exitLandscapeFullscreen(playerView: playerView)
         }
     }
 }
