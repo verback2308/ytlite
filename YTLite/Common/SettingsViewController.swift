@@ -4,7 +4,8 @@ import UIKit
 /// Settings popup presented as a sheet from the toolbar.
 final class SettingsViewController: UIViewController {
     private enum Row {
-        case theme, quality, backgroundPlayback, persistCache, clearCache, rydEnabled
+        case theme, quality, backgroundPlayback, showShorts
+        case persistCache, clearCache, rydEnabled
         case sponsorBlockEnabled, sponsorBlockSettings
     }
     private struct Section {
@@ -31,7 +32,11 @@ final class SettingsViewController: UIViewController {
             : nil
         return [
             Section(header: "Theme", footer: nil, rows: [.theme]),
-            Section(header: "Playback", footer: nil, rows: [.quality, .backgroundPlayback]),
+            Section(
+                header: "Playback",
+                footer: nil,
+                rows: [.quality, .backgroundPlayback, .showShorts]
+            ),
             Section(header: "Cache", footer: nil, rows: [.persistCache, .clearCache]),
             Section(header: "Return YouTube Dislike", footer: rydFooter, rows: [.rydEnabled]),
             Section(header: "SponsorBlock", footer: sbFooter, rows: sponsorBlockRows),
@@ -105,6 +110,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
         sections[section].footer
     }
 
+    // swiftlint:disable:next cyclomatic_complexity
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         switch sections[indexPath.section].rows[indexPath.row] {
         case .theme:
@@ -117,6 +123,8 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
                 BackgroundPlaybackService.isEnabled = $0
                 BackgroundPlaybackService.apply()
             }
+        case .showShorts:
+            return makeShowShortsCell()
         case .persistCache:
             return makeToggleCell("Keep feed cache 24h", isOn: AppCache.persistenceEnabled) {
                 AppCache.persistenceEnabled = $0
@@ -146,6 +154,13 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             showSponsorBlockSettings()
         default:
             break
+        }
+    }
+
+    private func makeShowShortsCell() -> UITableViewCell {
+        let isOn = UserDefaults.standard.bool(forKey: UserDefaultsKeys.Feed.showShorts)
+        return makeToggleCell("Show Shorts", isOn: isOn) {
+            UserDefaults.standard.set($0, forKey: UserDefaultsKeys.Feed.showShorts)
         }
     }
 

@@ -90,3 +90,18 @@ struct PlaylistRendererParser: VideoRendererParser {
         return InnertubeClient.parsePlaylistRenderer(pr)
     }
 }
+
+// MARK: - ReelItemVideoRendererParser
+
+/// Handles `reelItemRenderer` (YouTube Shorts) — appears as a direct item or
+/// wrapped inside `richItemRenderer/content/reelItemRenderer`.
+struct ReelItemVideoRendererParser: VideoRendererParser {
+    func video(from item: [String: Any]) -> Video? {
+        let ri = item["reelItemRenderer"] as? [String: Any]
+            ?? item.digDict(RendererKey.richItem, JSONKey.content, "reelItemRenderer")
+        guard let ri else {
+            return nil
+        }
+        return InnertubeClient.parseReelItem(ri)
+    }
+}

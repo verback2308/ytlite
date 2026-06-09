@@ -34,11 +34,34 @@ enum VideoRendererParserChain {
         RichItemVideoRendererParser(),
         LockupViewModelVideoParser(),
         RadioRendererParser(),
-        PlaylistRendererParser()
+        PlaylistRendererParser(),
+        ReelItemVideoRendererParser()
     ]
 
     static func video(from item: [String: Any]) -> Video? {
         parsers.lazy.compactMap { $0.video(from: item) }.first
+    }
+
+    /// Returns true if `item` is a YouTube Short.
+    /// Shorts appear as:
+    ///   • richItemRenderer/content/reelItemRenderer
+    ///   • richItemRenderer/content/videoRenderer with reelWatchEndpoint navigation
+    static func isShortFeedItem(_ item: [String: Any]) -> Bool {
+        guard let ri = item[RendererKey.richItem] as? [String: Any],
+              let content = ri[JSONKey.content] as? [String: Any] else {
+            return false
+        }
+        if content["reelItemRenderer"] != nil
+            || content["shortsLockupViewModel"] != nil {
+            return true
+        }
+        // Regular videoRenderer that navigates to /shorts/…
+        if let vr = content[RendererKey.video] as? [String: Any],
+           let nav = vr["navigationEndpoint"] as? [String: Any],
+           nav["reelWatchEndpoint"] != nil {
+            return true
+        }
+        return false
     }
 
     /// Extracts a continuation token from a `continuationItemRenderer` item, if present.
@@ -54,15 +77,17 @@ enum VideoRendererParserChain {
     }
 
     /// Convenience: maps a list of items to videos, skipping unrecognised items.
+    /// Shorts (reelItemRenderer) are excluded unless the showShorts setting is on.
     static func videos(from items: [[String: Any]]) -> [Video] {
-        items.compactMap { video(from: $0) }
+        filtered(items).compactMap { video(from: $0) }
     }
 
     /// Convenience: maps items to videos AND extracts the first continuation token found.
+    /// Shorts (reelItemRenderer) are excluded unless the showShorts setting is on.
     static func parse(items: [[String: Any]]) -> (videos: [Video], continuation: String?) {
         var videos: [Video] = []
         var continuation: String?
-        for item in items {
+        for item in filtered(items) {
             if let video = video(from: item) {
                 videos.append(video)
             } else if continuation == nil, let token = Self.continuation(from: item) {
@@ -70,5 +95,17 @@ enum VideoRendererParserChain {
             }
         }
         return (videos, continuation)
+    }
+
+    // MARK: - Private
+
+    private static func filtered(_ items: [[String: Any]]) -> [[String: Any]] {
+        let showShorts = UserDefaults.standard.bool(
+            forKey: UserDefaultsKeys.Feed.showShorts
+        )
+        guard !showShorts else {
+            return items
+        }
+        return items.filter { !isShortFeedItem($0) }
     }
 }

@@ -31,6 +31,10 @@ enum UserDefaultsKeys {
         }
     }
 
+    enum Feed {
+        static let showShorts = "feed_showShorts"
+    }
+
     enum Player {
         static let backgroundPlayback = "player_backgroundPlayback"
     }

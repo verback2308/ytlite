@@ -1,7 +1,32 @@
+// swiftlint:disable file_length
 import Foundation
 
 // MARK: - Renderer Parsing
 extension InnertubeClient {
+    /// Parses a `reelItemRenderer` dictionary (YouTube Shorts) into a `Video`.
+    static func parseReelItem(_ ri: [String: Any]) -> Video? {
+        let videoId = ri[JSONKey.videoId] as? String
+            ?? ri.digString("navigationEndpoint", "reelWatchEndpoint", JSONKey.videoId)
+        guard let videoId else {
+            return nil
+        }
+        let title = ri.digString("headline", JSONKey.simpleText) ?? ""
+        let thumb = preferredThumbnailURL(videoId: videoId, fallbackURL: "")
+        let views = ri.digString("viewCountText", JSONKey.simpleText)
+        return Video(
+            id: videoId,
+            title: title,
+            channelId: nil,
+            channelName: "",
+            channelAvatarURL: nil,
+            thumbnailURL: thumb,
+            viewCount: views,
+            publishedAt: nil,
+            duration: nil,
+            isLive: false
+        )
+    }
+
     static func parseWebVideoRenderer(
         _ vr: [String: Any]
     ) -> Video? {

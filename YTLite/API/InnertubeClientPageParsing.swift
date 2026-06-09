@@ -46,6 +46,9 @@ extension InnertubeClient {
         let sections = slr["contents"]
             as? [[String: Any]] ?? []
         var videos: [Video] = []
+        let showShorts = UserDefaults.standard.bool(
+            forKey: UserDefaultsKeys.Feed.showShorts
+        )
         for section in sections {
             guard let shelf = section[
                 "shelfRenderer"
@@ -53,6 +56,9 @@ extension InnertubeClient {
                   let sc = shelf["content"]
                     as? [String: Any]
             else {
+                continue
+            }
+            if !showShorts && isShortsShelf(shelf) {
                 continue
             }
             appendShelfVideos(
@@ -167,6 +173,26 @@ private extension InnertubeClient {
             as? [String: Any])?[
                 "sectionListRenderer"
             ] as? [String: Any]
+    }
+
+    static func isShortsShelf(
+        _ shelf: [String: Any]
+    ) -> Bool {
+        let lockup = shelf.digDict(
+            "headerRenderer",
+            "shelfHeaderRenderer",
+            "avatarLockup",
+            "avatarLockupRenderer"
+        )
+        let icon = lockup?["icon"] as? [String: Any]
+        if let iconType = icon?["iconType"] as? String,
+           iconType.contains("SHORTS") {
+            return true
+        }
+        let title = lockup?["title"] as? [String: Any]
+        let runs = title?["runs"] as? [[String: Any]]
+        let text = runs?.first?["text"] as? String
+        return text?.lowercased() == "shorts"
     }
 
     static func appendShelfVideos(
