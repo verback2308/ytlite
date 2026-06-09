@@ -98,7 +98,10 @@ class SubscriptionVideoCell: UITableViewCell {
         withHorizontalFittingPriority horizontalFittingPriority: UILayoutPriority,
         verticalFittingPriority: UILayoutPriority
     ) -> CGSize {
-        sizeThatFits(CGSize(width: targetSize.width, height: 0))
+        // On some iOS versions targetSize.width may be 0; fall back to the
+        // cell's actual width (set by the table view before this is called).
+        let width = targetSize.width > 10 ? targetSize.width : bounds.width
+        return sizeThatFits(CGSize(width: width, height: 0))
     }
 
     /// iPad / wide: thumbnail left, text right — matches original subscriptions style

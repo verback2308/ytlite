@@ -67,6 +67,17 @@ class MainTabBarController: UITabBarController {
         applyTheme()
     }
 
+    override func viewWillTransition(
+        to size: CGSize,
+        with coordinator: UIViewControllerTransitionCoordinator
+    ) {
+        super.viewWillTransition(to: size, with: coordinator)
+        coordinator.animate(alongsideTransition: nil) { [weak self] _ in
+            self?.tabBar.setNeedsLayout()
+            self?.tabBar.layoutIfNeeded()
+        }
+    }
+
     private func buildTabs() -> [UIViewController] {
         [makeHomeTab(), makeSubscriptionsTab(), makeLibraryTab()]
     }

@@ -1,6 +1,12 @@
+// swiftlint:disable file_length
 import UIKit
 
 extension WatchViewController {
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        adjustForFloatingNavBar()
+    }
+
     func setupNavigationBar() {
         let theme = ThemeManager.shared
         if #available(iOS 13.0, *) {
@@ -271,6 +277,29 @@ extension WatchViewController {
         rv.contentInsetAdjustmentBehavior = .never
         contentView.addSubview(rv)
         relatedHeightConstraint = rv.heightAnchor.constraint(equalToConstant: 0)
+    }
+
+    /// On iOS 26+ the navigation bar uses a floating "Liquid Glass" style that
+    /// no longer contributes its height to `view.safeAreaInsets`.  When that
+    /// happens the player appears behind the bar.  We detect the gap and
+    /// compensate via `additionalSafeAreaInsets` so Auto Layout still works.
+    func adjustForFloatingNavBar() {
+        guard let navBar = navigationController?.navigationBar,
+              !navBar.isHidden else {
+            if additionalSafeAreaInsets.top != 0 {
+                additionalSafeAreaInsets.top = 0
+            }
+            return
+        }
+        let navBarBottom = navBar.convert(
+            CGPoint(x: 0, y: navBar.bounds.height),
+            to: view
+        ).y
+        let systemTop = view.safeAreaInsets.top - additionalSafeAreaInsets.top
+        let extra = max(0, navBarBottom - systemTop)
+        if abs(additionalSafeAreaInsets.top - extra) > 0.5 {
+            additionalSafeAreaInsets.top = extra
+        }
     }
 }
 

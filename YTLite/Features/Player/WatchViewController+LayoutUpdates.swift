@@ -2,6 +2,11 @@ import UIKit
 
 extension WatchViewController {
     func updateLayoutForSize(_ size: CGSize? = nil) {
+        // While in fullscreen the player view lives in the window, not in our
+        // view hierarchy — skip layout until the user exits fullscreen.
+        guard fullscreenSnapshot == nil else {
+            return
+        }
         let resolved = size ?? view.bounds.size
         let isLandscape = resolved.width > resolved.height
         if isLandscape {
@@ -52,6 +57,9 @@ extension WatchViewController {
         playerToSidebarConstraint?.isActive = false
         playerTrailingConstraint?.isActive = true
         moveRelatedCollection(toLandscape: false)
+        // Force multi-line labels to re-wrap at the new (wider) portrait width.
+        metaLabel.invalidateIntrinsicContentSize()
+        metaLabel.setNeedsLayout()
     }
 
     func updateRelatedLayout(
