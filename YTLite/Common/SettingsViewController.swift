@@ -7,6 +7,7 @@ final class SettingsViewController: UIViewController {
         case theme, quality, backgroundPlayback, showShorts
         case persistCache, clearCache, rydEnabled
         case sponsorBlockEnabled, sponsorBlockSettings
+        case shareLog
     }
     private struct Section {
         let header: String?
@@ -40,6 +41,7 @@ final class SettingsViewController: UIViewController {
             Section(header: "Cache", footer: nil, rows: [.persistCache, .clearCache]),
             Section(header: "Return YouTube Dislike", footer: rydFooter, rows: [.rydEnabled]),
             Section(header: "SponsorBlock", footer: sbFooter, rows: sponsorBlockRows),
+            Section(header: "Debug", footer: nil, rows: [.shareLog]),
             Section(header: nil, footer: appVersionFooter, rows: [])
         ]
     }
@@ -110,7 +112,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
         sections[section].footer
     }
 
-    // swiftlint:disable:next cyclomatic_complexity
+    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         switch sections[indexPath.section].rows[indexPath.row] {
         case .theme:
@@ -140,6 +142,8 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             return makeSponsorBlockToggle()
         case .sponsorBlockSettings:
             return makeDisclosureCell("SponsorBlock Settings")
+        case .shareLog:
+            return makeDisclosureCell("Share Debug Log")
         }
     }
 
@@ -152,6 +156,8 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             clearCache()
         case .sponsorBlockSettings:
             showSponsorBlockSettings()
+        case .shareLog:
+            shareDebugLog()
         default:
             break
         }
@@ -251,23 +257,60 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             sheet.addAction(action)
         }
         sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        if let pop = sheet.popoverPresentationController {
-            pop.sourceView = view
-            pop.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 0, height: 0)
-            pop.permittedArrowDirections = []
-        }
+        configureCenteredPopover(sheet)
         present(sheet, animated: true)
     }
     private func clearCache() {
         ThumbnailImageView.clearCache()
         AppCache.shared.clearAllDiskCache()
-        let alert = UIAlertController(
+        presentSimpleAlert(
             title: "Cache Cleared",
-            message: "Image and feed cache has been cleared.",
+            message: "Image and feed cache has been cleared."
+        )
+    }
+
+    private func shareDebugLog() {
+        guard let data = AppLog.exportLogData(),
+              !data.isEmpty
+        else {
+            presentSimpleAlert(
+                title: "No Logs",
+                message: "No debug logs available yet."
+            )
+            return
+        }
+        let tempURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ytlite_debug.log")
+        try? data.write(to: tempURL)
+        let activity = UIActivityViewController(
+            activityItems: [tempURL],
+            applicationActivities: nil
+        )
+        configureCenteredPopover(activity)
+        present(activity, animated: true)
+    }
+
+    private func presentSimpleAlert(title: String, message: String) {
+        let alert = UIAlertController(
+            title: title,
+            message: message,
             preferredStyle: .alert
         )
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
+    }
+
+    private func configureCenteredPopover(_ controller: UIViewController) {
+        guard let pop = controller.popoverPresentationController
+        else { return }
+        pop.sourceView = view
+        pop.sourceRect = CGRect(
+            x: view.bounds.midX,
+            y: view.bounds.midY,
+            width: 0,
+            height: 0
+        )
+        pop.permittedArrowDirections = []
     }
 }
 
