@@ -1,13 +1,17 @@
 # YTLite
 
-A lightweight, privacy-focused YouTube client for iOS built entirely with UIKit. No ads, no tracking, no dependencies.
+A lightweight, privacy-focused YouTube client for iOS 12+ built entirely with UIKit. No ads, no tracking, no dependencies.
+
+<p align="center">
+  <img src="screenshots/channel.jpeg" width="300" alt="Channel page">
+</p>
 
 ## Features
 
-- **Video Playback** — HLS, DASH-to-HLS conversion, adaptive streaming
+- **Video Playback** — up to 1080p 60fps quality
 - **Background Audio** — Continue listening with the screen off
 - **Picture-in-Picture** — Watch while using other apps
-- **SponsorBlock** — Skip sponsored segments automatically
+- **SponsorBlock** — Skip sponsored segments automatically 
 - **Return YouTube Dislike** — See dislike counts again
 - **Subtitles** — Full subtitle/caption support with VTT parsing
 - **Search & Browse** — Home feed, trending, channel pages, playlists
@@ -15,8 +19,11 @@ A lightweight, privacy-focused YouTube client for iOS built entirely with UIKit.
 - **Watch History** — Track what you've watched with progress indicators
 - **Autoplay** — Automatically play the next related video
 - **Dark/Light Theme** — Manual theme switching via ThemeManager
-- **Quality Selection** — Choose max video quality
-- **Download** — Save videos for offline viewing
+- **Download** — Save videos for offline viewing (planned)
+
+<p align="center">
+  <img src="screenshots/settings.PNG" width="300" alt="Settings">
+</p>
 
 ## Requirements
 
@@ -27,7 +34,7 @@ A lightweight, privacy-focused YouTube client for iOS built entirely with UIKit.
 ## Building
 
 ```bash
-git clone https://github.com/user/YTLite.git
+git clone https://github.com/verback2308/YTLite.git
 cd YTLite
 open YTLite.xcodeproj
 ```
@@ -72,12 +79,12 @@ YTLite/
 
 ### Playback Pipeline
 
-The player supports multiple strategies selected automatically:
+The app fetches video streams via YouTube's Innertube API. Two strategies are used in practice:
 
-1. **HLS** — Native `AVPlayer` with YouTube HLS manifest (preferred)
-2. **DASH → HLS** — Converts DASH SIDX segments into HLS playlists for `AVPlayer`
-3. **Progressive** — Direct MP4 URL with fast-start reordering
-4. **Onesie** — YouTube proprietary streaming as fallback
+1. **Generated HLS** — Adaptive formats (360p–1080p) are converted from DASH SIDX byte ranges into an HLS playlist for native `AVPlayer`. This is the primary path with quality selection.
+2. **Progressive** — Direct 360p MP4 URL as a fallback when YouTube restricts adaptive formats (e.g. during server-side A/B experiments).
+
+If streams are unavailable from the primary client, an **Onesie** fallback requests them through YouTube's proprietary bootstrap API.
 
 ### Authentication
 
@@ -112,6 +119,12 @@ If you encounter a bug, you can export debug logs directly from the app:
 **Settings → Debug → Share Debug Log**
 
 This generates a log file you can attach to your GitHub issue. The log includes timestamped playback, API, and caching events that help diagnose problems.
+
+## Credits
+
+- [SponsorBlock](https://github.com/ajayyy/SponsorBlock) — crowdsourced API for skipping sponsored segments
+- [Return YouTube Dislike](https://github.com/Anarios/return-youtube-dislike) — community-maintained dislike count data
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp) — invaluable reference for understanding YouTube's playback infrastructure
 
 ## Legal
 
