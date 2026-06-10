@@ -5,11 +5,6 @@ extension InnertubeClient {
     static func parsePlayerJSON(
         _ json: [String: Any]
     ) -> DirectPlaybackInfo? {
-        let topKeys = json.keys.sorted()
-            .joined(separator: ", ")
-        AppLog.innertube(
-            "parsePlayerJSON topKeys: \(topKeys)"
-        )
         logStreamingDataSummary(json)
         return parseDirectPlaybackInfo(json)
     }
@@ -22,18 +17,18 @@ extension InnertubeClient {
         else {
             return nil
         }
-        let fmts = sd["formats"]
+        let formats = sd["formats"]
             as? [[String: Any]] ?? []
         let adaptive = sd["adaptiveFormats"]
             as? [[String: Any]] ?? []
-        let sel = selectFormats(
-            formats: fmts,
+        let selected = selectFormats(
+            formats: formats,
             adaptive: adaptive
         )
         return assemblePlayback(
             json: json,
             streamingData: sd,
-            selected: sel,
+            selected: selected,
             adaptive: adaptive
         )
     }
@@ -78,13 +73,13 @@ extension InnertubeClient {
         _ lhs: [String: Any],
         _ rhs: [String: Any]
     ) -> Bool {
-        let lh = fmtHeight(lhs)
-        let rh = fmtHeight(rhs)
-        if lh == rh {
+        let leftHeight = fmtHeight(lhs)
+        let rightHeight = fmtHeight(rhs)
+        if leftHeight == rightHeight {
             return fmtBitrate(lhs)
                 < fmtBitrate(rhs)
         }
-        return lh < rh
+        return leftHeight < rightHeight
     }
 }
 
@@ -95,7 +90,7 @@ private extension InnertubeClient {
         formats: [[String: Any]],
         adaptive: [[String: Any]]
     ) -> SelectedFmts {
-        let prog = formats
+        let progressive = formats
             .filter {
                 fmtDirectURL($0) != nil
                     && fmtMimeType($0)
@@ -104,11 +99,11 @@ private extension InnertubeClient {
             .max {
                 fmtBitrate($0) < fmtBitrate($1)
             }
-        let vid = selectBestVideo(
+        let video = selectBestVideo(
             from: adaptive,
             maxHeight: VideoQualityStore.maxHeight
         )
-        let aud = adaptive
+        let audio = adaptive
             .filter {
                 fmtDirectURL($0) != nil
                     && fmtMimeType($0)
@@ -118,9 +113,9 @@ private extension InnertubeClient {
                 fmtBitrate($0) < fmtBitrate($1)
             }
         return SelectedFmts(
-            progressive: prog,
-            video: vid,
-            audio: aud
+            progressive: progressive,
+            video: video,
+            audio: audio
         )
     }
 
@@ -150,19 +145,19 @@ private extension InnertubeClient {
         else {
             return nil
         }
-        let at = fmt["audioTrack"]
+        let audioTrack = fmt["audioTrack"]
             as? [String: Any]
-        let xt = fmt["xtags"] as? String
-        let drc = (fmt["isDrc"] as? Bool)
-            ?? (xt?.contains("drc=1") == true)
+        let xtags = fmt["xtags"] as? String
+        let isDrc = (fmt["isDrc"] as? Bool)
+            ?? (xtags?.contains("drc=1") == true)
         return SabrFormatInfo(
             itag: tag,
             lastModified:
                 (fmt["lastModified"] as? String)
                 ?? (fmt["lmt"] as? String),
-            xtags: xt,
-            audioTrackId: at?["id"] as? String,
-            isDrc: drc,
+            xtags: xtags,
+            audioTrackId: audioTrack?["id"] as? String,
+            isDrc: isDrc,
             mimeType: fmt["mimeType"] as? String,
             bitrate: fmt["bitrate"] as? Int,
             width: fmt["width"] as? Int,
@@ -173,16 +168,16 @@ private extension InnertubeClient {
     static func buildDashInfo(
         _ fmt: [String: Any]
     ) -> DashFormatInfo? {
-        let ir = fmt["initRange"]
+        let initRange = fmt["initRange"]
             as? [String: Any]
-        let xr = fmt["indexRange"]
+        let indexRange = fmt["indexRange"]
             as? [String: Any]
         guard let url = fmtDirectURL(fmt),
               let tag = fmtItag(fmt),
-              let iEnd = intVal(ir?["end"]),
-              let xSt = intVal(xr?["start"]),
-              let xEnd = intVal(xr?["end"]),
-              let clen = (fmt["contentLength"]
+              let initEnd = intVal(initRange?["end"]),
+              let indexStart = intVal(indexRange?["start"]),
+              let indexEnd = intVal(indexRange?["end"]),
+              let contentLength = (fmt["contentLength"]
                   as? String).flatMap(Int64.init)
         else {
             return nil
@@ -191,10 +186,10 @@ private extension InnertubeClient {
             url: url,
             itag: tag,
             fmt: fmt,
-            clen: clen,
-            iEnd: iEnd,
-            xSt: xSt,
-            xEnd: xEnd
+            clen: contentLength,
+            iEnd: initEnd,
+            xSt: indexStart,
+            xEnd: indexEnd
         )
     }
 
@@ -282,32 +277,32 @@ private extension InnertubeClient {
     static func assemblePlayback(
         json: [String: Any],
         streamingData sd: [String: Any],
-        selected sel: SelectedFmts,
+        selected: SelectedFmts,
         adaptive: [[String: Any]]
     ) -> DirectPlaybackInfo? {
-        let dV = sel.video.flatMap(buildDashInfo)
-        let dA = sel.audio.flatMap(buildDashInfo)
-        logDashSelection(video: dV, audio: dA)
+        let dashVideo = selected.video.flatMap(buildDashInfo)
+        let dashAudio = selected.audio.flatMap(buildDashInfo)
+        logDashSelection(video: dashVideo, audio: dashAudio)
         let urls = extractURLs(
-            sd: sd, selected: sel
+            sd: sd, selected: selected
         )
         guard urls.hasAny
         else {
             return nil
         }
-        let cfg = extractPlayerConfig(json: json)
+        let config = extractPlayerConfig(json: json)
         let allDash = buildAllDashVideo(
             from: adaptive
         )
-        let dur = extractDuration(selected: sel)
+        let duration = extractDuration(selected: selected)
         return buildPlaybackPart1(
             urls: urls,
-            cfg: cfg,
-            sel: sel,
-            dV: dV,
-            dA: dA,
+            cfg: config,
+            sel: selected,
+            dV: dashVideo,
+            dA: dashAudio,
             allDash: allDash,
-            dur: dur,
+            dur: duration,
             json: json
         )
     }
@@ -329,11 +324,10 @@ private extension InnertubeClient {
         ] as? String) ?? (sel.progressive?[
             "qualityLabel"
         ] as? String)
-        let vis = (json["responseContext"]
+        let visitorData = (json["responseContext"]
             as? [String: Any])?["visitorData"]
             as? String
-        let wt = extractWatchtimeURL(json)
-        let ptURLs = extractWatchtimeURLs(json)
+        let trackingURLs = extractWatchtimeURLs(json)
         let captions = extractCaptionTracks(json)
         return DirectPlaybackInfo(
             hlsManifestURL: urls.hls,
@@ -357,14 +351,14 @@ private extension InnertubeClient {
             audioItag: sel.audio
                 .flatMap(fmtItag),
             qualityLabel: vLabel,
-            visitorData: vis,
+            visitorData: visitorData,
             hasPlaybackUstreamerConfig:
                 cfg.hasPlaybackConfig,
             dashVideoFormat: dV,
             dashAudioFormat: dA,
             allDashVideoFormats: allDash,
             duration: dur,
-            playbackTrackingURLs: ptURLs,
+            playbackTrackingURLs: trackingURLs,
             captionTracks: captions
         )
     }
@@ -394,8 +388,6 @@ private extension InnertubeClient {
         else {
             return nil
         }
-        let nameKeys = (track["name"] as? [String: Any])?.keys
-            .sorted().joined(separator: ",") ?? "nil"
         let name = (track["name"]
             as? [String: Any])?["simpleText"]
             as? String
@@ -408,21 +400,6 @@ private extension InnertubeClient {
         return SubtitleTrack(
             name: name, languageCode: lang, url: url, isAsr: isAsr
         )
-    }
-
-    static func extractWatchtimeURL(
-        _ json: [String: Any]
-    ) -> String? {
-        let pt = json["playbackTracking"]
-            as? [String: Any]
-        let wt = pt?["videostatsWatchtimeUrl"]
-            as? [String: Any]
-        let url = wt?["baseUrl"] as? String
-        AppLog.innertube(
-            "playbackTracking watchtime="
-                + (url != nil ? "present" : "nil")
-        )
-        return url
     }
 
     static func extractURLs(

@@ -110,8 +110,6 @@ file_name:
     - InnertubeClientPlayerParsing.swift
     - InnertubeClientDebugLogging.swift
     - InnertubeClientPageParsing.swift
-    - InnertubeClientSearchParsing.swift
-    - InnertubeClientExecute.swift
     - ProgressiveWithUpgradePlaybackStrategy.swift
 
 line_length:

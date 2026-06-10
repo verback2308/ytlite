@@ -1,16 +1,19 @@
-# Secrets — never commit
-YTVLite/Config/Secrets.swift
-
 # Xcode
+build/
+DerivedData/
 *.xcuserstate
 xcuserdata/
 *.xccheckout
 *.moved-aside
-DerivedData/
 *.hmap
 *.ipa
 *.dSYM.zip
 *.dSYM
+YTVLite.xcodeproj
 
 # macOS
 .DS_Store
+
+# AI/Agent configs
+.claude/
+CLAUDE.md

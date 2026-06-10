@@ -103,7 +103,8 @@ final class WatchViewController: UIViewController {
     let downloadButton = UIButton(type: .system)
     let likeCountLabel = UILabel()
     let dislikeCountLabel = UILabel()
-    var likeCount: String?; var dislikeCount: String?
+    var likeCount: String?
+    var dislikeCount: String?
     var currentLikeStatus: LikeStatus = .indifferent
 
     // MARK: - Constraints
@@ -117,8 +118,10 @@ final class WatchViewController: UIViewController {
     var scrollTopToPlayerConstraint: NSLayoutConstraint?
     var scrollTrailingConstraint: NSLayoutConstraint?
     var scrollToSidebarConstraint: NSLayoutConstraint?
-    var sidebarTopConstraint, sidebarTrailingConstraint: NSLayoutConstraint?
-    var sidebarBottomConstraint, sidebarWidthConstraint: NSLayoutConstraint?
+    var sidebarTopConstraint: NSLayoutConstraint?
+    var sidebarTrailingConstraint: NSLayoutConstraint?
+    var sidebarBottomConstraint: NSLayoutConstraint?
+    var sidebarWidthConstraint: NSLayoutConstraint?
     var bottomCommentsConstraint: NSLayoutConstraint?
     var relatedPortraitConstraints: [NSLayoutConstraint] = []
     var relatedLandscapeConstraints: [NSLayoutConstraint] = []

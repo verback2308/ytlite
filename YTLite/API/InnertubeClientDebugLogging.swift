@@ -56,25 +56,6 @@ extension InnertubeClient {
             aCands: aCands
         )
     }
-
-    /// Dumps raw JSON to ~/Documents/YTLite_channel_<name>.json for debugging.
-    static func dumpChannelTabJSON(
-        _ json: [String: Any],
-        label: String
-    ) {
-        guard let data = try? JSONSerialization.data(
-            withJSONObject: json, options: [.prettyPrinted, .sortedKeys]
-        ) else { return }
-        let safe = label
-            .replacingOccurrences(of: "/", with: "_")
-            .replacingOccurrences(of: ":", with: "_")
-        let fileName = "YTLite_channel_\(safe).json"
-        let url = FileManager.default
-            .urls(for: .documentDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent(fileName)
-        try? data.write(to: url)
-        AppLog.innertube("JSON dump → \(url.path)")
-    }
 }
 
 // MARK: - Private Helpers

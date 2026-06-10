@@ -244,13 +244,6 @@ extension InnertubeClient {
         )
     }
 
-    func debugFetchPlayer(videoId: String, completion: @escaping (Result<Void, Error>) -> Void) {
-        AppLog.innertube("debugFetchPlayer start: \(videoId)")
-        withValidToken(completion: completion) { client, token in
-            client.executePlayerDebug(videoId: videoId, token: token, completion: completion)
-        }
-    }
-
     func fetchDirectPlayback(
         videoId: String,
         client: DirectPlaybackClient = .androidVR,

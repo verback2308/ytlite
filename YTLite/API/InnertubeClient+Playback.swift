@@ -1,4 +1,3 @@
-// swiftlint:disable file_length
 import Foundation
 
 // MARK: - Playback & Subscriptions
@@ -63,35 +62,6 @@ extension InnertubeClient {
         ) { json -> CommentsPage? in
             Self.parseCommentsPage(json)
         } completion: { completion($0) }
-    }
-
-    func executePlayerDebug(
-        videoId: String,
-        token: String,
-        completion: @escaping (Result<Void, Error>) -> Void
-    ) {
-        let contexts = buildPlayerDebugContexts()
-        let group = DispatchGroup()
-        var firstError: Error?
-        for ctx in contexts {
-            group.enter()
-            executePlayer(
-                videoId: videoId,
-                debugContext: ctx,
-                token: ctx.useAuth ? token : nil
-            ) { result in
-                if case .failure(let error) = result,
-                   firstError == nil {
-                    firstError = error
-                }
-                group.leave()
-            }
-        }
-        group.notify(queue: .main) {
-            completion(
-                firstError.map { .failure($0) } ?? .success(())
-            )
-        }
     }
 
     func executeDirectPlayback(
@@ -210,12 +180,6 @@ extension InnertubeClient {
 }
 
 private extension InnertubeClient {
-    struct PlayerDebugContext {
-        let name: String
-        let body: [String: Any]
-        let useAuth: Bool
-    }
-
     static func parseDirectPlayback(
         json: [String: Any],
         videoId: String,
@@ -259,51 +223,6 @@ private extension InnertubeClient {
             contextName: client.description,
             json: json
         )
-    }
-
-    func executePlayer(
-        videoId: String,
-        debugContext: PlayerDebugContext,
-        token: String?,
-        completion: @escaping (Result<Void, Error>) -> Void
-    ) {
-        var body = debugContext.body
-        body["videoId"] = videoId
-        if debugContext.name != "TVHTML5" {
-            body["contentCheckOk"] = true
-            body["racyCheckOk"] = true
-        }
-        var headers = anonHeaders()
-        if debugContext.name == "WEB" {
-            headers[HTTPHeader.xYoutubeClientName] =
-                DirectPlaybackClient.web.clientHeaderName
-            headers[HTTPHeader.xYoutubeClientVersion] =
-                DirectPlaybackClient.web.clientVersion
-        }
-        if let token {
-            headers[HTTPHeader.authorization] = "Bearer \(token)"
-        }
-        let playerURL = "\(baseURL)\(InnertubeEndpoint.player)"
-        execute(
-            urlString: playerURL,
-            body: body,
-            headers: headers,
-            logTag: "playerDebug(\(debugContext.name))"
-        ) { json -> Void? in
-            Self.logPlayerDebug(
-                videoId: videoId,
-                contextName: debugContext.name,
-                json: json
-            )
-            return ()
-        } completion: { completion($0) }
-    }
-
-    func buildPlayerDebugContexts() -> [PlayerDebugContext] {
-        [
-            PlayerDebugContext(name: "TVHTML5", body: tvContext, useAuth: true),
-            PlayerDebugContext(name: "WEB", body: webContext, useAuth: false)
-        ]
     }
 
     func buildDirectPlaybackBody(
