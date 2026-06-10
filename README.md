@@ -3,7 +3,7 @@
 A lightweight, privacy-focused YouTube client for iOS 12+ built entirely with UIKit. No ads, no tracking, no dependencies.
 
 <p align="center">
-  <img src="screenshots/channel.jpeg" width="300" alt="Channel page">
+  <img src="screenshots/channel.jpeg" width="800" alt="Channel page">
 </p>
 
 ## Features
@@ -22,7 +22,7 @@ A lightweight, privacy-focused YouTube client for iOS 12+ built entirely with UI
 - **Download** — Save videos for offline viewing (planned)
 
 <p align="center">
-  <img src="screenshots/settings.PNG" width="300" alt="Settings">
+  <img src="screenshots/settings.PNG" width="800" alt="Settings">
 </p>
 
 ## Requirements
