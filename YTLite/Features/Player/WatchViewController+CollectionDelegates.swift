@@ -134,7 +134,14 @@ extension WatchViewController: UIScrollViewDelegate {
 
 extension WatchViewController: PlaybackContext {
     func updateStatusLabel(_ text: String) {
-        playerStatusLabel.text = text
+        DispatchQueue.main.async { [weak self] in
+            guard let self else {
+                return
+            }
+            playerStatusLabel.text = text
+            playerStatusLabel.isHidden = false
+            playerSpinner.startAnimating()
+        }
     }
 
     func setCaptionTracks(_ tracks: [SubtitleTrack]) {

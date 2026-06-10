@@ -185,14 +185,13 @@ final class ChannelInfoStore {
         channelId: String,
         completion: @escaping (Result<ChannelInfo, Error>) -> Void
     ) {
-        if Thread.isMainThread, let cached = cache[channelId] {
-            completion(.success(cached))
-            return
-        }
-
+        // ALL cache/pending accesses must go through queue to
+        // avoid data races on the dictionary.
         queue.async {
             if let cached = self.cache[channelId] {
-                DispatchQueue.main.async { completion(.success(cached)) }
+                DispatchQueue.main.async {
+                    completion(.success(cached))
+                }
                 return
             }
 
@@ -202,11 +201,16 @@ final class ChannelInfoStore {
             }
 
             if let cached = self.loadFromDisk(channelId: channelId) {
-                DispatchQueue.main.async { completion(.success(cached)) }
+                DispatchQueue.main.async {
+                    completion(.success(cached))
+                }
                 return
             }
 
-            self.fetchFromNetwork(channelId: channelId, completion: completion)
+            self.fetchFromNetwork(
+                channelId: channelId,
+                completion: completion
+            )
         }
     }
 

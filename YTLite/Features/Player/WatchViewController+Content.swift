@@ -296,7 +296,9 @@ extension WatchViewController {
     func navigateTo(_ video: Video) {
         let current = watchPage?.video ?? initialVideo
         videoHistory.append(current)
-        loadVideoInternal(video)
+        let inFullscreen = isLandscapeFullscreen
+            || (videoPlayerView?.isFullscreen == true)
+        loadVideoInternal(video, keepFullscreen: inFullscreen)
         updateLeftBarButton()
     }
 
@@ -308,7 +310,10 @@ extension WatchViewController {
         updateLeftBarButton()
     }
 
-    private func loadVideoInternal(_ video: Video) {
+    private func loadVideoInternal(
+        _ video: Video,
+        keepFullscreen: Bool = false
+    ) {
         dismissAutoplayOverlay()
         pageLoadToken.cancel()
         pageLoadToken = CancellationToken()
@@ -316,7 +321,9 @@ extension WatchViewController {
         playbackFacade.reset()
         resetVideoState()
         scrollView.setContentOffset(.zero, animated: false)
-        exitFullscreenIfNeeded()
+        if !keepFullscreen {
+            exitFullscreenIfNeeded()
+        }
         initialVideo = video
         loadInitialState()
         loadWatchPage()
@@ -327,6 +334,7 @@ extension WatchViewController {
         watchPage = nil
         allRelatedVideos = []
         visibleRelatedVideos = []
+        relatedCollectionView.reloadData()
         comments = []
         commentsContinuation = nil
         visibleCommentsCount = commentsPageSize

@@ -173,7 +173,9 @@ extension WatchViewController {
             watchPage?.nextVideo else {
             return
         }
-        showAutoplayOverlay(for: nextVideo)
+        DispatchQueue.main.async { [weak self] in
+            self?.showAutoplayOverlay(for: nextVideo)
+        }
     }
 
     @objc
@@ -215,13 +217,38 @@ extension WatchViewController {
 
     func showAutoplayOverlay(for video: Video) {
         autoplayOverlay?.removeFromSuperview()
+        let overlay = makeAutoplayOverlay(for: video)
+        // playerView may be in the window via EITHER fullscreen path
+        // (rotation-based for iPhone or tap-based for iPad/portrait).
+        // Use isFullscreen to detect both cases.
+        if let pv = videoPlayerView, pv.isFullscreen {
+            overlay.translatesAutoresizingMaskIntoConstraints = true
+            overlay.frame = pv.bounds
+            overlay.autoresizingMask = [
+                .flexibleWidth, .flexibleHeight
+            ]
+            pv.addSubview(overlay)
+        } else {
+            overlay
+                .translatesAutoresizingMaskIntoConstraints
+                = false
+            playerContainer.addSubview(overlay)
+            applyEdgeConstraints(overlay, to: playerContainer)
+        }
+        autoplayOverlay = overlay
+        UIView.animate(withDuration: 0.25) {
+            overlay.alpha = 1
+        }
+        overlay.startCountdown()
+    }
+
+    private func makeAutoplayOverlay(
+        for video: Video
+    ) -> AutoplayOverlayView {
         let overlay = AutoplayOverlayView(
             nextVideo: video,
             countdownSecs: 5
         )
-        overlay
-            .translatesAutoresizingMaskIntoConstraints
-            = false
         overlay.alpha = 0
         overlay.onPlay = { [weak self] in
             self?.dismissAutoplayOverlay()
@@ -230,16 +257,7 @@ extension WatchViewController {
         overlay.onCancel = { [weak self] in
             self?.dismissAutoplayOverlay()
         }
-        playerContainer.addSubview(overlay)
-        applyEdgeConstraints(
-            overlay,
-            to: playerContainer
-        )
-        autoplayOverlay = overlay
-        UIView.animate(withDuration: 0.25) {
-            overlay.alpha = 1
-        }
-        overlay.startCountdown()
+        return overlay
     }
 
     func applyEdgeConstraints(
