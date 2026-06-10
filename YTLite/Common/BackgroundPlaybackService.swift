@@ -13,6 +13,10 @@ enum BackgroundPlaybackService {
 
     /// Call on app launch and whenever the setting changes.
     static func apply() {
+        // Default to enabled — user can disable in Settings.
+        UserDefaults.standard.register(defaults: [
+            UserDefaultsKeys.Player.backgroundPlayback: true
+        ])
         let session = AVAudioSession.sharedInstance()
         do {
             // Always use .playback so Now Playing / remote controls work.

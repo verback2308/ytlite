@@ -1,52 +1,31 @@
 import AVFoundation
 
 extension PlaybackFacade {
+    /// Background playback is handled entirely by AVAudioSession
+    /// (.playback category) and NowPlayingService — no playlist
+    /// switch needed. Explicitly resume play() to guard against
+    /// the player being paused during the active→background transition.
     func handleAppDidEnterBackground(player: AVPlayer) {
         backgroundRestoreTime = player.currentTime()
         backgroundEnteredAt = Date()
         let wasPlaying = player.rate > 0
         let secs = CMTimeGetSeconds(backgroundRestoreTime)
         AppLog.player(
-            "background playback continuing at \(secs)s"
+            "background: at \(secs)s wasPlaying=\(wasPlaying)"
         )
-        guard wasPlaying,
-              let item = audioPlaylistItem() else {
-            backgroundPlaybackMode = .inline
-            return
+        if wasPlaying {
+            player.play()
         }
-        beginPlaylistSwitchBackgroundTask()
-        replaceCurrentItemDirectly(on: player, with: item)
-        backgroundPlaybackMode = .audioOnlyHLS
-        seekForBackgroundSwitch(player: player)
-        player.play()
-        logBackgroundSwitchReady(seconds: secs)
     }
 
+    /// Resume playback if it was active before backgrounding.
     func handleAppWillEnterForeground(player: AVPlayer) {
-        endPlaylistSwitchBackgroundTask()
-        guard shouldRestoreInlinePlayback(player: player),
-              let item = makePlaylistItem(
-                  path: "master.m3u8",
-                  forwardBufferDuration:
-                    PlaybackBufferPolicy
-                    .defaultForwardBufferDuration
-              ) else {
-            backgroundEnteredAt = nil
-            return
-        }
-        let restoreContext = makeForegroundRestoreContext()
+        let wasPlaying = backgroundEnteredAt != nil
         backgroundEnteredAt = nil
-        backgroundRestoreTime = restoreContext.time
-        AppLog.player(
-            "foreground playback continuing at \(restoreContext.seconds)s"
-        )
-        replaceCurrentItemDirectly(on: player, with: item)
-        backgroundPlaybackMode = .inline
-        seekForForegroundSwitch(
-            player: player,
-            restoreTime: restoreContext.time
-        )
-        logForegroundSwitchReady(seconds: restoreContext.seconds)
+        AppLog.player("foreground: resuming wasPlaying=\(wasPlaying)")
+        if wasPlaying {
+            player.play()
+        }
     }
 }
 
@@ -78,7 +57,11 @@ private extension PlaybackFacade {
                 seconds: 1,
                 preferredTimescale: 1_000
             )
-        )
+        ) { [weak player] _ in
+            // Play only after seek is positioned — avoids
+            // starting from 0 before seek completes.
+            player?.play()
+        }
     }
 
     func seekForForegroundSwitch(

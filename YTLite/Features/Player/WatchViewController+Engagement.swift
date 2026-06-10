@@ -7,37 +7,32 @@ extension WatchViewController {
     @objc
     func appDidEnterBackground() {
         let bgEnabled = BackgroundPlaybackService.isEnabled
-        let hasVideo = videoPlayerView?.player != nil
         AppLog.player(
             "appDidEnterBackground: bgEnabled=\(bgEnabled)"
-            + " videoPlayer=\(hasVideo)"
         )
-        if let player = videoPlayerView?.player {
-            AppLog.player(
-                "videoPlayer rate=\(player.rate)"
-                + " status=\(player.status.rawValue)"
-                + " timeControlStatus="
-                + "\(player.timeControlStatus.rawValue)"
-            )
-        }
         guard bgEnabled else {
             videoPlayerView?.player?.pause()
             return
         }
-        if let player = videoPlayerView?.player {
-            playbackFacade.handleAppDidEnterBackground(player: player)
+        // If PiP is active, leave playerLayer connected — PiP needs it.
+        let pipActive = videoPlayerView?.pipController?
+            .isPictureInPictureActive == true
+        if pipActive {
+            return
         }
+        // Disconnect the video layer so iOS doesn't pause the
+        // player when rendering stops. Audio continues via
+        // AVAudioSession .playback category.
+        videoPlayerView?.playerLayer.player = nil
     }
 
     @objc
     func appWillEnterForeground() {
         AppLog.player("appWillEnterForeground")
-        guard BackgroundPlaybackService.isEnabled,
-              let player = videoPlayerView?.player else {
-            playbackFacade.backgroundEnteredAt = nil
-            return
+        // Reconnect the video layer to resume rendering.
+        if let player = videoPlayerView?.player {
+            videoPlayerView?.playerLayer.player = player
         }
-        playbackFacade.handleAppWillEnterForeground(player: player)
     }
 
     // MARK: - Theming
