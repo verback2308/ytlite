@@ -105,6 +105,14 @@ OAuth device-code flow: the app requests a device code → user enters it at goo
 
 Please follow the existing code style. SwiftLint is configured and runs as a build phase.
 
+## Bug Reports
+
+If you encounter a bug, you can export debug logs directly from the app:
+
+**Settings → Debug → Share Debug Log**
+
+This generates a log file you can attach to your GitHub issue. The log includes timestamped playback, API, and caching events that help diagnose problems.
+
 ## Legal
 
 This project is for educational and personal use. It is not affiliated with, endorsed by, or connected to Google or YouTube. Use at your own risk.
