@@ -201,7 +201,11 @@ extension VideoPlayerView {
     func setupPiP() {
         let supported = AVPictureInPictureController
             .isPictureInPictureSupported()
-        guard supported else {
+        let key = UserDefaultsKeys.Player.pipEnabled
+        let enabled = UserDefaults.standard.object(
+            forKey: key
+        ) as? Bool ?? true
+        guard supported, enabled else {
             return
         }
         pipController = AVPictureInPictureController(

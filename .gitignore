@@ -17,3 +17,5 @@ YTVLite.xcodeproj
 # AI/Agent configs
 .claude/
 CLAUDE.md
+AGENTS.md
+.mimocode/

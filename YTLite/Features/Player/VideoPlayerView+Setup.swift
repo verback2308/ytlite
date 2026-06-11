@@ -162,7 +162,11 @@ extension VideoPlayerView {
         )
         let supported = AVPictureInPictureController
             .isPictureInPictureSupported()
-        pipButton.isHidden = !supported
+        let key = UserDefaultsKeys.Player.pipEnabled
+        let enabled = UserDefaults.standard.object(
+            forKey: key
+        ) as? Bool ?? true
+        pipButton.isHidden = !supported || !enabled
         controlsView.addSubview(pipButton)
     }
 

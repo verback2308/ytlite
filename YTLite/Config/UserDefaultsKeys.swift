@@ -37,5 +37,6 @@ enum UserDefaultsKeys {
 
     enum Player {
         static let backgroundPlayback = "player_backgroundPlayback"
+        static let pipEnabled = "player_pipEnabled"
     }
 }

@@ -4,7 +4,7 @@ import UIKit
 /// Settings popup presented as a sheet from the toolbar.
 final class SettingsViewController: UIViewController {
     private enum Row {
-        case theme, quality, backgroundPlayback, showShorts
+        case theme, quality, backgroundPlayback, pipEnabled, showShorts
         case persistCache, clearCache, rydEnabled
         case sponsorBlockEnabled, sponsorBlockSettings
         case shareLog
@@ -36,7 +36,7 @@ final class SettingsViewController: UIViewController {
             Section(
                 header: "Playback",
                 footer: nil,
-                rows: [.quality, .backgroundPlayback, .showShorts]
+                rows: [.quality, .backgroundPlayback, .pipEnabled, .showShorts]
             ),
             Section(header: "Cache", footer: nil, rows: [.persistCache, .clearCache]),
             Section(header: "Return YouTube Dislike", footer: rydFooter, rows: [.rydEnabled]),
@@ -124,6 +124,12 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             return makeToggleCell("Background Playback", isOn: bgOn) {
                 BackgroundPlaybackService.isEnabled = $0
                 BackgroundPlaybackService.apply()
+            }
+        case .pipEnabled:
+            let key = UserDefaultsKeys.Player.pipEnabled
+            let isOn = UserDefaults.standard.object(forKey: key) as? Bool ?? true
+            return makeToggleCell("Picture-in-Picture", isOn: isOn) {
+                UserDefaults.standard.set($0, forKey: key)
             }
         case .showShorts:
             return makeShowShortsCell()
