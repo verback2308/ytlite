@@ -108,6 +108,25 @@ extension InnertubeClient {
         } completion: { completion($0) }
     }
 
+    func fetchHistoryProgress(
+        completion: @escaping (
+            ([String: Double], [String: String])
+        ) -> Void
+    ) {
+        OAuthClient.shared.validToken { [weak self] result in
+            guard let self,
+                  case let .success(token) = result
+            else {
+                completion(([:], [:]))
+                return
+            }
+            self.executeHistoryFetch(
+                token: token,
+                completion: completion
+            )
+        }
+    }
+
     func executeBrowseAnonymous(
         browseId: String,
         completion: @escaping (Result<FeedPage, Error>) -> Void
@@ -160,6 +179,38 @@ extension InnertubeClient {
 // MARK: - Private Browse Helpers
 
 private extension InnertubeClient {
+    func executeHistoryFetch(
+        token: String,
+        completion: @escaping (
+            ([String: Double], [String: String])
+        ) -> Void
+    ) {
+        var body = tvContext
+        body[JSONKey.browseId] = BrowseID.history
+        let url = baseURL + InnertubeEndpoint.browse
+        execute(
+            urlString: url,
+            body: body,
+            headers: authHeaders(token: token),
+            logTag: "progressSync"
+        ) { json -> (progress: [String: Double], thumbnails: [String: String])? in
+            let progress = InnertubeClient
+                .extractProgressFromHistory(json)
+            let thumbs = InnertubeClient
+                .extractThumbnailsFromHistory(json)
+            return (progress, thumbs)
+        } completion: { result in
+            let data = try? result.get()
+            let pCount = data?.progress.count ?? 0
+            let tCount = data?.thumbnails.count ?? 0
+            AppLog.log(
+                "ProgressSync",
+                "\(pCount) progress, \(tCount) thumbs"
+            )
+            completion(data ?? ([:], [:]))
+        }
+    }
+
     func postVote(
         endpoint: String,
         videoId: String,

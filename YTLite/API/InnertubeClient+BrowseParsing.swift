@@ -180,3 +180,114 @@ private extension InnertubeClient {
         return nil
     }
 }
+
+// MARK: - History Progress Extraction
+
+extension InnertubeClient {
+    static func extractProgressFromHistory(
+        _ json: [String: Any]
+    ) -> [String: Double] {
+        var result: [String: Double] = [:]
+        let items = extractHistoryItems(from: json)
+        for item in items {
+            guard let vr = item[RendererKey.video]
+                    as? [String: Any],
+                  let videoId = vr[JSONKey.videoId]
+                    as? String
+            else {
+                continue
+            }
+            let overlays = vr["thumbnailOverlays"]
+                as? [[String: Any]] ?? []
+            if let frac = extractProgressFromOverlays(
+                overlays
+            ) {
+                result[videoId] = frac
+            }
+        }
+        return result
+    }
+
+    static func extractThumbnailsFromHistory(
+        _ json: [String: Any]
+    ) -> [String: String] {
+        var result: [String: String] = [:]
+        let items = extractHistoryItems(from: json)
+        for item in items {
+            guard let vr = item[RendererKey.video]
+                as? [String: Any],
+                  let videoId = vr[JSONKey.videoId]
+                    as? String
+            else {
+                continue
+            }
+            let raw = vr.thumbnailURL() ?? ""
+            if !raw.isEmpty {
+                result[videoId] = preferredThumbnailURL(
+                    videoId: videoId,
+                    fallbackURL: raw
+                )
+            }
+        }
+        return result
+    }
+}
+
+// MARK: - Private History Helpers
+
+private extension InnertubeClient {
+    static func extractProgressFromOverlays(
+        _ overlays: [[String: Any]]
+    ) -> Double? {
+        let key = RendererKey.thumbnailOverlayTimeStatus
+        for overlay in overlays {
+            guard let renderer = overlay[key]
+                as? [String: Any]
+            else {
+                continue
+            }
+            if let frac = renderer[
+                "percentDurationWatched"
+            ] as? Double {
+                if frac > 0.03, frac < 0.97 {
+                    return frac
+                }
+                return nil
+            }
+            if let text = renderer["text"]
+                as? [String: Any],
+               let simple = text[JSONKey.simpleText]
+                   as? String,
+               simple.contains("/") == false,
+               (renderer["style"] as? String) == "RED" {
+                return 0.5
+            }
+        }
+        return nil
+    }
+
+    static func extractHistoryItems(
+        from json: [String: Any]
+    ) -> [[String: Any]] {
+        if let cc = json["continuationContents"]
+            as? [String: Any],
+           let gc = cc["gridContinuation"]
+               as? [String: Any],
+           let items = gc[JSONKey.items]
+               as? [[String: Any]] {
+            return items
+        }
+        if let grid = json.digDict(
+            JSONKey.contents,
+            RendererKey.tvBrowse,
+            JSONKey.content,
+            RendererKey.tvSurfaceContent,
+            JSONKey.content,
+            RendererKey.grid
+        ), let items = grid[JSONKey.items]
+            as? [[String: Any]] {
+            return items
+        }
+        return []
+    }
+}

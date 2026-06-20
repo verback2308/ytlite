@@ -24,6 +24,11 @@ class ThumbnailImageView: UIImageView {
         diskCache.clear()
     }
 
+    static func invalidate(url: String) {
+        cache.remove(url: url)
+        diskCache.remove(url: url)
+    }
+
     func setImage(url: URL) {
         if currentURL == url, image != nil || task != nil {
             return
@@ -139,6 +144,10 @@ private final class ImageMemoryCache {
     func removeAll() {
         backing.removeAllObjects()
     }
+
+    func remove(url key: String) {
+        backing.removeObject(forKey: key as NSString) // swiftlint:disable:this legacy_objc_type
+    }
 }
 
 private final class ImageDiskCache {
@@ -192,6 +201,16 @@ private final class ImageDiskCache {
             withIntermediateDirectories: true,
             attributes: nil
         )
+    }
+
+    func remove(url: String) {
+        guard let urlObj = URL(string: url) else {
+            return
+        }
+        let fileURL = cacheDir.appendingPathComponent(
+            cacheKey(for: urlObj)
+        )
+        try? fm.removeItem(at: fileURL)
     }
 
     private func cacheKey(for url: URL) -> String {

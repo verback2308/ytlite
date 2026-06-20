@@ -22,6 +22,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             if OAuthClient.shared.isSignedIn {
                 UserProfileStore.shared.load()
                 self?.showMain()
+                WatchProgressSyncService.shared.syncIfNeeded()
             } else if OAuthClient.shared.isAnonymous {
                 self?.showMain()
             } else {

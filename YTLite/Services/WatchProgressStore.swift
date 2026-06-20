@@ -17,20 +17,24 @@ struct WatchProgress {
 }
 
 /// Persists per-video watch progress locally.
-/// Updated by WatchtimeTracker on every ping.
+/// Updated by WatchtimeTracker on every ping
+/// and by WatchProgressSyncService from server.
 final class WatchProgressStore {
     static let shared = WatchProgressStore()
 
     private let key = "WatchProgressStore.v1"
+    private let fractionKey = "WatchProgressStore.fractions"
     private let maxEntries = 200
     private let queue = DispatchQueue(
         label: "com.ytvlite.watch-progress",
         attributes: .concurrent
     )
     private var store: [String: [Double]] = [:]
+    private var serverFractions: [String: Double] = [:]
 
     init() {
         load()
+        loadFractions()
     }
 
     func setProgress(
@@ -50,14 +54,40 @@ final class WatchProgressStore {
         }
     }
 
+    func setFraction(
+        videoId: String,
+        fraction: Double
+    ) {
+        queue.async(flags: .barrier) {
+            self.serverFractions[videoId] = fraction
+            self.persistFractions()
+        }
+    }
+
+    func setServerFractions(
+        _ entries: [String: Double]
+    ) {
+        queue.async(flags: .barrier) {
+            self.serverFractions = entries
+            self.persistFractions()
+        }
+    }
+
     func progress(forVideoId videoId: String) -> WatchProgress? {
         let entry = queue.sync { store[videoId] }
-        guard let entry,
-              entry.count == 2
-        else {
-            return nil
+        if let entry, entry.count == 2 {
+            return WatchProgress(
+                position: entry[0], duration: entry[1]
+            )
         }
-        return WatchProgress(position: entry[0], duration: entry[1])
+        if let frac = queue.sync(execute: {
+            serverFractions[videoId]
+        }) {
+            return WatchProgress(
+                position: frac, duration: 1.0
+            )
+        }
+        return nil
     }
 
     // MARK: - Persistence
@@ -74,5 +104,21 @@ final class WatchProgressStore {
 
     private func persist() {
         UserDefaults.standard.set(store, forKey: key)
+    }
+
+    private func loadFractions() {
+        guard let raw = UserDefaults.standard.dictionary(
+            forKey: fractionKey
+        ) as? [String: Double]
+        else {
+            return
+        }
+        serverFractions = raw
+    }
+
+    private func persistFractions() {
+        UserDefaults.standard.set(
+            serverFractions, forKey: fractionKey
+        )
     }
 }
