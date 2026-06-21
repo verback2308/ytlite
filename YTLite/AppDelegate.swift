@@ -21,6 +21,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         splash.onComplete = { [weak self] in
             if OAuthClient.shared.isSignedIn {
                 UserProfileStore.shared.load()
+                OAuthClient.shared.refreshIfStale()
                 self?.showMain()
                 WatchProgressSyncService.shared.syncIfNeeded()
             } else if OAuthClient.shared.isAnonymous {

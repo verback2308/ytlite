@@ -200,7 +200,7 @@ extension OAuthClient {
         }
         doRefresh(tokens: tokens, completion: completion)
     }
-    private func doRefresh(
+    func doRefresh(
         tokens: OAuthTokens,
         completion: @escaping (Result<String, Error>) -> Void
     ) {
@@ -259,32 +259,5 @@ extension OAuthClient {
         tokens = nil
         isAnonymous = false
         deleteFromKeychain()
-    }
-
-    func tryRefreshIfNeeded() {
-        guard let tokens else {
-            DispatchQueue.main.async {
-                NotificationCenter.default.post(
-                    name: .authorizationRequired,
-                    object: nil
-                )
-            }
-            return
-        }
-        doRefresh(tokens: tokens) { [weak self] result in
-            switch result {
-            case .success:
-                AppLog.auth("Token auto-refreshed on 401")
-            case .failure:
-                AppLog.auth("Refresh failed on 401 → require auth")
-                self?.tokens = nil
-                DispatchQueue.main.async {
-                    NotificationCenter.default.post(
-                        name: .authorizationRequired,
-                        object: nil
-                    )
-                }
-            }
-        }
     }
 }
