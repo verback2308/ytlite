@@ -42,6 +42,7 @@ fi
 
 echo "▶ Replacing bundle ID for release: $RELEASE_BUNDLE_ID"
 plutil -replace CFBundleIdentifier -string "$RELEASE_BUNDLE_ID" "$APP_PATH/Info.plist"
+plutil -replace CFBundleShortVersionString -string "$VERSION" "$APP_PATH/Info.plist"
 
 echo "▶ Replacing dev cert with ad-hoc signature..."
 codesign -f -s - --deep --preserve-metadata=entitlements "$APP_PATH" 2>/dev/null \

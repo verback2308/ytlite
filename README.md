@@ -46,15 +46,7 @@ Install the `.ipa` package directly:
 
 Add the YTLite source to your sideloading app to receive automatic updates:
 
-- [**Add to SideStore**](sidestore://source?url=https%3A%2F%2Fraw.githubusercontent.com%2Fverback2308%2FYTLite%2Fmain%2Fsource%2Fapps.json)
-- [**Add to AltStore**](altstore-classic://source?url=https%3A%2F%2Fraw.githubusercontent.com%2Fverback2308%2FYTLite%2Fmain%2Fsource%2Fapps.json)
-- [**Add to LiveContainer**](livecontainer://source?url=https%3A%2F%2Fraw.githubusercontent.com%2Fverback2308%2FYTLite%2Fmain%2Fsource%2Fapps.json)
-
-If the LiveContainer link doesn't open automatically, copy and paste this URL in the "Add Manually" field:
-
-```
-https://raw.githubusercontent.com/verback2308/YTLite/main/source/apps.json
-```
+[![Add Source](https://github.com/StikStore/altdirect/raw/main/assets/png/AltSource_Blue.png?raw=true)](https://stikstore.app/altdirect/?url=https://raw.githubusercontent.com/verback2308/YTLite/main/source/apps.json)
 
 **Option 2 — Manual install**
 
