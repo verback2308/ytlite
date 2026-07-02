@@ -168,21 +168,12 @@ extension WatchViewController {
     }
 
     func fallbackToProgressivePlayback() {
-        AppLog.player("HLS: falling back to progressive")
-        guard let info = playbackFacade.activePlaybackInfo,
-              ProgressiveUpgradeStrategy().canHandle(info)
-        else {
-            DispatchQueue.main.async {
-                self.showPlaybackError(
-                    "HLS generation failed — no fallback"
-                )
-            }
-            return
-        }
-        let client = playbackFacade.activePlaybackClient
+        AppLog.player(
+            "HLS: falling back to progressive + adaptive upgrade"
+        )
         DispatchQueue.main.async {
-            ProgressiveUpgradeStrategy().play(
-                info, client: client, context: self
+            self.showPlaybackError(
+                "HLS generation failed — no fallback available"
             )
         }
     }
