@@ -183,6 +183,13 @@ final class VideoPlayerView: UIView {
     var statusObservation: NSKeyValueObservation?
     var timeControlObservation: NSKeyValueObservation?
 
+    override var safeAreaInsets: UIEdgeInsets {
+        if isFullscreen && !transform.isIdentity {
+            return .zero
+        }
+        return super.safeAreaInsets
+    }
+
     // MARK: - Init
 
     override init(frame: CGRect) {

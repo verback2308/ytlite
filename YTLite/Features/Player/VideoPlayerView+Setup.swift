@@ -309,10 +309,10 @@ extension VideoPlayerView {
         let safeArea = controlsView.safeAreaLayoutGuide
         NSLayoutConstraint.activate([
             settingsButton.topAnchor.constraint(
-                equalTo: safeArea.topAnchor, constant: 10
+                equalTo: safeArea.topAnchor, constant: 20
             ),
             settingsButton.trailingAnchor.constraint(
-                equalTo: safeArea.trailingAnchor, constant: -12
+                equalTo: safeArea.trailingAnchor, constant: -28
             ),
             settingsButton.widthAnchor.constraint(equalToConstant: 36),
             settingsButton.heightAnchor.constraint(equalToConstant: 36)

@@ -94,11 +94,11 @@ extension VideoPlayerView {
         NSLayoutConstraint.activate([
             fullscreenButton.bottomAnchor.constraint(
                 equalTo: safe.bottomAnchor,
-                constant: -8
+                constant: -16
             ),
             fullscreenButton.trailingAnchor.constraint(
                 equalTo: safe.trailingAnchor,
-                constant: -8
+                constant: -16
             ),
             fullscreenButton.widthAnchor.constraint(
                 equalToConstant: 36
@@ -129,7 +129,7 @@ extension VideoPlayerView {
             ),
             currentTimeLabel.leadingAnchor.constraint(
                 equalTo: safe.leadingAnchor,
-                constant: 12
+                constant: 28
             )
         ])
     }
@@ -139,11 +139,11 @@ extension VideoPlayerView {
         NSLayoutConstraint.activate([
             seekBar.leadingAnchor.constraint(
                 equalTo: safe.leadingAnchor,
-                constant: 12
+                constant: 28
             ),
             seekBar.trailingAnchor.constraint(
                 equalTo: safe.trailingAnchor,
-                constant: -12
+                constant: -16
             ),
             seekBar.bottomAnchor.constraint(
                 equalTo: fullscreenButton.topAnchor,
