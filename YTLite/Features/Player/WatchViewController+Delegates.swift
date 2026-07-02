@@ -29,13 +29,21 @@ extension WatchViewController: VideoPlayerViewDelegate {
         present(alert, animated: true)
     }
 
-    func videoPlayerViewDidTapFullscreen(
-        _ playerView: VideoPlayerView
-    ) {
+    func videoPlayerViewDidTapFullscreen(_ playerView: VideoPlayerView) {
         if playerView.isFullscreen {
             exitFullscreen(playerView: playerView)
-        } else {
+            return
+        }
+        if UIDevice.current.userInterfaceIdiom == .pad {
             enterFullscreen(playerView: playerView)
+        } else {
+            let orientation = UIDevice.current.orientation
+            let landscape: UIDeviceOrientation = orientation.isLandscape
+                ? orientation : .landscapeLeft
+            enterLandscapeFullscreen(
+                playerView: playerView,
+                orientation: landscape
+            )
         }
     }
 
@@ -72,22 +80,15 @@ extension WatchViewController: VideoPlayerViewDelegate {
               let snap = fullscreenSnapshot else {
             return
         }
-        let target = snap.superview.convert(
-            snap.frame,
-            to: window
-        )
+        let target = snap.superview.convert(snap.frame, to: window)
         UIView.animate(
             withDuration: 0.25,
             delay: 0,
             options: .curveEaseInOut,
             animations: {
                 playerView.frame = target
-            },
-            completion: { [weak self] _ in
-                self?.restoreFromFullscreen(
-                    playerView: playerView,
-                    snapshot: snap
-                )
+            }, completion: { [weak self] _ in
+                self?.restoreFromFullscreen(playerView: playerView, snapshot: snap)
             }
         )
     }
@@ -98,27 +99,20 @@ extension WatchViewController: VideoPlayerViewDelegate {
     ) {
         playerView.removeFromSuperview()
         let sv = snapshot.superview
+        playerView.transform = .identity
+        playerView.bounds = CGRect(origin: .zero, size: snapshot.frame.size)
         playerView.translatesAutoresizingMaskIntoConstraints = false
         playerView.autoresizingMask = []
         sv.addSubview(playerView)
         NSLayoutConstraint.activate([
-            playerView.leadingAnchor.constraint(
-                equalTo: sv.leadingAnchor
-            ),
-            playerView.trailingAnchor.constraint(
-                equalTo: sv.trailingAnchor
-            ),
-            playerView.topAnchor.constraint(
-                equalTo: sv.topAnchor
-            ),
-            playerView.bottomAnchor.constraint(
-                equalTo: sv.bottomAnchor
-            )
+            playerView.leadingAnchor.constraint(equalTo: sv.leadingAnchor),
+            playerView.trailingAnchor.constraint(equalTo: sv.trailingAnchor),
+            playerView.topAnchor.constraint(equalTo: sv.topAnchor),
+            playerView.bottomAnchor.constraint(equalTo: sv.bottomAnchor)
         ])
         playerView.isFullscreen = false
+        isLandscapeFullscreen = false
         fullscreenSnapshot = nil
-        // Re-run layout so all content (metaLabel, related list, etc.) reflows
-        // correctly for the current orientation after exiting fullscreen.
         updateLayoutForSize()
     }
 
@@ -238,8 +232,6 @@ extension WatchViewController: VideoPlayerViewDelegate {
 
 // MARK: - iPhone landscape fullscreen (no UI rotation)
 extension WatchViewController {
-    /// Rotates the player view inside the window to fill the screen in landscape
-    /// without rotating the portrait-locked UI.
     func enterLandscapeFullscreen(
         playerView: VideoPlayerView,
         orientation: UIDeviceOrientation
@@ -290,7 +282,14 @@ extension WatchViewController {
             options: .curveEaseInOut,
             animations: {
                 playerView.transform = .identity
-                playerView.frame = target
+                playerView.bounds = CGRect(
+                    origin: .zero,
+                    size: target.size
+                )
+                playerView.center = CGPoint(
+                    x: target.midX,
+                    y: target.midY
+                )
             },
             completion: { [weak self] _ in
                 self?.restoreFromFullscreen(playerView: playerView, snapshot: snap)
