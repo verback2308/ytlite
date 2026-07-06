@@ -122,16 +122,6 @@ class MainTabBarController: UITabBarController {
         let theme = ThemeManager.shared
         tabBar.barStyle = theme.barStyle
         tabBar.tintColor = theme.isDark ? .white : theme.accent
-        let navControllers = (viewControllers ?? [])
-            .compactMap { $0 as? UINavigationController }
-        for nav in navControllers {
-            nav.navigationBar.barStyle = theme.barStyle
-            nav.navigationBar.tintColor = theme.isDark
-                ? .white : theme.accent
-            nav.navigationBar.titleTextAttributes = [
-                .foregroundColor: theme.primaryText
-            ]
-        }
         miniPlayerBar?.applyTheme()
     }
 

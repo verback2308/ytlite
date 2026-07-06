@@ -8,28 +8,8 @@ extension WatchViewController {
     }
 
     func setupNavigationBar() {
-        let theme = ThemeManager.shared
-        if #available(iOS 13.0, *) {
-            let appearance = UINavigationBarAppearance()
-            appearance.configureWithOpaqueBackground()
-            appearance.backgroundColor = theme.surface
-            appearance.titleTextAttributes = [.foregroundColor: theme.primaryText]
-            navigationItem.standardAppearance = appearance
-            // UINavigationBar.scrollEdgeAppearance is iOS 13+; without it the bar
-            // becomes transparent when the scroll view is at the top (iOS 15+ default),
-            // which makes the player appear to overlap the Dynamic Island.
-            navigationController?.navigationBar.scrollEdgeAppearance = appearance
-            if #available(iOS 15.0, *) {
-                navigationItem.scrollEdgeAppearance = appearance
-            }
-        } else {
-            let navBar = navigationController?.navigationBar
-            navBar?.barTintColor = theme.surface
-            navBar?.isTranslucent = false
-            navBar?.titleTextAttributes = [.foregroundColor: theme.primaryText]
-        }
-        let bar = navigationController?.navigationBar
-        bar?.tintColor = theme.isDark ? .white : theme.accent
+        // Bar styling (appearance, tint, margins) is owned by
+        // RotatingNavigationController so every bar lays out identically.
         navigationController?.setNavigationBarHidden(false, animated: false)
         updateLeftBarButton()
     }

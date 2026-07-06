@@ -30,6 +30,50 @@ final class RotatingNavigationController: UINavigationController {
         // Replacing the system back button disables the edge-swipe pop
         // gesture; re-enable it (guarded so the root screen never pops).
         interactivePopGestureRecognizer?.delegate = self
+        applyBarTheme()
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(applyBarTheme),
+            name: ThemeManager.didChangeNotification,
+            object: nil
+        )
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        // Child-embedded navs (the player panel) inherit different layout
+        // margins than tab-root ones, shifting bar items horizontally. Pin
+        // the margins so every bar places its items identically.
+        if navigationBar.layoutMargins.left != 16 {
+            navigationBar.layoutMargins.left = 16
+        }
+        if navigationBar.layoutMargins.right != 16 {
+            navigationBar.layoutMargins.right = 16
+        }
+    }
+
+    /// One bar configuration for every navigation bar in the app — bars
+    /// with differing appearance setups use different item-layout metrics
+    /// (visibly different chevron insets), so the bar styles itself here
+    /// instead of per screen.
+    @objc
+    private func applyBarTheme() {
+        let theme = ThemeManager.shared
+        navigationBar.tintColor = theme.isDark ? .white : theme.accent
+        if #available(iOS 13.0, *) {
+            let appearance = UINavigationBarAppearance()
+            appearance.configureWithOpaqueBackground()
+            appearance.backgroundColor = theme.surface
+            appearance.titleTextAttributes = [.foregroundColor: theme.primaryText]
+            navigationBar.standardAppearance = appearance
+            navigationBar.scrollEdgeAppearance = appearance
+            navigationBar.compactAppearance = appearance
+        } else {
+            navigationBar.barTintColor = theme.surface
+            navigationBar.isTranslucent = false
+            navigationBar.barStyle = theme.barStyle
+            navigationBar.titleTextAttributes = [.foregroundColor: theme.primaryText]
+        }
     }
 
     override func pushViewController(
