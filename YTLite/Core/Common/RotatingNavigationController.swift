@@ -39,19 +39,6 @@ final class RotatingNavigationController: UINavigationController {
         )
     }
 
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        // Child-embedded navs (the player panel) inherit different layout
-        // margins than tab-root ones, shifting bar items horizontally. Pin
-        // the margins so every bar places its items identically.
-        if navigationBar.layoutMargins.left != 16 {
-            navigationBar.layoutMargins.left = 16
-        }
-        if navigationBar.layoutMargins.right != 16 {
-            navigationBar.layoutMargins.right = 16
-        }
-    }
-
     /// One bar configuration for every navigation bar in the app — bars
     /// with differing appearance setups use different item-layout metrics
     /// (visibly different chevron insets), so the bar styles itself here
