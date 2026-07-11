@@ -52,6 +52,20 @@ enum InnertubeContexts {
             "request": ["useSsl": true, "internalExperimentFlags": []]
         ]
     ]
+    /// Mobile web client. Logged-out, so its GVS `pot` binds to visitorData —
+    /// matching the anonymous BotGuard token we mint (unlike authed TVHTML5,
+    /// whose pot binds to the account datasyncId).
+    static let mweb: [String: Any] = [
+        "context": [
+            "client": [
+                "clientName": "MWEB",
+                "clientVersion": "2.20250101.00.00",
+                "hl": "en",
+                "gl": "US",
+                "userAgent": UserAgent.mobileSafari
+            ]
+        ]
+    ]
     static let android: [String: Any] = [
         "context": [
             "client": [

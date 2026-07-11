@@ -35,9 +35,13 @@ extension InnertubeClient {
     private static func buildSubtitleTrack(
         _ track: [String: Any]
     ) -> SubtitleTrack? {
-        guard let raw = track["baseUrl"] as? String,
-              let url = URL(string: raw)
-        else {
+        guard let raw = track["baseUrl"] as? String else {
+            return nil
+        }
+        // The MWEB /player response returns baseUrl as a relative path;
+        // URL(string:) accepts it but URLSession then fails with -1002.
+        let absolute = raw.hasPrefix("/") ? AppURLs.YouTube.base + raw : raw
+        guard let url = URL(string: absolute) else {
             return nil
         }
         let name = (track["name"]

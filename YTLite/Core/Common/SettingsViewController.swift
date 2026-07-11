@@ -59,9 +59,8 @@ final class SettingsViewController: UIViewController {
                 footer: "Force a specific playback source."
                     + " Normally Android VR is used"
                     + " with automatic fallback."
-                    + " The remote solver enables WebView HLS"
-                    + " on iOS 12–13, where the throttling"
-                    + " signature can't be solved on-device.",
+                    + " The solver server powers the Mobile Web + pot source"
+                    + " (pot minting, and n-solving on iOS 12–13).",
                 rows: [.playbackSource, .solverEndpoint, .shareLog]
             ),
             Section(header: nil, footer: appVersionFooter, rows: [])
@@ -76,15 +75,11 @@ final class SettingsViewController: UIViewController {
     }
 
     private var solverEndpointDisplay: String {
-        let value = UserDefaults.standard.string(
-            forKey: UserDefaultsKeys.Debug.solverEndpoint
+        let custom = UserDefaults.standard.string(
+            forKey: UserDefaultsKeys.Debug.serverBaseURL
         )
-        guard let value, !value.isEmpty else {
-            return AppURLs.NSolver.defaultEndpoint.isEmpty
-                ? "Not set"
-                : "Default"
-        }
-        return value
+        let isCustom = custom?.isEmpty == false
+        return AppURLs.SolverServer.baseURL + (isCustom ? "" : " (default)")
     }
 
     override func viewDidLoad() {
@@ -218,7 +213,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             )
         case .solverEndpoint:
             return makeDisclosureCell(
-                "Remote Solver",
+                "Solver Server",
                 value: solverEndpointDisplay
             )
         }
@@ -429,24 +424,25 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
 
     private func showSolverEndpointPicker() {
         let alert = UIAlertController(
-            title: "Remote Solver",
-            message: "Full /solve URL of the deployed solver-server."
-                + " Leave empty to use the built-in default.",
+            title: "Solver Server",
+            message: "URL of the solver server.",
             preferredStyle: .alert
         )
-        let current = UserDefaults.standard.string(
-            forKey: UserDefaultsKeys.Debug.solverEndpoint
-        )
         alert.addTextField { field in
-            field.placeholder = "https://host:port/solve"
-            field.text = current
+            field.placeholder = AppURLs.SolverServer.defaultBaseURL
+            field.text = AppURLs.SolverServer.baseURL
             field.keyboardType = .URL
             field.autocapitalizationType = .none
             field.autocorrectionType = .no
         }
         alert.addAction(
             UIAlertAction(title: "Save", style: .default) { [weak self, weak alert] _ in
-                self?.saveSolverEndpoint(alert?.textFields?.first?.text)
+                self?.saveServerBaseURL(alert?.textFields?.first?.text)
+            }
+        )
+        alert.addAction(
+            UIAlertAction(title: "Reset to default", style: .destructive) { [weak self] _ in
+                self?.saveServerBaseURL(nil)
             }
         )
         alert.addAction(
@@ -455,12 +451,17 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
         present(alert, animated: true)
     }
 
-    private func saveSolverEndpoint(_ text: String?) {
+    /// Stores a custom base URL, or clears the override (→ default) when the
+    /// value is empty / equal to the default.
+    private func saveServerBaseURL(_ text: String?) {
         let trimmed = (text ?? "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
+        let override = (trimmed.isEmpty || trimmed == AppURLs.SolverServer.defaultBaseURL)
+            ? ""
+            : trimmed
         UserDefaults.standard.set(
-            trimmed,
-            forKey: UserDefaultsKeys.Debug.solverEndpoint
+            override,
+            forKey: UserDefaultsKeys.Debug.serverBaseURL
         )
         tableView.reloadData()
     }

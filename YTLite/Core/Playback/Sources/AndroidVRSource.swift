@@ -28,10 +28,12 @@ final class AndroidVRSource: VideoSource {
         info.allDashVideoFormats.map { format in
             let fps = format.fps ?? 0
             let height = format.height ?? 0
-            let label = fps > 30 ? "\(height)p\(fps)" : "\(height)p"
+            // YouTube's tier name when present — non-16:9 heights are
+            // off-ladder (1920x1012 is the "1080p" tier, not "1012p").
+            let fallback = fps > 30 ? "\(height)p\(fps)" : "\(height)p"
             return VideoQuality(
                 id: "\(format.itag)",
-                label: label,
+                label: format.qualityLabel ?? fallback,
                 height: format.height,
                 fps: format.fps
             )

@@ -49,29 +49,20 @@ enum HLSPlaybackBuilder {
     ) {
         var urlReq = URLRequest(url: request.url)
         for (headerKey, headerVal) in request.headers {
-            urlReq.setValue(
-                headerVal,
-                forHTTPHeaderField: headerKey
-            )
+            urlReq.setValue(headerVal, forHTTPHeaderField: headerKey)
         }
         let rv = "bytes=\(request.start)-\(request.end)"
-        urlReq.setValue(
-            rv,
-            forHTTPHeaderField: HTTPHeader.range
-        )
-        let task = URLSession.shared.dataTask(
-            with: urlReq
-        ) { data, response, error in
+        urlReq.setValue(rv, forHTTPHeaderField: HTTPHeader.range)
+        let task = URLSession.shared.dataTask(with: urlReq) { data, response, error in
             if let error {
-                let msg = error.localizedDescription
-                AppLog.hls("range fetch failed: \(msg)")
+                AppLog.hls("range fetch failed: \(error.localizedDescription)")
                 completion(nil)
                 return
             }
-            let code = (response as? HTTPURLResponse)?
-                .statusCode ?? 0
+            let http = response as? HTTPURLResponse
+            let code = http?.statusCode ?? 0
             if code != 206, code != 200 {
-                AppLog.hls("range fetch status \(code)")
+                logRangeFailure(code: code, request: request, http: http, data: data)
             }
             completion(data)
         }

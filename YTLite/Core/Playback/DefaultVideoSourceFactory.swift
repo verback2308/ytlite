@@ -12,8 +12,8 @@ struct DefaultVideoSourceFactory: VideoSourceFactory {
             return AndroidVRSource(apiClient: apiClient)
         case .progressive:
             return ProgressiveSource(apiClient: apiClient)
-        case .webViewHLS:
-            return WebViewHLSSource(apiClient: apiClient)
+        case .mwebPot:
+            return MWebSource(apiClient: apiClient)
         }
     }
 }

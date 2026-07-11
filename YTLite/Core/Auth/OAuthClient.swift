@@ -187,10 +187,7 @@ extension OAuthClient {
             return
         }
         if !tokens.isExpired {
-            AppLog.auth(
-                "Using cached token: " +
-                "\(tokens.accessToken.prefix(16))..."
-            )
+            AppLog.auth("using cached token")
             completion(.success(tokens.accessToken))
             return
         }
@@ -246,9 +243,7 @@ extension OAuthClient {
         )
         self.tokens = updated
         saveToKeychain(updated)
-        AppLog.auth(
-            "Token refreshed: \(accessToken.prefix(16))..."
-        )
+        AppLog.auth("token refreshed")
         completion(.success(accessToken))
     }
     func signOut() {

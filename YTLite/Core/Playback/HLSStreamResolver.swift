@@ -1,27 +1,18 @@
 import Foundation
+import JavaScriptCore
 
 // MARK: - HLS Stream Resolver
 //
-// Resolves a playable YouTube HLS manifest without a WKWebView:
-//   1. URLSession GET the watch page (desktop Safari UA) → hlsManifestUrl + jsUrl.
-//      The server-rendered HTML already carries an spc= (proof-of-context) URL.
-//   2. URLSession GET the multivariant manifest → the unsolved n-throttling value.
-//   3. Solve n: on iOS 14+ in a local JSContext; older devices need a remote
-//      solver (base.js uses ES2020 syntax the iOS 12/13 JS engine cannot parse).
-// The solved n is handed to `HLSProxyLoader`, which rewrites /n/ and fixes the
-// User-Agent so AVPlayer's segment requests are accepted (HTTP 200, not 403).
-
-struct ResolvedHLS {
-    let manifestURL: URL
-    let nSolver: (unsolved: String, solved: String)?
-    let captions: [SubtitleTrack]
-}
+// n-throttling signature solver + small HTTP/regex helpers used by the mweb
+// playback source. `solveN` (see the +Solve / +Remote extensions) runs the
+// EJS solver in an on-device JSContext (iOS 14+) or falls back to the remote
+// solver (iOS 12/13, whose engine can't parse YouTube's ES2020 base.js).
+// `fetchText` / `firstMatch` are used to scrape the player-JS URL from the
+// watch page.
 
 final class HLSStreamResolver {
     enum ResolverError: Error {
-        case noManifest
         case badResponse
-        case solveUnavailable
     }
 
     static let shared = HLSStreamResolver()
@@ -41,6 +32,14 @@ final class HLSStreamResolver {
     private var playerJSCache: (path: String, text: String)?
     private let cacheLock = NSLock()
 
+    // A single reused JS engine for on-device n-solving. Creating a fresh
+    // JSContext (hence a fresh JSVirtualMachine) per solve leaks memory —
+    // JavaScriptCore doesn't return a retired VM's memory to the OS — so the
+    // solver library is loaded once and the context is reused. Serial access
+    // only, via `solverQueue`; never touch `solverContext` off that queue.
+    let solverQueue = DispatchQueue(label: "com.ytvlite.nsolve")
+    var solverContext: JSContext?
+
     init(transport: HTTPTransport = ServiceContainer.transport) {
         self.transport = transport
     }
@@ -56,70 +55,6 @@ final class HLSStreamResolver {
             return nil
         }
         return String(text[group])
-    }
-
-    static func manifestURL(from html: String) -> URL? {
-        let raw = firstMatch(
-            in: html, pattern: "\"hlsManifestUrl\":\"(https[^\"]+)\""
-        )?.replacingOccurrences(of: "\\/", with: "/")
-        return raw.flatMap { URL(string: $0) }
-    }
-
-    // MARK: Public
-
-    func resolve(
-        videoId: String,
-        attempt: Int = 0,
-        completion: @escaping (Result<ResolvedHLS, Error>) -> Void
-    ) {
-        let watch = "https://www.youtube.com/watch?v=\(videoId)"
-        guard let url = URL(string: watch) else {
-            completion(.failure(ResolverError.noManifest))
-            return
-        }
-        AppLog.player("hlsResolve: fetching watch page \(videoId) (try \(attempt))")
-        fetchText(url: url) { [weak self] result in
-            guard let self else {
-                return
-            }
-            switch result {
-            case .failure(let error):
-                self.retryOrFail(
-                    videoId: videoId,
-                    attempt: attempt,
-                    error: error,
-                    completion: completion
-                )
-            case .success(let html):
-                self.handleWatchPage(
-                    html: html,
-                    videoId: videoId,
-                    attempt: attempt,
-                    completion: completion
-                )
-            }
-        }
-    }
-
-    /// The watch page intermittently ships without a pre-rendered player
-    /// response (no hlsManifestUrl). Retry a couple of times before failing.
-    private func retryOrFail(
-        videoId: String,
-        attempt: Int,
-        error: Error,
-        completion: @escaping (Result<ResolvedHLS, Error>) -> Void
-    ) {
-        guard attempt < 3 else {
-            completion(.failure(error))
-            return
-        }
-        // Back off a little more each try — the page needs a moment to warm up.
-        let delay = 0.8 * Double(attempt + 1)
-        DispatchQueue.global().asyncAfter(deadline: .now() + delay) { [weak self] in
-            self?.resolve(
-                videoId: videoId, attempt: attempt + 1, completion: completion
-            )
-        }
     }
 
     func fetchText(
@@ -145,82 +80,6 @@ final class HLSStreamResolver {
                     completion(.failure(ResolverError.badResponse))
                 }
             }
-        }
-    }
-
-    // MARK: Pipeline steps
-
-    private func handleWatchPage(
-        html: String,
-        videoId: String,
-        attempt: Int,
-        completion: @escaping (Result<ResolvedHLS, Error>) -> Void
-    ) {
-        guard let manifestURL = Self.manifestURL(from: html) else {
-            AppLog.player("hlsResolve: no hlsManifestUrl in page")
-            retryOrFail(
-                videoId: videoId,
-                attempt: attempt,
-                error: ResolverError.noManifest,
-                completion: completion
-            )
-            return
-        }
-        let jsPath = Self.firstMatch(
-            in: html, pattern: "\"jsUrl\":\"([^\"]+base\\.js)\""
-        )
-        let captions = InnertubeClient.extractCaptionTracks(fromWatchHTML: html)
-        AppLog.player(
-            "hlsResolve: manifest ok, jsUrl=\(jsPath ?? "nil"),"
-                + " captions=\(captions.count)"
-        )
-        finishResolve(
-            manifestURL: manifestURL,
-            jsPath: jsPath,
-            captions: captions,
-            completion: completion
-        )
-    }
-
-    private func finishResolve(
-        manifestURL: URL,
-        jsPath: String?,
-        captions: [SubtitleTrack],
-        completion: @escaping (Result<ResolvedHLS, Error>) -> Void
-    ) {
-        fetchText(url: manifestURL) { [weak self] result in
-            guard let self else {
-                return
-            }
-            let manifestText = (try? result.get()) ?? ""
-            self.solveIfNeeded(
-                manifestText: manifestText,
-                jsPath: jsPath
-            ) { mapping in
-                completion(.success(ResolvedHLS(
-                    manifestURL: manifestURL,
-                    nSolver: mapping,
-                    captions: captions
-                )))
-            }
-        }
-    }
-
-    private func solveIfNeeded(
-        manifestText: String,
-        jsPath: String?,
-        completion: @escaping ((unsolved: String, solved: String)?) -> Void
-    ) {
-        guard let unsolved = Self.firstMatch(
-            in: manifestText, pattern: "/n/([A-Za-z0-9_-]{10,})/"
-        ) else {
-            AppLog.player("hlsResolve: no n in manifest; serving as-is")
-            completion(nil)
-            return
-        }
-        solveN(unsolved: unsolved, jsPath: jsPath) { solved in
-            AppLog.player("hlsResolve: n \(unsolved) -> \(solved ?? "nil")")
-            completion(solved.map { (unsolved, $0) })
         }
     }
 }

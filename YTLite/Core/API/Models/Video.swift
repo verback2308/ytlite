@@ -113,6 +113,10 @@ struct DashFormatInfo {
     let width: Int?
     let height: Int?
     let fps: Int?
+    /// YouTube's own tier name ("1080p", "1080p60"). Preferred over deriving
+    /// from `height` — non-16:9 videos have off-ladder heights (1920x1012 is
+    /// still the "1080p" tier, not "1012p").
+    let qualityLabel: String?
 }
 
 struct DirectPlaybackInfo {

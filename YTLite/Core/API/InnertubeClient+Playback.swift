@@ -74,22 +74,19 @@ extension InnertubeClient {
         token: String,
         poToken: String? = nil,
         visitorData: String? = nil,
+        signatureTimestamp: Int? = nil,
         cancellationToken: CancellationToken? = nil,
         completion: @escaping (Result<DirectPlaybackInfo, Error>) -> Void
     ) {
         let body = buildDirectPlaybackBody(
             videoId: videoId,
             client: client,
-            poToken: poToken
+            poToken: poToken,
+            signatureTimestamp: signatureTimestamp
         )
         let headers = client.apiHeaders(
             token: token,
             visitorData: visitorData
-        )
-        let headerKeys = headers.keys.sorted().joined(separator: ",")
-        AppLog.innertube(
-            "directPlayback(\(client)): "
-                + "videoId=\(videoId) headers=\(headerKeys)"
         )
         let playerURL = "\(baseURL)/player\(client.playerURLSuffix)"
         execute(
@@ -97,6 +94,7 @@ extension InnertubeClient {
             body: body,
             headers: headers,
             cancellationToken: cancellationToken,
+            sendsCookies: client.sendsCookies,
             logTag: "directPlayback(\(client))"
         ) { json -> DirectPlaybackInfo? in
             Self.parseDirectPlayback(
@@ -105,6 +103,42 @@ extension InnertubeClient {
                 client: client
             )
         } completion: { completion($0) }
+    }
+
+    /// Anonymous MWEB playback: POSTs /player with the mobile-web context +
+    /// STS + `pot` + `visitorData`. The signatureTimestamp is mandatory (else
+    /// UNPLAYABLE "page needs reloaded") and MUST match the player used to
+    /// solve `n` — the caller scrapes both from the same watch page; a stale
+    /// STS gets every media range 403'd. Falls back to the site-wide STS
+    /// only when the caller has none.
+    func fetchMWebPlayback(
+        videoId: String,
+        poToken: String?,
+        visitorData: String?,
+        signatureTimestamp: Int? = nil,
+        cancellationToken: CancellationToken? = nil,
+        completion: @escaping (Result<DirectPlaybackInfo, Error>) -> Void
+    ) {
+        let run: (Int?) -> Void = { [weak self] sts in
+            guard let self, cancellationToken?.isCancelled != true else {
+                return
+            }
+            self.executeDirectPlayback(
+                videoId: videoId,
+                client: .mweb,
+                token: "",
+                poToken: poToken,
+                visitorData: visitorData,
+                signatureTimestamp: sts,
+                cancellationToken: cancellationToken,
+                completion: completion
+            )
+        }
+        if let signatureTimestamp {
+            run(signatureTimestamp)
+        } else {
+            SignatureTimestampService.shared.fetch { run($0) }
+        }
     }
 
     func executeSubscribe(
@@ -232,17 +266,22 @@ private extension InnertubeClient {
     func buildDirectPlaybackBody(
         videoId: String,
         client: DirectPlaybackClient,
-        poToken: String?
+        poToken: String?,
+        signatureTimestamp: Int? = nil
     ) -> [String: Any] {
         var body = client.context
         body["videoId"] = videoId
         if client.requiresContentCheckFlags {
             body["contentCheckOk"] = true
             body["racyCheckOk"] = true
+            var playbackCtx: [String: Any] = [
+                "html5Preference": "HTML5_PREF_WANTS"
+            ]
+            if let signatureTimestamp {
+                playbackCtx["signatureTimestamp"] = signatureTimestamp
+            }
             body["playbackContext"] = [
-                "contentPlaybackContext": [
-                    "html5Preference": "HTML5_PREF_WANTS"
-                ]
+                "contentPlaybackContext": playbackCtx
             ]
         }
         if let poToken, !poToken.isEmpty {

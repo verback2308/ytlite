@@ -42,10 +42,17 @@ final class APIClient {
         body: Data,
         headers: [String: String] = [:],
         cancellationToken: CancellationToken? = nil,
+        sendsCookies: Bool = true,
         completion: @escaping (Result<Data, Error>) -> Void
     ) {
         transport.send(
-            HTTPRequest(method: .post, url: url, headers: headers, body: body),
+            HTTPRequest(
+                method: .post,
+                url: url,
+                headers: headers,
+                body: body,
+                sendsCookies: sendsCookies
+            ),
             cancellationToken: cancellationToken
         ) { result in
             completion(Self.jsonData(from: result))

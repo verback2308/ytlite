@@ -12,7 +12,7 @@ import Foundation
 enum VideoSourceKind {
     case androidVR
     case progressive
-    case webViewHLS
+    case mwebPot
 }
 
 /// A selectable quality level, expressed source-agnostically.

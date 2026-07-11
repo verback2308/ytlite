@@ -3,6 +3,7 @@ import Foundation
 enum DirectPlaybackClient: Equatable, CustomStringConvertible {
     case androidVR
     case web
+    case mweb
 
     var description: String {
         clientName
@@ -14,6 +15,8 @@ enum DirectPlaybackClient: Equatable, CustomStringConvertible {
             "ANDROID_VR"
         case .web:
             "WEB"
+        case .mweb:
+            "MWEB"
         }
     }
 
@@ -23,6 +26,8 @@ enum DirectPlaybackClient: Equatable, CustomStringConvertible {
             "1.65.10"
         case .web:
             "2.20231121.08.00"
+        case .mweb:
+            "2.20250101.00.00"
         }
     }
 
@@ -32,6 +37,8 @@ enum DirectPlaybackClient: Equatable, CustomStringConvertible {
             "28"
         case .web:
             "1"
+        case .mweb:
+            "2"
         }
     }
 
@@ -43,13 +50,15 @@ enum DirectPlaybackClient: Equatable, CustomStringConvertible {
                 + " eureka-user Build/SQ3A.220605.009.A1) gzip"
         case .web:
             UserAgent.chromeMac
+        case .mweb:
+            UserAgent.mobileSafari
         }
     }
 
     /// Whether this client uses cookie-based auth instead of OAuth Bearer token
     var usesCookieAuth: Bool {
         switch self {
-        case .androidVR:
+        case .androidVR, .mweb:
             true
         case .web:
             false
@@ -61,18 +70,32 @@ enum DirectPlaybackClient: Equatable, CustomStringConvertible {
         true
     }
 
+    /// MWEB playback is anonymous and its GVS pot binds to the video id; sending
+    /// the app's authenticated (TV device) session cookies makes YouTube return a
+    /// session-bound URL the anonymous pot can't satisfy (403). Keep it cookieless.
+    var sendsCookies: Bool {
+        switch self {
+        case .mweb:
+            false
+        case .androidVR, .web:
+            true
+        }
+    }
+
     var context: [String: Any] {
         switch self {
         case .androidVR:
             InnertubeContexts.androidVR
         case .web:
             InnertubeContexts.web
+        case .mweb:
+            InnertubeContexts.mweb
         }
     }
 
     var playerURLSuffix: String {
         switch self {
-        case .androidVR:
+        case .androidVR, .mweb:
             "?prettyPrint=false"
         case .web:
             ""
@@ -112,7 +135,7 @@ enum DirectPlaybackClient: Equatable, CustomStringConvertible {
             headers[HTTPHeader.referer] = AppURLs.YouTube.base + "/"
             headers[HTTPHeader.origin] = AppURLs.YouTube.base
             headers[HTTPHeader.xOrigin] = AppURLs.YouTube.base
-        case .androidVR:
+        case .androidVR, .mweb:
             break
         }
         if let visitorData, !visitorData.isEmpty {
@@ -133,11 +156,13 @@ enum DirectPlaybackClient: Equatable, CustomStringConvertible {
         switch self {
         case .web:
             break
-        case .androidVR:
-            headers[HTTPHeader.origin] = AppURLs.YouTube.base
+        case .androidVR, .mweb:
             if let visitorData, !visitorData.isEmpty {
                 headers[HTTPHeader.xGoogVisitorId] = visitorData
             }
+        }
+        if case .androidVR = self {
+            headers[HTTPHeader.origin] = AppURLs.YouTube.base
         }
         return headers
     }

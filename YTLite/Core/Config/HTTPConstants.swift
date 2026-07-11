@@ -57,6 +57,13 @@ enum UserAgent {
     static let cobaltTV =
         "Mozilla/5.0 (ChromiumStylePlatform) Cobalt/Version"
 
+    /// Mobile Safari on iPhone — used for the anonymous MWEB playback client.
+    static let mobileSafari = [
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X)",
+        "AppleWebKit/605.1.15 (KHTML, like Gecko)",
+        "Version/17.5 Mobile/15E148 Safari/604.1"
+    ].joined(separator: " ")
+
     /// Safari on macOS — used for WKWebView po_token generation.
     static let safariMac = [
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",

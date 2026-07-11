@@ -101,8 +101,6 @@ extension OAuthClient {
         )
         tokens = newTokens
         saveToKeychain(newTokens)
-        AppLog.auth(
-            "New token obtained: \(accessToken.prefix(16))..."
-        )
+        AppLog.auth("new token obtained")
     }
 }

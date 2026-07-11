@@ -52,7 +52,7 @@ enum UserDefaultsKeys {
 
     enum Debug {
         static let playbackSource = "debug_playbackSource"
-        static let solverEndpoint = "debug_solverEndpoint"
+        static let serverBaseURL = "debug_serverBaseURL"
     }
 }
 
@@ -61,7 +61,7 @@ enum UserDefaultsKeys {
 enum PlaybackSource: String, CaseIterable {
     case androidVR = "android_vr"
     case progressive = "progressive"
-    case webViewHLS = "webview_hls"
+    case mwebPot = "mweb_pot"
 
     static var selected: PlaybackSource {
         let raw = UserDefaults.standard.string(
@@ -77,8 +77,8 @@ enum PlaybackSource: String, CaseIterable {
             return "Android VR (default)"
         case .progressive:
             return "Progressive (360p)"
-        case .webViewHLS:
-            return "WebView HLS (kids/dubbed)"
+        case .mwebPot:
+            return "Mobile Web + pot (kids/dubbed)"
         }
     }
 
@@ -88,8 +88,8 @@ enum PlaybackSource: String, CaseIterable {
             return .androidVR
         case .progressive:
             return .progressive
-        case .webViewHLS:
-            return .webViewHLS
+        case .mwebPot:
+            return .mwebPot
         }
     }
 }

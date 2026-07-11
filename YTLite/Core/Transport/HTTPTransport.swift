@@ -14,19 +14,25 @@ struct HTTPRequest {
     var body: Data?
     /// Per-request timeout; nil uses the session default.
     var timeout: TimeInterval?
+    /// When false, the shared cookie storage is neither sent nor updated for
+    /// this request — used to keep the anonymous MWEB playback flow from being
+    /// contaminated by the app's authenticated (TV device) session cookies.
+    var sendsCookies: Bool
 
     init(
         method: HTTPMethod,
         url: URL,
         headers: [String: String] = [:],
         body: Data? = nil,
-        timeout: TimeInterval? = nil
+        timeout: TimeInterval? = nil,
+        sendsCookies: Bool = true
     ) {
         self.method = method
         self.url = url
         self.headers = headers
         self.body = body
         self.timeout = timeout
+        self.sendsCookies = sendsCookies
     }
 }
 

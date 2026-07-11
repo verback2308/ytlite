@@ -102,12 +102,17 @@ extension HLSStreamResolver {
         unsolved: String,
         completion: @escaping (String?) -> Void
     ) {
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+        solverQueue.async { [weak self] in
             completion(self?.runSolver(baseJS: baseJS, unsolved: unsolved))
         }
     }
 
-    private func runSolver(baseJS: String, unsolved: String) -> String? {
+    /// Loads the solver library once into a reused context. Must run on
+    /// `solverQueue` (a `JSContext` is not thread-safe).
+    private func sharedSolverContext() -> JSContext? {
+        if let context = solverContext {
+            return context
+        }
         guard let context = JSContext() else {
             return nil
         }
@@ -118,15 +123,23 @@ extension HLSStreamResolver {
         context.evaluateScript(Self.solverBridge)
         context.evaluateScript(WebViewHLSSolverJS.core)
         context.evaluateScript(Self.solverWrapper)
-        guard let fn = context.objectForKeyedSubscript("__ytSolveN") else {
+        solverContext = context
+        return context
+    }
+
+    /// Runs on `solverQueue`. Reuses the shared context and reclaims the garbage
+    /// from parsing the (multi-MB) player JS after each solve so the JS heap
+    /// doesn't grow across videos.
+    private func runSolver(baseJS: String, unsolved: String) -> String? {
+        guard let context = sharedSolverContext(),
+              let fn = context.objectForKeyedSubscript("__ytSolveN") else {
             return nil
         }
-        let value = fn.call(withArguments: [baseJS, unsolved])
-        guard let solved = value?.toString(),
-              !solved.isEmpty,
-              !solved.hasPrefix("ERR:") else {
-            if let err = value?.toString(), err.hasPrefix("ERR:") {
-                AppLog.player("hlsResolve: solver \(err)")
+        let result = fn.call(withArguments: [baseJS, unsolved])?.toString()
+        JSGarbageCollect(context.jsGlobalContextRef)
+        guard let solved = result, !solved.isEmpty, !solved.hasPrefix("ERR:") else {
+            if let result, result.hasPrefix("ERR:") {
+                AppLog.player("hlsResolve: solver \(result)")
             }
             return nil
         }

@@ -19,27 +19,42 @@ enum AppURLs {
         static let token      = "https://www.youtube.com/o/oauth2/token"
     }
 
-    /// Remote n-throttling solver for iOS 12/13, where YouTube's ES2020 base.js
-    /// cannot be parsed on-device. Deploy `solver-server/` and set this to its
-    /// `/solve` URL. Empty = disabled (older devices fall back to no HLS).
-    /// A runtime override can be set under `UserDefaultsKeys.Debug.solverEndpoint`.
-    enum NSolver {
-        static let defaultEndpoint =
-            "https://potoken-solver-buaphfh0f5gefqfm.canadacentral-01.azurewebsites.net/api/solve"
+    /// The deployed `solver-server` (n-solve + GVS pot mint). Only the base URL
+    /// (host) is configured; the app derives `/solve` and `/get_pot` from it.
+    /// Runtime override: `Debug.serverBaseURL` (empty = the built-in default).
+    enum SolverServer {
+        static let defaultBaseURL =
+            "https://ytlite-solver.wonderfulpond-77505dfd.westus2.azurecontainerapps.io"
 
-        static var endpoint: URL? {
+        /// The effective base URL — the runtime override if set, else the
+        /// default — with any trailing slash trimmed.
+        static var baseURL: String {
             let override = UserDefaults.standard.string(
-                forKey: UserDefaultsKeys.Debug.solverEndpoint
+                forKey: UserDefaultsKeys.Debug.serverBaseURL
             )
-            let value = (override?.isEmpty == false)
-                ? override
-                : (defaultEndpoint.isEmpty ? nil : defaultEndpoint)
-            return value.flatMap(URL.init(string:))
+            let value = (override?.isEmpty == false) ? (override ?? "") : defaultBaseURL
+            return value.hasSuffix("/") ? String(value.dropLast()) : value
         }
+
+        static func endpoint(path: String) -> URL? {
+            baseURL.isEmpty ? nil : URL(string: baseURL + path)
+        }
+    }
+
+    /// Remote n-throttling solver (`/solve`). Only the mweb+pot source uses it.
+    enum NSolver {
+        static var endpoint: URL? { SolverServer.endpoint(path: "/solve") }
     }
 
     enum GoogleAPIs {
         static let youtubeV3 = "https://www.googleapis.com/youtube/v3"
+    }
+
+    /// Remote GVS proof-of-origin (`pot`) provider — the `solver-server`'s
+    /// `/get_pot` endpoint (BotGuard minting can't be done reliably on-device).
+    /// `POST /get_pot {"content_binding": <videoId>}`.
+    enum PoTokenProvider {
+        static var endpoint: URL? { SolverServer.endpoint(path: "/get_pot") }
     }
 
     enum RYD {

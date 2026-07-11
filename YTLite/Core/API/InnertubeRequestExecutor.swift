@@ -24,6 +24,7 @@ extension InnertubeClient {
         body: [String: Any],
         headers: [String: String],
         cancellationToken: CancellationToken? = nil,
+        sendsCookies: Bool = true,
         logTag: String = "request",
         parse: @escaping ([String: Any]) -> T?,
         completion: @escaping (Result<T, Error>) -> Void
@@ -48,7 +49,8 @@ extension InnertubeClient {
             url: url,
             body: bodyData,
             headers: headers,
-            cancellationToken: cancellationToken
+            cancellationToken: cancellationToken,
+            sendsCookies: sendsCookies
         ) { result in
             self.handlePostResult(
                 result,

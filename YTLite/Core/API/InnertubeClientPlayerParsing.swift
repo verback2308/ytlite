@@ -103,20 +103,33 @@ private extension InnertubeClient {
             from: adaptive,
             maxHeight: VideoQualityStore.maxHeight
         )
-        let audio = adaptive
-            .filter {
-                fmtDirectURL($0) != nil
-                    && fmtMimeType($0)
-                        .contains("audio/mp4")
-            }
-            .max {
-                fmtBitrate($0) < fmtBitrate($1)
-            }
         return SelectedFmts(
             progressive: progressive,
             video: video,
-            audio: audio
+            audio: selectBestAudio(from: adaptive)
         )
+    }
+
+    /// Best audio/mp4 stream, preferring the default track. Auto-dubbed
+    /// videos ship several itag-140 variants whose bitrates differ by a few
+    /// bits — a plain max-bitrate pick lands on the dub; `audioIsDefault`
+    /// marks the original (matching what the website plays).
+    static func selectBestAudio(
+        from adaptive: [[String: Any]]
+    ) -> [String: Any]? {
+        let pool = adaptive.filter {
+            fmtDirectURL($0) != nil
+                && fmtMimeType($0)
+                    .contains("audio/mp4")
+        }
+        let defaults = pool.filter {
+            ((($0["audioTrack"] as? [String: Any])?["audioIsDefault"])
+                as? Bool) == true
+        }
+        return (defaults.isEmpty ? pool : defaults)
+            .max {
+                fmtBitrate($0) < fmtBitrate($1)
+            }
     }
 
     static func selectBestVideo(
@@ -217,7 +230,8 @@ private extension InnertubeClient {
             indexRangeEnd: xEnd,
             width: fmt["width"] as? Int,
             height: fmt["height"] as? Int,
-            fps: fmt["fps"] as? Int
+            fps: fmt["fps"] as? Int,
+            qualityLabel: fmt["qualityLabel"] as? String
         )
     }
     // swiftlint:enable function_parameter_count

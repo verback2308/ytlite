@@ -1,15 +1,24 @@
 import Foundation
 
 /// The single `URLSession`-backed transport — the only place in the app that
-/// touches `URLSession` (aside from `HLSProxyLoader`'s AVFoundation byte
+/// touches `URLSession` (aside from `HLSPlaybackBuilder`'s AVFoundation byte
 /// streaming, which is documented). Maps status codes onto `APIError` and
 /// honours `CancellationToken`: a cancelled task silences its callback,
 /// matching the previous `APIClient` behaviour.
 final class URLSessionTransport: HTTPTransport {
     private let session: URLSession
+    /// A session with no cookie storage — used for requests that opt out of
+    /// cookies (`sendsCookies == false`). Guarantees the shared jar is never
+    /// attached, independent of the per-request `httpShouldHandleCookies` flag.
+    private let cookielessSession: URLSession
 
     init(session: URLSession = .shared) {
         self.session = session
+        let config = URLSessionConfiguration.ephemeral
+        config.httpCookieStorage = nil
+        config.httpShouldSetCookies = false
+        config.httpCookieAcceptPolicy = .never
+        self.cookielessSession = URLSession(configuration: config)
     }
 
     static func isCancelled(_ error: Error?) -> Bool {
@@ -57,12 +66,16 @@ final class URLSessionTransport: HTTPTransport {
         var urlRequest = URLRequest(url: request.url)
         urlRequest.httpMethod = request.method.rawValue
         urlRequest.httpBody = request.body
+        urlRequest.httpShouldHandleCookies = request.sendsCookies
         if let timeout = request.timeout {
             urlRequest.timeoutInterval = timeout
         }
         request.headers.forEach {
             urlRequest.setValue($1, forHTTPHeaderField: $0)
         }
+        // Route cookie-opted-out requests through a jar-less session so the
+        // shared cookies can't leak in regardless of httpShouldHandleCookies.
+        let session = request.sendsCookies ? self.session : cookielessSession
         let task = session.dataTask(with: urlRequest) { data, response, error in
             if Self.isCancelled(error) {
                 return
