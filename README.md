@@ -1,47 +1,99 @@
+<div align="center">
+
 # YTLite
 
-A lightweight YouTube client for iOS 12+ built entirely with UIKit. No ads, no tracking, no dependencies.
+**A lightweight, native YouTube client for iOS 12+. No ads, no tracking, no dependencies.**
 
-<a href="https://buymeacoffee.com/verback2308" target="_blank" rel="noopener noreferrer"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-violet.png" alt="Buy me a coffee" height="50"></a>
+[![Latest release](https://img.shields.io/github/v/release/verback2308/YTLite?label=release&color=blue)](https://github.com/verback2308/YTLite/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/verback2308/YTLite/total?color=brightgreen)](https://github.com/verback2308/YTLite/releases)
+![iOS 12+](https://img.shields.io/badge/iOS-12%2B-lightgrey?logo=apple)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-<p align="center">
-  <img src="screenshots/channel.jpeg" width="300" alt="Channel page">
-</p>
+<br>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="screenshots/app/iphone/dark/recommendations.jpeg">
+  <img src="screenshots/app/iphone/light/recommendations.jpeg" width="24%" alt="Home feed">
+</picture>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="screenshots/app/iphone/dark/player.jpeg">
+  <img src="screenshots/app/iphone/light/player.jpeg" width="24%" alt="Video player with comments">
+</picture>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="screenshots/app/iphone/dark/channel.jpeg">
+  <img src="screenshots/app/iphone/light/channel.jpeg" width="24%" alt="Channel page">
+</picture>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="screenshots/app/iphone/dark/subscriptions.jpeg">
+  <img src="screenshots/app/iphone/light/subscriptions.jpeg" width="24%" alt="Subscriptions feed">
+</picture>
+
+<sub>Screenshots follow your GitHub theme — the app supports both light and dark mode.</sub>
+
+</div>
 
 ## Why
 
 When Google dropped support for the official YouTube app on older devices, there was no way to watch videos properly. Browsers capped quality at 360p — and even that barely ran. YTLite was born to restore what was lost: high-quality playback on hardware that still works fine, just ignored by Google. The "Lite" stands for a focused, lightweight client that does one thing well — let you watch YouTube.
 
-> **Note:** This project is not related to [dayanch96/YTLite](https://github.com/dayanch96/YTLite) (YouTube Plus). The name collision is accidental.
+> [!NOTE]
+> This project is not related to [dayanch96/YTLite](https://github.com/dayanch96/YTLite) (YouTube Plus). The name collision is accidental.
 
 ## Features
 
-- **Video Playback** — up to 1080p 60fps quality
-- **Kids Content** — plays videos the standard API sources refuse, via a dedicated playback source
-- **Background Audio** — Continue listening with the screen off
-- **Picture-in-Picture** — Watch while using other apps
-- **SponsorBlock** — Skip sponsored segments automatically
-- **Return YouTube Dislike** — See dislike counts again
-- **Subtitles** — Full subtitle/caption support with VTT parsing
-- **Search & Browse** — Search with live suggestions and recent-search history, home feed, trending, channel pages, playlists
-- **Subscriptions** — Follow channels with a local subscription feed
-- **Watch History** — Track what you've watched with progress indicators, synced across devices
-- **Autoplay** — Automatically play the next related video
-- **Auto Theme** — Follows system dark mode on iOS 13+, scheduled hours on iOS 12; manual override available
+- **Video playback** — up to 1080p 60fps
+- **Kids content** — plays videos the standard API sources refuse, via a dedicated playback source
+- **Background audio** — continue listening with the screen off
+- **Picture-in-Picture** — watch while using other apps
+- **SponsorBlock** — skip sponsored segments automatically
+- **Return YouTube Dislike** — see dislike counts again
+- **Subtitles** — full subtitle/caption support with VTT parsing
+- **Search & browse** — live suggestions, recent-search history, home feed, trending, channel pages, playlists
+- **Subscriptions** — follow channels with a local subscription feed
+- **Watch history** — progress indicators, synced across devices
+- **Autoplay** — automatically play the next related video
+- **Auto theme** — follows system dark mode on iOS 13+, scheduled hours on iOS 12; manual override available
 
-<p align="center">
-  <img src="screenshots/settings.PNG" width="300" alt="Settings">
-</p>
+<div align="center">
 
-## How to Use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="screenshots/app/ipad/dark/player.jpeg">
+  <img src="screenshots/app/ipad/light/player.jpeg" width="90%" alt="iPad player with related videos side by side">
+</picture>
+
+<sub>Native iPad layout — player and related videos side by side.</sub>
+
+</div>
+
+<details>
+<summary><b>More screenshots</b></summary>
+<br>
+<div align="center">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="screenshots/app/iphone/dark/settings.jpeg">
+  <img src="screenshots/app/iphone/light/settings.jpeg" width="32%" alt="Settings">
+</picture>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="screenshots/app/ipad/dark/recommendations.jpeg">
+  <img src="screenshots/app/ipad/light/recommendations.jpeg" width="63%" alt="iPad home feed">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="screenshots/app/ipad/dark/channel.jpeg">
+  <img src="screenshots/app/ipad/light/channel.jpeg" width="48%" alt="iPad channel page">
+</picture>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="screenshots/app/ipad/dark/subscriptions.jpeg">
+  <img src="screenshots/app/ipad/light/subscriptions.jpeg" width="48%" alt="iPad subscriptions feed">
+</picture>
+
+</div>
+</details>
+
+## Installation
 
 YTLite runs on devices with **iOS 12 and above**.
-
-### Jailbroken devices
-
-Install the `.ipa` package directly:
-- **Filza** — open the `.ipa` file → Install
-- **ReProvision** — sign and install the IPA from the app
 
 ### Non-jailbroken devices
 
@@ -49,11 +101,11 @@ Install the `.ipa` package directly:
 
 Add the YTLite source to your sideloading app to receive automatic updates:
 
-[![Add Source](https://github.com/StikStore/altdirect/raw/main/assets/png/AltSource_Blue.png?raw=true)](https://stikstore.app/altdirect/?url=https://raw.githubusercontent.com/verback2308/YTLite/main/source/apps.json)
+<a href="https://stikstore.app/altdirect/?url=https://raw.githubusercontent.com/verback2308/YTLite/main/source/apps.json"><img src="https://github.com/StikStore/altdirect/raw/main/assets/png/AltSource_Blue.png" height="55" alt="Add Source"></a>
 
 **Option 2 — Manual install**
 
-Download the IPA and install via **SideStore**, **AltStore**, or **LiveContainer**.
+[Download the latest IPA](https://github.com/verback2308/YTLite/releases/latest) and install via **SideStore**, **AltStore**, or **LiveContainer**.
 
 **Option 3 — Build from source**
 
@@ -63,6 +115,12 @@ cd YTLite
 cp Config/Local.xcconfig.example Config/Local.xcconfig
 ./make_ipa.sh
 ```
+
+### Jailbroken devices
+
+Install the `.ipa` package directly:
+- **Filza** — open the `.ipa` file → Install
+- **ReProvision** — sign and install the IPA from the app
 
 ## Known Issues and Limitations
 
@@ -89,7 +147,7 @@ If you encounter a bug, you can export debug logs directly from the app:
 This generates a log file you can attach to your GitHub issue. The log includes timestamped playback, API, and caching events that help diagnose problems.
 
 <details>
-<summary>For developers</summary>
+<summary><b>For developers</b></summary>
 
 ## Building
 
@@ -173,6 +231,12 @@ OAuth device-code flow: the app requests a device code → user enters it at goo
 Please follow the existing code style. SwiftLint is configured and runs as a build phase.
 
 </details>
+
+## Support
+
+If YTLite keeps your old device alive, you can support development:
+
+<a href="https://buymeacoffee.com/verback2308" target="_blank" rel="noopener noreferrer"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-violet.png" alt="Buy me a coffee" height="45"></a>
 
 ## Credits
 
