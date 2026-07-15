@@ -12,6 +12,14 @@
       "subtitle": "YouTube client for iOS 12+",
       "versions": [
         {
+          "version": "1.4.3",
+          "date": "2026-07-15T23:54:09Z",
+          "localizedDescription": "New Features\n- YTLite is now on a Cydia/Sileo repo! Jailbroken devices can install the app and get automatic updates straight from the package manager — add https://verback2308.github.io/YTLite/ to Sileo, Zebra or Cydia. Rootful and rootless packages are provided, and every release stays in the repo, so you can roll back to an older version anytime (Sileo/Zebra: package page → version list)\n- Note for AppSync users: the repo is now the recommended way to install. If you switch, uninstall the Filza-installed app first — two copies can't coexist. Your sign-in will survive the move, but app settings will reset once\n\nBug Fixes\n- Dark theme: section headers, footers, switches and alerts no longer keep light-mode colors on iOS 13+ — Settings, SponsorBlock categories and search screens are fully readable again",
+          "downloadURL": "https://github.com/verback2308/YTLite/releases/download/1.4.3/YTLite_1.4.3.ipa",
+          "size": 4189760,
+          "minOSVersion": "12.0"
+        },
+        {
           "version": "1.4.2",
           "date": "2026-07-14T15:03:05Z",
           "localizedDescription": "New Features\n- Kids content now plays! A new Mobile Web playback source handles videos the fast source can't open, including kids content\n- Smarter search: live suggestions as you type, plus recent searches under the search bar (swipe to delete)\n- Auto playback source: picks the fastest source and silently falls back if a video fails to start\n- Auto theme: follows system dark mode on iOS 13+, custom schedule on iOS 12\n- Cleaner fullscreen: status bar hides during fullscreen playback (Settings toggle to keep it)\n\nBug Fixes\n- Videos played by autoplay now correctly appear in your YouTube watch history\n- Commenter avatars now load; anyone without one gets a colored monogram instead of an empty circle\n\n1.4.1\n- Auto playback source now applies after updating (previously stayed on Android VR if you'd ever opened the source picker)\n- Added detailed logging around sign-in token refresh to diagnose the auto-logout issue (#12) — if it hits you, please use Settings → Share Debug Log\n\n1.4.2\n- Sign releases with a fixed application-identifier\n- Note for jailbreak (AppSync) users: this update will ask you to sign in one more time. That's a one-time change that permanently fixes login persistence (#12) — future updates will keep your session.",
@@ -36,14 +44,14 @@
           "minOSVersion": "12.0"
         }
       ],
-      "version": "1.4.2",
-      "versionDate": "2026-07-14T15:03:05Z",
-      "versionDescription": "New Features\n- Kids content now plays! A new Mobile Web playback source handles videos the fast source can't open, including kids content\n- Smarter search: live suggestions as you type, plus recent searches under the search bar (swipe to delete)\n- Auto playback source: picks the fastest source and silently falls back if a video fails to start\n- Auto theme: follows system dark mode on iOS 13+, custom schedule on iOS 12\n- Cleaner fullscreen: status bar hides during fullscreen playback (Settings toggle to keep it)\n\nBug Fixes\n- Videos played by autoplay now correctly appear in your YouTube watch history\n- Commenter avatars now load; anyone without one gets a colored monogram instead of an empty circle\n\n1.4.1\n- Auto playback source now applies after updating (previously stayed on Android VR if you'd ever opened the source picker)\n- Added detailed logging around sign-in token refresh to diagnose the auto-logout issue (#12) — if it hits you, please use Settings → Share Debug Log\n\n1.4.2\n- Sign releases with a fixed application-identifier\n- Note for jailbreak (AppSync) users: this update will ask you to sign in one more time. That's a one-time change that permanently fixes login persistence (#12) — future updates will keep your session.",
-      "downloadURL": "https://github.com/verback2308/YTLite/releases/download/1.4.2/YTLite_1.4.2.ipa",
+      "version": "1.4.3",
+      "versionDate": "2026-07-15T23:54:09Z",
+      "versionDescription": "New Features\n- YTLite is now on a Cydia/Sileo repo! Jailbroken devices can install the app and get automatic updates straight from the package manager — add https://verback2308.github.io/YTLite/ to Sileo, Zebra or Cydia. Rootful and rootless packages are provided, and every release stays in the repo, so you can roll back to an older version anytime (Sileo/Zebra: package page → version list)\n- Note for AppSync users: the repo is now the recommended way to install. If you switch, uninstall the Filza-installed app first — two copies can't coexist. Your sign-in will survive the move, but app settings will reset once\n\nBug Fixes\n- Dark theme: section headers, footers, switches and alerts no longer keep light-mode colors on iOS 13+ — Settings, SponsorBlock categories and search screens are fully readable again",
+      "downloadURL": "https://github.com/verback2308/YTLite/releases/download/1.4.3/YTLite_1.4.3.ipa",
       "localizedDescription": "A lightweight YouTube client for iOS 12+. No ads, no tracking. Features: SponsorBlock, Return YouTube Dislike, 1080p playback, background audio, PiP, subtitles, and more.",
       "iconURL": "https://raw.githubusercontent.com/verback2308/YTLite/main/source/icon.png",
       "tintColor": "FF0000",
-      "size": 4187786,
+      "size": 4189760,
       "category": "entertainment",
       "minOSVersion": "12.0"
     }
