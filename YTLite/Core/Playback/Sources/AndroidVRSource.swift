@@ -17,11 +17,13 @@ final class AndroidVRSource: VideoSource {
     private(set) var currentQuality: VideoQuality?
 
     private let apiClient: WatchService
+    private let liveHLS: LiveHLSPlayback
     private let client: DirectPlaybackClient = .androidVR
     private var info: DirectPlaybackInfo?
 
-    init(apiClient: WatchService) {
+    init(apiClient: WatchService, resolver: HLSStreamResolver = .shared) {
         self.apiClient = apiClient
+        liveHLS = LiveHLSPlayback(resolver: resolver)
     }
 
     static func qualities(from info: DirectPlaybackInfo) -> [VideoQuality] {
@@ -65,6 +67,10 @@ final class AndroidVRSource: VideoSource {
         _ quality: VideoQuality,
         completion: @escaping (Result<PreparedPlayback, Error>) -> Void
     ) {
+        if liveHLS.isActive {
+            selectLiveQuality(quality, completion: completion)
+            return
+        }
         guard let info,
               let format = info.allDashVideoFormats.first(
                   where: { "\($0.itag)" == quality.id }
@@ -86,6 +92,7 @@ final class AndroidVRSource: VideoSource {
         completion: @escaping (Result<PreparedPlayback, Error>) -> Void
     ) {
         self.info = info
+        liveHLS.reset()
         availableQualities = Self.qualities(from: info)
         currentQuality = info.dashVideoFormat.flatMap { selected in
             availableQualities.first { $0.id == "\(selected.itag)" }
@@ -102,7 +109,7 @@ final class AndroidVRSource: VideoSource {
                 info: info, video: video, audio: audio, completion: completion
             )
         } else if let hls = info.hlsManifestURL {
-            completion(.success(prepared(item: AVPlayerItem(url: hls), info: info)))
+            loadLiveHLS(info: info, url: hls, completion: completion)
         } else if let progressive = info.progressiveURL {
             let item = progressiveItem(progressive, info: info)
             completion(.success(prepared(item: item, info: info)))
@@ -156,5 +163,42 @@ final class AndroidVRSource: VideoSource {
         PreparedPlayback(
             item: item, captions: info.captionTracks, duration: info.duration
         )
+    }
+}
+
+// MARK: - Live HLS
+
+private extension AndroidVRSource {
+    /// Live streams (no DASH SIDX ladder): [[LiveHLSPlayback]] exposes the
+    /// multivariant playlist's variants as qualities and starts on Auto. A
+    /// failed playlist fetch degrades to direct playback with no picker.
+    func loadLiveHLS(
+        info: DirectPlaybackInfo,
+        url: URL,
+        completion: @escaping (Result<PreparedPlayback, Error>) -> Void
+    ) {
+        liveHLS.load(url: url, info: info) { [weak self] prepared in
+            guard let self else {
+                return
+            }
+            if !liveHLS.qualities.isEmpty {
+                availableQualities = liveHLS.qualities
+                currentQuality = liveHLS.startQuality
+            }
+            completion(.success(prepared))
+        }
+    }
+
+    func selectLiveQuality(
+        _ quality: VideoQuality,
+        completion: @escaping (Result<PreparedPlayback, Error>) -> Void
+    ) {
+        guard let info,
+              let prepared = liveHLS.prepared(for: quality, info: info) else {
+            completion(.failure(Self.noStreamError))
+            return
+        }
+        currentQuality = quality
+        completion(.success(prepared))
     }
 }
