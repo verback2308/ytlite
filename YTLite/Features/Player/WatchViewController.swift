@@ -90,6 +90,7 @@ final class WatchViewController: UIViewController {
         style: .whiteLarge
     )
     let playerStatusLabel = UILabel()
+    var statsOverlay: StatsOverlayView?
     let titleLabel = UILabel()
     let metaLabel = UILabel()
     let channelAvatarView = ThumbnailImageView(

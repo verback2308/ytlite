@@ -6,11 +6,17 @@ extension WatchViewController: VideoPlayerViewDelegate {
     func videoPlayerViewDidTapSettings(
         _ playerView: VideoPlayerView
     ) {
+        let statsOn = statsOverlay != nil
         presentPlayerMenu(
             title: "Playback settings",
             items: [
                 PlayerMenuItem(title: "Quality") { [weak self] in
                     self?.showQualityPicker()
+                },
+                PlayerMenuItem(
+                    title: statsOn ? "✓ Stats for nerds" : "Stats for nerds"
+                ) { [weak self] in
+                    self?.toggleStatsOverlay()
                 }
             ]
         )
