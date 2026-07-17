@@ -17,6 +17,7 @@ extension VideoPlayerView {
         setupControls()
         addGestureRecognizers()
         addLifecycleObservers()
+        observeReadyForDisplay()
     }
 
     /// Unavailable controls stay visible but disabled, so the top-bar

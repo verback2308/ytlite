@@ -6,6 +6,7 @@ final class SettingsViewController: UIViewController {
     private enum Row {
         case theme, autoDarkStart, autoDarkEnd
         case quality, backgroundPlayback, pipEnabled, hideStatusBar, showShorts
+        case autoZoomToFill
         case homeLayout
         case persistCache, feedCacheDays
         case imageCacheEnabled, imageCacheDays
@@ -54,10 +55,12 @@ final class SettingsViewController: UIViewController {
             Section(header: "Theme", footer: themeFooter, rows: themeRows),
             Section(
                 header: "Playback",
-                footer: nil,
+                footer: "Zoom to Fill automatically scales the video"
+                    + " in fullscreen so no black bars remain."
+                    + " Pinch in the player overrides it per video.",
                 rows: [
                     .quality, .backgroundPlayback, .pipEnabled,
-                    .hideStatusBar, .showShorts
+                    .hideStatusBar, .autoZoomToFill, .showShorts
                 ]
             ),
             Section(
@@ -227,6 +230,12 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             let key = UserDefaultsKeys.Player.hideStatusBarInFullscreen
             let isOn = UserDefaults.standard.object(forKey: key) as? Bool ?? true
             return makeToggleCell("Hide Status Bar in Fullscreen", isOn: isOn) {
+                UserDefaults.standard.set($0, forKey: key)
+            }
+        case .autoZoomToFill:
+            let key = UserDefaultsKeys.Player.autoZoomToFill
+            let isOn = UserDefaults.standard.bool(forKey: key)
+            return makeToggleCell("Zoom to Fill in Fullscreen", isOn: isOn) {
                 UserDefaults.standard.set($0, forKey: key)
             }
         case .showShorts:

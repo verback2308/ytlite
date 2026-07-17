@@ -7,6 +7,13 @@ extension VideoPlayerView {
     /// Hard ceiling for pinch zoom, relative to aspect-fit (200%).
     static let maxPinchZoom: CGFloat = 2
 
+    /// Auto zoom-to-fill setting (Playback settings menu).
+    static var autoZoomToFill: Bool {
+        UserDefaults.standard.bool(
+            forKey: UserDefaultsKeys.Player.autoZoomToFill
+        )
+    }
+
     /// Scale at which the video covers the whole view (no bars).
     /// 1 when the video already fills or its size is not yet known.
     var fillZoom: CGFloat {
@@ -21,12 +28,44 @@ extension VideoPlayerView {
         )
     }
 
+    /// Animate to the fill scale when the setting is on and the user
+    /// hasn't pinched manually. Called on fullscreen entry and whenever
+    /// the layer (re)becomes ready — covers autoplay video changes.
+    func applyAutoZoomIfNeeded() {
+        guard Self.autoZoomToFill, isFullscreen,
+              videoZoom <= 1.01 || zoomIsAuto else {
+            return
+        }
+        let fill = fillZoom
+        let target = fill > 1.01 ? fill : 1
+        guard abs(target - videoZoom) > 0.01 else {
+            return
+        }
+        setZoom(target, animated: true)
+        zoomIsAuto = target > 1
+    }
+
+    func observeReadyForDisplay() {
+        readyObservation = playerLayer.observe(
+            \.isReadyForDisplay,
+            options: [.new]
+        ) { [weak self] layer, _ in
+            guard layer.isReadyForDisplay else {
+                return
+            }
+            DispatchQueue.main.async {
+                self?.applyAutoZoomIfNeeded()
+            }
+        }
+    }
+
     func handleFullscreenPinch(
         _ gesture: UIPinchGestureRecognizer
     ) {
         switch gesture.state {
         case .began:
             pinchStartZoom = videoZoom
+            zoomIsAuto = false
         case .changed:
             let limit = max(Self.maxPinchZoom, fillZoom)
             let proposed = pinchStartZoom * gesture.scale
@@ -78,7 +117,13 @@ extension VideoPlayerView {
             y: zoom
         )
         if animated {
+            CATransaction.begin()
+            CATransaction.setAnimationDuration(0.35)
+            CATransaction.setAnimationTimingFunction(
+                CAMediaTimingFunction(name: .easeInEaseOut)
+            )
             playerLayer.setAffineTransform(scale)
+            CATransaction.commit()
             return
         }
         CATransaction.begin()

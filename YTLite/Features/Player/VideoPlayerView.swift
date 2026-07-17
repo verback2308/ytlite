@@ -21,6 +21,7 @@ final class VideoPlayerView: UIView {
             updateFullscreenIcon()
             if !isFullscreen {
                 setZoom(1, animated: false)
+                zoomIsAuto = false
             }
         }
     }
@@ -183,7 +184,11 @@ final class VideoPlayerView: UIView {
     /// Video scale relative to aspect-fit; 1 = fit, `fillZoom` = no bars.
     var videoZoom: CGFloat = 1
     var pinchStartZoom: CGFloat = 1
+    /// True while the current zoom came from auto zoom-to-fill,
+    /// not a user pinch — auto re-fit may override it.
+    var zoomIsAuto = false
     var zoomHUDWorkItem: DispatchWorkItem?
+    var readyObservation: NSKeyValueObservation?
 
     let zoomLabel: UILabel = {
         let label = UILabel()

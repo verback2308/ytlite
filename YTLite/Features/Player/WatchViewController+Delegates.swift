@@ -58,10 +58,14 @@ extension WatchViewController: VideoPlayerViewDelegate {
         UIView.animate(
             withDuration: 0.25,
             delay: 0,
-            options: .curveEaseInOut
-        ) {
-            playerView.frame = window.bounds
-        }
+            options: .curveEaseInOut,
+            animations: {
+                playerView.frame = window.bounds
+            },
+            completion: { _ in
+                playerView.applyAutoZoomIfNeeded()
+            }
+        )
     }
 
     func exitFullscreen(playerView: VideoPlayerView) {
@@ -164,16 +168,32 @@ extension WatchViewController {
         playerView.frame = frameInWindow
         window.addSubview(playerView)
         playerView.isFullscreen = true
-        let width = window.bounds.width
-        let height = window.bounds.height
         // Rotate clockwise for landscapeLeft, counterclockwise for landscapeRight,
         // so the video appears right-side-up from the user's perspective.
         let angle: CGFloat = orientation == .landscapeLeft ? .pi / 2 : -.pi / 2
-        UIView.animate(withDuration: 0.25, delay: 0, options: .curveEaseInOut) {
-            playerView.transform = CGAffineTransform(rotationAngle: angle)
-            playerView.bounds = CGRect(x: 0, y: 0, width: height, height: width)
-            playerView.center = CGPoint(x: width / 2, y: height / 2)
-        }
+        animateLandscapeEntry(playerView: playerView, window: window, angle: angle)
+    }
+
+    private func animateLandscapeEntry(
+        playerView: VideoPlayerView,
+        window: UIWindow,
+        angle: CGFloat
+    ) {
+        let width = window.bounds.width
+        let height = window.bounds.height
+        UIView.animate(
+            withDuration: 0.25,
+            delay: 0,
+            options: .curveEaseInOut,
+            animations: {
+                playerView.transform = CGAffineTransform(rotationAngle: angle)
+                playerView.bounds = CGRect(x: 0, y: 0, width: height, height: width)
+                playerView.center = CGPoint(x: width / 2, y: height / 2)
+            },
+            completion: { _ in
+                playerView.applyAutoZoomIfNeeded()
+            }
+        )
     }
 
     func exitLandscapeFullscreen(playerView: VideoPlayerView) {

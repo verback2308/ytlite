@@ -51,6 +51,7 @@ enum UserDefaultsKeys {
         static let backgroundPlayback = "player_backgroundPlayback"
         static let pipEnabled = "player_pipEnabled"
         static let hideStatusBarInFullscreen = "player_hideStatusBarFullscreen"
+        static let autoZoomToFill = "player_autoZoomToFill"
     }
 
     enum Innertube {
