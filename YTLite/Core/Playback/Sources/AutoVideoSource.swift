@@ -18,6 +18,7 @@ final class AutoVideoSource: VideoSource {
     var supportsQualitySelection: Bool { active.supportsQualitySelection }
     var availableQualities: [VideoQuality] { active.availableQualities }
     var currentQuality: VideoQuality? { active.currentQuality }
+    var currentCodecs: String? { active.currentCodecs }
 
     init(primary: VideoSource, makeFallback: @escaping () -> VideoSource) {
         self.primary = primary

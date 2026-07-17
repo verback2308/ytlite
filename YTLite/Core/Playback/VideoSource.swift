@@ -56,6 +56,8 @@ protocol VideoSource: AnyObject {
     var availableQualities: [VideoQuality] { get }
     /// The active quality, if any.
     var currentQuality: VideoQuality? { get }
+    /// Active codec/itag pair for the stats overlay, when the source knows it.
+    var currentCodecs: String? { get }
 
     /// Resolves the video and produces a ready-to-play result.
     func loadPlayback(
@@ -69,6 +71,10 @@ protocol VideoSource: AnyObject {
         _ quality: VideoQuality,
         completion: @escaping (Result<PreparedPlayback, Error>) -> Void
     )
+}
+
+extension VideoSource {
+    var currentCodecs: String? { nil }
 }
 
 /// Creates the right `VideoSource` for a kind (abstract factory).

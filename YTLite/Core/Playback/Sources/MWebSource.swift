@@ -24,6 +24,9 @@ final class MWebSource: VideoSource {
 
     let kind: VideoSourceKind = .mwebPot
     var supportsQualitySelection: Bool { !availableQualities.isEmpty }
+    var currentCodecs: String? {
+        AndroidVRSource.codecsLine(info: info, quality: currentQuality)
+    }
     private(set) var availableQualities: [VideoQuality] = []
     private(set) var currentQuality: VideoQuality?
 
@@ -35,6 +38,9 @@ final class MWebSource: VideoSource {
     var info: DirectPlaybackInfo?
     var poToken: String?
     var visitorData: String?
+    /// Remembered for the deferred pot mint when playback starts from a
+    /// quality pick after a [[probeQualities]] (no pot minted at probe time).
+    var currentVideoId: String?
     /// One-shot guard for the fresh-pot /player retry.
     var didRetryFreshPot = false
     /// Balances the async pot mint: the pot is only needed as a media-URL
@@ -58,6 +64,7 @@ final class MWebSource: VideoSource {
         cancellation: CancellationToken?,
         completion: @escaping (Result<PreparedPlayback, Error>) -> Void
     ) {
+        currentVideoId = videoId
         mintPot(videoId: videoId)
         resolvePlayerContext(videoId: videoId) { [weak self] in
             guard let self, cancellation?.isCancelled != true else {
@@ -88,6 +95,10 @@ final class MWebSource: VideoSource {
             return
         }
         currentQuality = quality
+        // Probe path never minted a pot; without one every range 403s (rqh=1).
+        if poToken == nil, let videoId = currentVideoId {
+            mintPot(videoId: videoId)
+        }
         solveThenBuild(info: info, video: format, audio: audio, completion: completion)
     }
 

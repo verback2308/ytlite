@@ -132,6 +132,20 @@ private extension InnertubeClient {
             }
     }
 
+    /// avc1 everywhere; av01 additionally on hardware-AV1 devices (the only
+    /// codecs above 1080p are VP9/AV1, and VP9 is undecodable by AVPlayer).
+    static func fmtIsPlayableVideo(
+        _ fmt: [String: Any]
+    ) -> Bool {
+        let mime = fmtMimeType(fmt)
+        guard mime.contains("video/mp4") else {
+            return false
+        }
+        return mime.contains("avc1")
+            || (AV1Support.isHardwareSupported
+                && mime.contains("av01"))
+    }
+
     static func selectBestVideo(
         from adaptive: [[String: Any]],
         maxHeight: Int?
@@ -139,10 +153,7 @@ private extension InnertubeClient {
         adaptive
             .filter { fmt in
                 fmtDirectURL(fmt) != nil
-                    && fmtMimeType(fmt)
-                        .contains("video/mp4")
-                    && fmtMimeType(fmt)
-                        .contains("avc1")
+                    && fmtIsPlayableVideo(fmt)
                     && fmtHeight(fmt) > 0
                     && maxHeight.map {
                         fmtHeight(fmt) <= $0
@@ -269,10 +280,7 @@ private extension InnertubeClient {
         adaptive
             .filter {
                 fmtDirectURL($0) != nil
-                    && fmtMimeType($0)
-                        .contains("video/mp4")
-                    && fmtMimeType($0)
-                        .contains("avc1")
+                    && fmtIsPlayableVideo($0)
                     && fmtHeight($0) > 0
             }
             .compactMap(buildDashInfo)

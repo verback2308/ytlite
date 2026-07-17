@@ -755,7 +755,14 @@ private final class ToggleCell: UITableViewCell {
 // MARK: - VideoQualityStore
 
 enum VideoQualityStore {
-    static let options = ["Auto", "1080p", "720p", "480p", "360p"]
+    /// 1440p/2160p exist only as av01 — offered solely where decodable.
+    static var options: [String] {
+        var opts = ["Auto", "1080p", "720p", "480p", "360p"]
+        if AV1Support.isHardwareSupported {
+            opts.insert(contentsOf: ["2160p", "1440p"], at: 1)
+        }
+        return opts
+    }
     static var selected: String {
         get {
             let key = UserDefaultsKeys.VideoQuality.selected
@@ -765,8 +772,12 @@ enum VideoQualityStore {
     }
     static var displayName: String { selected }
 
-    /// Returns the maximum height for the selected quality.
+    /// Returns the maximum height for the selected quality. "Auto" caps at
+    /// 1080p — the pre-AV1 behavior; higher tiers are explicit opt-in.
     static var maxHeight: Int? {
-        ["1080p": 1_080, "720p": 720, "480p": 480, "360p": 360][selected]
+        [
+            "2160p": 2_160, "1440p": 1_440, "1080p": 1_080,
+            "720p": 720, "480p": 480, "360p": 360
+        ][selected] ?? 1_080
     }
 }

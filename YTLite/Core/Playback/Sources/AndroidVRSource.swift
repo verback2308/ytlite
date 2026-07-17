@@ -13,6 +13,9 @@ final class AndroidVRSource: VideoSource {
 
     let kind: VideoSourceKind = .androidVR
     var supportsQualitySelection: Bool { !availableQualities.isEmpty }
+    var currentCodecs: String? {
+        Self.codecsLine(info: info, quality: currentQuality)
+    }
     private(set) var availableQualities: [VideoQuality] = []
     private(set) var currentQuality: VideoQuality?
 
@@ -26,8 +29,29 @@ final class AndroidVRSource: VideoSource {
         liveHLS = LiveHLSPlayback(resolver: resolver)
     }
 
+    /// "vCodec (itag) / aCodec (itag)" for the stats overlay; nil when the
+    /// active quality is not a DASH format (live variants).
+    static func codecsLine(
+        info: DirectPlaybackInfo?, quality: VideoQuality?
+    ) -> String? {
+        guard let info, let quality,
+              let video = info.allDashVideoFormats.first(
+                  where: { "\($0.itag)" == quality.id }
+              ) else {
+            return nil
+        }
+        let videoPart = "\(video.codecs) (\(video.itag))"
+        guard let audio = info.dashAudioFormat else {
+            return videoPart
+        }
+        return videoPart + " / \(audio.codecs) (\(audio.itag))"
+    }
+
+    /// One entry per tier label: with av01 admitted alongside avc1 the same
+    /// height appears twice — keep the first (higher-bitrate) format.
     static func qualities(from info: DirectPlaybackInfo) -> [VideoQuality] {
-        info.allDashVideoFormats.map { format in
+        var seenLabels = Set<String>()
+        return info.allDashVideoFormats.map { format in
             let fps = format.fps ?? 0
             let height = format.height ?? 0
             // YouTube's tier name when present — non-16:9 heights are
@@ -41,6 +65,7 @@ final class AndroidVRSource: VideoSource {
             )
         }
         .sorted { ($0.height ?? 0) > ($1.height ?? 0) }
+        .filter { seenLabels.insert($0.label).inserted }
     }
 
     func loadPlayback(
