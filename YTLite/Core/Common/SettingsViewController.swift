@@ -64,17 +64,17 @@ final class SettingsViewController: UIViewController {
                 ]
             ),
             Section(
-                header: "Home",
+                header: "首页",
                 footer: "How recommendation shelves are shown:"
                     + " one continuous grid, a grid grouped under"
                     + " shelf titles, or TV-style horizontal rails.",
                 rows: [.homeLayout]
             ),
-            Section(header: "Cache", footer: nil, rows: cacheRows),
+            Section(header: "缓存", footer: nil, rows: cacheRows),
             Section(header: "Return YouTube Dislike", footer: rydFooter, rows: [.rydEnabled]),
             Section(header: "SponsorBlock", footer: sbFooter, rows: sponsorBlockRows),
             Section(
-                header: "Debug",
+                header: "调试",
                 footer: "Force a specific playback source."
                     + " Normally Android VR is used"
                     + " with automatic fallback."
@@ -124,7 +124,7 @@ final class SettingsViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Settings"
+        title = "设置"
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             barButtonSystemItem: .done,
             target: self,
