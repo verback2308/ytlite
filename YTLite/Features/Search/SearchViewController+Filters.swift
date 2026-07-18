@@ -17,13 +17,13 @@ extension SearchViewController {
     @objc
     private func filtersTapped() {
         let sheet = UIAlertController(
-            title: "Search Filters", message: nil, preferredStyle: .actionSheet
+            title: "搜索过滤器", message: nil, preferredStyle: .actionSheet
         )
         addFilterActions(to: sheet)
         if !filters.isDefault {
             sheet.addAction(
                 UIAlertAction(
-                    title: "Reset filters",
+                    title: "重置过滤器",
                     style: .destructive
                 ) { [weak self] _ in
                     self?.apply { $0 = SearchFilters() }
