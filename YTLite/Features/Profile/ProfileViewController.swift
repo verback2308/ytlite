@@ -29,7 +29,7 @@ class ProfileViewController: UIViewController {
         )
         loadProfile()
         navigationItem.rightBarButtonItem = UIBarButtonItem(
-            title: "Sign Out",
+            title: "退出",
             style: .plain,
             target: self,
             action: #selector(signOut)
