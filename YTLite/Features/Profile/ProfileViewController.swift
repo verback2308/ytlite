@@ -18,7 +18,7 @@ class ProfileViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Profile"
+        title = "界面"
         setupUI()
         applyTheme()
         NotificationCenter.default.addObserver(
@@ -74,7 +74,7 @@ class ProfileViewController: UIViewController {
     }
 
     private func setupControlViews() {
-        themeTitleLabel.text = "Theme"
+        themeTitleLabel.text = "主题"
         themeTitleLabel.font = UIFont.systemFont(ofSize: 13, weight: .semibold)
         themeTitleLabel.textColor = UIColor(white: 0.5, alpha: 1)
         themeTitleLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -158,7 +158,7 @@ class ProfileViewController: UIViewController {
         ThumbnailImageView.clearCache()
 
         let alert = UIAlertController(
-            title: "Done",
+            title: "完成",
             message: "Image cache cleared.",
             preferredStyle: .alert
         )
