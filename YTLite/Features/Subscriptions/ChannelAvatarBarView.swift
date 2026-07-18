@@ -111,7 +111,7 @@ final class ChannelAvatarBarView: UIView {
     }
 
     private func setupAllButton() {
-        allButton.setTitle("All", for: .normal)
+        allButton.setTitle("全部", for: .normal)
         allButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .medium)
         allButton.contentEdgeInsets = UIEdgeInsets(
             top: 8, left: 12, bottom: 8, right: 16
