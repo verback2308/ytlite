@@ -3,7 +3,7 @@ import UIKit
 final class DownloadsViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Downloads"
+        title = "下载"
         applyTheme()
         NotificationCenter.default.addObserver(
             self,
