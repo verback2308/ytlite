@@ -15,7 +15,7 @@ final class ChannelAboutViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = theme.background
-        title = "About"
+        title = "关于"
         if #available(iOS 13, *) {
             navigationItem.rightBarButtonItem = UIBarButtonItem(
                 barButtonSystemItem: .close,
@@ -24,7 +24,7 @@ final class ChannelAboutViewController: UIViewController {
             )
         } else {
             navigationItem.rightBarButtonItem = UIBarButtonItem(
-                title: "Close",
+                title: "关闭",
                 style: .done,
                 target: self,
                 action: #selector(dismissSelf)
@@ -96,7 +96,7 @@ final class ChannelAboutViewController: UIViewController {
             return
         }
         let descHeader = makeLabel(
-            text: "Description",
+            text: "描述",
             style: .subheadline,
             color: theme.secondaryText
         )
@@ -112,7 +112,7 @@ final class ChannelAboutViewController: UIViewController {
             return
         }
         let header = makeLabel(
-            text: "Contact",
+            text: "联系",
             style: .subheadline,
             color: theme.secondaryText
         )
