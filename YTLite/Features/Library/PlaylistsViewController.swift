@@ -33,7 +33,7 @@ final class PlaylistsViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Playlists"
+        title = "播放列表"
         setupTableView()
         setupSpinner()
         setupEmpty()
