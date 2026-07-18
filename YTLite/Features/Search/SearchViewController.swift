@@ -48,7 +48,7 @@ class SearchViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Search"
+        title = "搜索"
         setupFiltersButton()
         setupSearchBar()
         setupTableView()
@@ -63,7 +63,7 @@ class SearchViewController: UIViewController {
 
     private func setupSearchBar() {
         searchBar.delegate = self
-        searchBar.placeholder = "Search YouTube"
+        searchBar.placeholder = "搜索YouTube"
         searchBar.text = lastQuery.isEmpty ? nil : lastQuery
         searchBar.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(searchBar)
