@@ -8,9 +8,9 @@ extension WatchViewController: VideoPlayerViewDelegate {
     ) {
         let statsOn = statsOverlay != nil
         presentPlayerMenu(
-            title: "Playback settings",
+            title: "播放设置",
             items: [
-                PlayerMenuItem(title: "Quality") { [weak self] in
+                PlayerMenuItem(title: "质量") { [weak self] in
                     self?.showQualityPicker()
                 },
                 PlayerMenuItem(
