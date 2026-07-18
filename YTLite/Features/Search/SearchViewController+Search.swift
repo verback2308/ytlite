@@ -96,12 +96,12 @@ extension SearchViewController {
 
     private func presentSearchError(_ error: Error) {
         let alert = UIAlertController(
-            title: "Error",
+            title: "错误",
             message: error.localizedDescription,
             preferredStyle: .alert
         )
         alert.addAction(
-            UIAlertAction(title: "OK", style: .default)
+            UIAlertAction(title: "好", style: .default)
         )
         present(alert, animated: true)
     }
