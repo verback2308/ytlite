@@ -2,7 +2,7 @@ import UIKit
 
 class HomeViewController: VideosViewController {
     let service: FeedService
-    private let cache: AppCache
+    let cache: AppCache
     /// Per-shelf continuation queue collected from parsed pages. When the
     /// section list runs out (~100 videos), pages get their continuation
     /// backfilled from here so scrolling keeps going (the Recommended
@@ -14,8 +14,28 @@ class HomeViewController: VideosViewController {
     var isDrainingShelves = false
     /// Title of the shelf currently being drained — labels its pages.
     var drainTitle: String?
-    let categories = HomeCategory.all
+    var categories: [HomeCategory] = [.feed] + HomeCategory.destinations
     var selectedCategoryIndex = 0
+    /// Unique shelf titles collected from feed pages, in order of
+    /// first appearance — they become the dynamic chips.
+    var shelfTitles: [String] = []
+    /// Accumulated titled runs of the "All" feed; shelf chips filter
+    /// these and "All" re-entry restores from them.
+    var feedRuns: [FeedRun] = []
+    /// The "All" feed's next continuation, preserved while a chip or
+    /// destination page is shown.
+    var allContinuation: String?
+    /// Remaining same-title shelf tokens for the selected shelf chip.
+    var chipTokens: [String] = []
+    /// Non-nil while a dynamic shelf chip is selected.
+    var selectedShelfTitle: String?
+    /// True while background pages are being fetched to collect
+    /// chips — the bar shows pulsing placeholders.
+    var chipDiscoveryActive = false
+    /// Background pages left to fetch for chip discovery.
+    var chipPrefetchBudget = 0
+    /// Shelf chip to re-select once a refresh lands.
+    var pendingChipReselect: String?
     /// Bumped on every category switch / refresh; async completions
     /// compare it so a stale response can't overwrite the new feed.
     var feedGeneration = 0
@@ -25,7 +45,9 @@ class HomeViewController: VideosViewController {
     private var lastScrollY: CGFloat = 0
     lazy var chipBar = ChipBarView()
 
-    override var shelfLayout: HomeLayout { HomeLayout.selected }
+    override var groupsByShelf: Bool { HomeLayout.selected == .rails }
+
+    override var useRails: Bool { HomeLayout.selected == .rails }
 
     override var columns: Int {
         if UIDevice.current.userInterfaceIdiom == .phone {
@@ -86,33 +108,12 @@ class HomeViewController: VideosViewController {
         loadCachedOrFetchFeed()
     }
 
-    func loadCachedOrFetchFeed() {
-        cache.loadHomeFeed { [weak self] cachedPage in
-            guard let self else {
-                return
-            }
-            if let cachedPage {
-                AppLog.home("cache-hit → showing \(cachedPage.videos.count) videos instantly")
-                self.isLoadingInitial = false
-                self.spinner.stopAnimating()
-                self.resetShelfDrain()
-                self.setPage(self.enqueueShelves(from: cachedPage))
-            } else {
-                AppLog.home("no cache → loading from network")
-                self.loadFeed()
-            }
-        }
-    }
-
-    private func setupToolbar() {
-        ToolbarManager.shared.install(in: self)
-    }
-
     @objc
     func handleSignOut() {
         ScreenVisitTracker.reset()
         cache.clearHomeFeed()
         categoryCache = [:]
+        resetChipState()
         setPage(FeedPage(videos: [], continuation: nil))
         toolbarRefreshProfileButton()
         chipBar.setSelected(0)
@@ -121,12 +122,15 @@ class HomeViewController: VideosViewController {
 
     override func handleRefresh() {
         feedGeneration += 1
-        if let browseId = categories[selectedCategoryIndex].browseId {
+        switch categories[selectedCategoryIndex].kind {
+        case .destination(let browseId):
             categoryCache[browseId] = nil
             loadCategory(browseId)
-        } else {
-            cache.clearHomeFeed()
-            loadFeed()
+        case .shelf:
+            pendingChipReselect = selectedShelfTitle
+            refreshAllFeed()
+        case .feed, .placeholder:
+            refreshAllFeed()
         }
     }
 
@@ -145,6 +149,94 @@ class HomeViewController: VideosViewController {
         }
     }
 
+    override func loadRailPage(
+        token: String,
+        completion: @escaping (FeedPage?) -> Void
+    ) {
+        let generation = feedGeneration
+        service.fetchNextPage(continuation: token) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self, self.feedGeneration == generation else {
+                    completion(nil)
+                    return
+                }
+                var page = try? result.get()
+                // A chip's rail chains into the next same-title token
+                // once its own shelf runs dry.
+                if self.selectedShelfTitle != nil,
+                   var chained = page,
+                   chained.continuation == nil,
+                   !self.chipTokens.isEmpty {
+                    chained.continuation = self.chipTokens.removeFirst()
+                    page = chained
+                }
+                completion(page)
+            }
+        }
+    }
+
+    override func handleLoadMore() {
+        if selectedShelfTitle != nil {
+            loadMoreForChip()
+            return
+        }
+        guard let continuation = currentContinuation else {
+            finishLoadingMore()
+            return
+        }
+        let generation = feedGeneration
+        service.fetchNextPage(continuation: continuation) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self, self.feedGeneration == generation else {
+                    return
+                }
+                switch result {
+                case .success(let page):
+                    self.appendPage(self.enqueueShelves(from: page))
+                    self.continueChipPrefetchIfNeeded()
+                case .failure where self.isDrainingShelves:
+                    self.appendPage(self.backfilled(
+                        FeedPage(videos: [], continuation: nil)
+                    ))
+                    self.continueChipPrefetchIfNeeded()
+                case .failure:
+                    self.finishLoadingMore()
+                    self.endChipDiscovery()
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Feed loading
+
+extension HomeViewController {
+    func setupToolbar() {
+        ToolbarManager.shared.install(in: self)
+    }
+
+    func loadCachedOrFetchFeed() {
+        cache.loadHomeFeed { [weak self] cachedPage in
+            guard let self else {
+                return
+            }
+            if let cachedPage {
+                AppLog.home("cache-hit → showing \(cachedPage.videos.count) videos instantly")
+                self.isLoadingInitial = false
+                self.spinner.stopAnimating()
+                self.resetShelfDrain()
+                self.setPage(self.enqueueShelves(from: cachedPage))
+                // Cached continuation tokens go stale within hours —
+                // revalidate so scrolling and chip discovery survive.
+                AppLog.home("revalidating feed in background")
+                self.loadFeed()
+            } else {
+                AppLog.home("no cache → loading from network")
+                self.loadFeed()
+            }
+        }
+    }
+
     private func showFeedError() {
         if OAuthClient.shared.isAnonymous {
             signInEmptyView.isHidden = false
@@ -159,6 +251,7 @@ class HomeViewController: VideosViewController {
         errorLabel.isHidden = true
         signInEmptyView.isHidden = true
         resetShelfDrain()
+        beginChipDiscovery()
         let generation = feedGeneration
         service.fetchHomeFeed { [weak self] result in
             DispatchQueue.main.async {
@@ -171,56 +264,30 @@ class HomeViewController: VideosViewController {
                 switch result {
                 case .success(let page):
                     AppLog.home("network fetch done \(ms)ms videos=\(page.videos.count)")
-                    self.cache.setHomeFeed(page)
-                    self.setPage(self.enqueueShelves(from: page))
+                    self.applyFreshFeed(page)
                 case .failure(let err):
                     AppLog.home("network fetch failed \(ms)ms: \(err)")
-                    self.setPage(FeedPage(videos: [], continuation: nil))
-                    self.showFeedError()
+                    self.endChipDiscovery()
+                    // Keep cached/stale content when revalidation
+                    // fails offline — only blank screens get the error.
+                    if self.videoCount == 0 {
+                        self.setPage(FeedPage(videos: [], continuation: nil))
+                        self.showFeedError()
+                    }
                 }
             }
         }
     }
 
-    override func loadRailPage(
-        token: String,
-        completion: @escaping (FeedPage?) -> Void
-    ) {
-        let generation = feedGeneration
-        service.fetchNextPage(continuation: token) { [weak self] result in
-            DispatchQueue.main.async {
-                guard let self, self.feedGeneration == generation else {
-                    completion(nil)
-                    return
-                }
-                completion(try? result.get())
-            }
-        }
-    }
-
-    override func handleLoadMore() {
-        guard let continuation = currentContinuation else {
-            finishLoadingMore()
-            return
-        }
-
-        let generation = feedGeneration
-        service.fetchNextPage(continuation: continuation) { [weak self] result in
-            DispatchQueue.main.async {
-                guard let self, self.feedGeneration == generation else {
-                    return
-                }
-                switch result {
-                case .success(let page):
-                    self.appendPage(self.enqueueShelves(from: page))
-                case .failure where self.isDrainingShelves:
-                    self.appendPage(self.backfilled(
-                        FeedPage(videos: [], continuation: nil)
-                    ))
-                case .failure:
-                    self.finishLoadingMore()
-                }
-            }
-        }
+    /// Replaces the session with a freshly fetched feed: cached and
+    /// previously accumulated pages carry expiring continuation
+    /// tokens, so runs and chips restart from this page.
+    private func applyFreshFeed(_ page: FeedPage) {
+        cache.setHomeFeed(page)
+        startFreshSession()
+        setPage(enqueueShelves(from: page))
+        rebuildChips()
+        applyPendingChipReselect()
+        continueChipPrefetchIfNeeded()
     }
 }

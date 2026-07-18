@@ -57,7 +57,7 @@ extension HomeViewController {
     }
 
     func setupChipBar() {
-        chipBar.setLabels(categories.map { $0.label })
+        rebuildChips()
         chipBar.onSelect = { [weak self] index in
             self?.selectCategory(at: index)
         }
@@ -74,22 +74,45 @@ extension HomeViewController {
     }
 
     func selectCategory(at index: Int) {
-        selectedCategoryIndex = index
-        feedGeneration += 1
-        resetShelfDrain()
-        errorLabel.isHidden = true
-        signInEmptyView.isHidden = true
-        if let cv = collectionView {
-            cv.setContentOffset(
-                CGPoint(x: 0, y: -cv.adjustedContentInset.top),
-                animated: false
-            )
-        }
-        guard let browseId = categories[index].browseId else {
-            showSkeleton()
-            loadCachedOrFetchFeed()
+        guard categories.indices.contains(index),
+              categories[index].kind != .placeholder
+        else {
             return
         }
+        let category = categories[index]
+        selectedCategoryIndex = index
+        feedGeneration += 1
+        errorLabel.isHidden = true
+        signInEmptyView.isHidden = true
+        scrollToTop()
+        switch category.kind {
+        case .feed:
+            showAllFeed()
+        case .shelf:
+            endChipDiscovery()
+            enterShelfChip(category.label)
+        case .destination(let browseId):
+            endChipDiscovery()
+            showDestination(browseId)
+        case .placeholder:
+            break
+        }
+    }
+
+    private func showAllFeed() {
+        selectedShelfTitle = nil
+        chipTokens = []
+        if feedRuns.isEmpty {
+            showSkeleton()
+            loadCachedOrFetchFeed()
+        } else {
+            restoreAllFeed()
+        }
+    }
+
+    private func showDestination(_ browseId: String) {
+        selectedShelfTitle = nil
+        chipTokens = []
         if let cached = categoryCache[browseId] {
             AppLog.home("category \(browseId) cache-hit")
             setPage(cached)
@@ -99,7 +122,17 @@ extension HomeViewController {
         loadCategory(browseId)
     }
 
-    private func showSkeleton() {
+    private func scrollToTop() {
+        guard let cv = collectionView else {
+            return
+        }
+        cv.setContentOffset(
+            CGPoint(x: 0, y: -cv.adjustedContentInset.top),
+            animated: false
+        )
+    }
+
+    func showSkeleton() {
         setPage(FeedPage(videos: [], continuation: nil))
         isLoadingInitial = true
         collectionView?.reloadData()
@@ -137,8 +170,9 @@ extension HomeViewController {
         drainTitle = nil
     }
 
-    /// Stashes the page's per-shelf tokens, then backfills the page
-    /// continuation from the queue once the section list is exhausted.
+    /// Stashes the page's per-shelf tokens, backfills the page
+    /// continuation from the queue once the section list is
+    /// exhausted, and feeds the chip/run accumulators.
     func enqueueShelves(from page: FeedPage) -> FeedPage {
         if let shelves = page.shelfContinuations {
             shelfQueue.append(contentsOf: shelves)
@@ -160,7 +194,11 @@ extension HomeViewController {
                 page.continuation = nil
             }
         }
-        return backfilled(page)
+        let result = backfilled(page)
+        recordRuns(from: result)
+        updateChips(from: result)
+        allContinuation = result.continuation
+        return result
     }
 
     func backfilled(_ page: FeedPage) -> FeedPage {

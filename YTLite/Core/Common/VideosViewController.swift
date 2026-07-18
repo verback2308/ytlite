@@ -17,11 +17,11 @@ class VideosViewController: UIViewController {
 
     var columns: Int { 5 }
 
-    /// How shelves are rendered. Pages without shelf info (channel
-    /// tabs, search) look the same in every mode.
-    var shelfLayout: HomeLayout { .shelves }
+    /// Whether pages' shelf partitions render as titled sections.
+    /// Pages without shelf info look the same either way.
+    var groupsByShelf: Bool { true }
 
-    var useRails: Bool { shelfLayout == .rails }
+    var useRails: Bool { false }
 
     private(set) var sections: [VideoSection] = []
     private(set) var collectionView: UICollectionView?
@@ -190,7 +190,7 @@ extension VideosViewController {
     /// Splits the page's videos into sections following its shelf
     /// partition, deduplicating against already-shown videos.
     private func makeSections(from page: FeedPage) -> [VideoSection] {
-        let grouped = shelfLayout == .grid ? nil : page.shelves
+        let grouped = groupsByShelf ? page.shelves : nil
         let shelves = grouped
             ?? [FeedShelf(title: nil, count: page.videos.count)]
         var result: [VideoSection] = []

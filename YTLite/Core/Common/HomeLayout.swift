@@ -4,8 +4,6 @@ import Foundation
 enum HomeLayout: String, CaseIterable {
     /// One continuous grid — shelves merged, no titles.
     case grid = "grid"
-    /// Grid grouped into titled sections per shelf.
-    case shelves = "shelf_titles"
     /// Each shelf is a horizontally scrolling rail (TV style).
     case rails = "shelf_rails"
 
@@ -32,8 +30,6 @@ enum HomeLayout: String, CaseIterable {
         switch self {
         case .grid:
             return "Plain Grid"
-        case .shelves:
-            return "Grid with Titles"
         case .rails:
             return "Shelf Rails"
         }

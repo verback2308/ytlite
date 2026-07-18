@@ -15,6 +15,9 @@ extension HomeViewController {
     @objc
     func handleTokenRefresh() {
         AppLog.home("token refreshed → reloading feed")
-        loadFeed()
+        feedGeneration += 1
+        selectedCategoryIndex = 0
+        chipBar.setSelected(0)
+        reloadFeedFromScratch()
     }
 }
