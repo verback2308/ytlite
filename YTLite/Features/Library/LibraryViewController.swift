@@ -13,11 +13,11 @@ final class LibraryViewController: UIViewController {
         var title: String {
             switch self {
             case .history:
-                return "History"
+                return "历史"
             case .downloads:
-                return "Downloads"
+                return "下载"
             case .playlists:
-                return "Playlists"
+                return "播放列表"
             }
         }
     }
