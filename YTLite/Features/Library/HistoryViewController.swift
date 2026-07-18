@@ -40,7 +40,7 @@ final class HistoryViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "History"
+        title = "历史"
         setupTableView()
         setupSpinner()
         setupEmpty()
