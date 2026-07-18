@@ -55,7 +55,7 @@ extension SubscriptionsViewController {
         }
         selectedChannel = nil
         channelBar.setSelectedChannelId(nil)
-        title = "Subscriptions"
+        title = "订阅"
         navigationItem.leftBarButtonItem = nil
         videos = stashedVideos
         continuationToken = stashedContinuation
