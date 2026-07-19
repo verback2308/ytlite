@@ -33,8 +33,8 @@ final class SettingsViewController: UIViewController {
     private var sections: [Section] {
         var sponsorBlockRows: [Row] = [.sponsorBlockEnabled]
         if SponsorBlockService.enabled { sponsorBlockRows.append(.sponsorBlockSettings) }
-        let rydFooter = "Dislike counts are powered by Return YouTube Dislike"
-            + " (returnyoutubedislike.com) — an open community project."
+        let rydFooter = "不喜欢计数由Return YouTube Dislike提供支持"
+            + " (returnyoutubedislike.com）——一个开放社区项目."
         let sbFooter = SponsorBlockService.enabled
             ? SponsorBlockService.attributionText
             : nil
@@ -76,10 +76,10 @@ final class SettingsViewController: UIViewController {
             Section(
                 header: "调试",
                 footer: "强制特定的播放源."
-                    + " Normally Android VR is used"
-                    + " with automatic fallback."
-                    + " The solver server powers the Mobile Web + pot source"
-                    + " (pot minting, and n-solving on iOS 12–13).",
+                    + " 通常使用安卓虚拟现实系统"
+                    + " 自动回退."
+                    + " 求解器服务器为移动网络+锅源提供动力"
+                    + " (在iOS 12–13系统上挖矿和n-solving).",
                 rows: [.playbackSource, .solverEndpoint, .shareLog]
             ),
             Section(header: nil, footer: appVersionFooter, rows: [])
@@ -102,9 +102,9 @@ final class SettingsViewController: UIViewController {
             return nil
         }
         if #available(iOS 13.0, *) {
-            return "Auto follows the system appearance."
+            return "自动跟随系统外观."
         }
-        return "Auto switches to the dark theme between the hours below."
+        return "在以下时间段内，自动切换至深色主题."
     }
 
     private var appVersionFooter: String {
@@ -274,10 +274,10 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             ) as? Int ?? 7
             let suffix = days == 1 ? "" : "s"
             return makeDisclosureCell(
-                "Image Cache Duration", value: "\(天) day\(suffix)"
+                "Image Cache Duration", value: "\(days) day\(suffix)"
             )
         case .clearCache:
-            return makeDestructiveCell("Clear All Cache")
+            return makeDestructiveCell("清除所有缓存")
         case .rydEnabled:
             let rydOn = ReturnYouTubeDislikeService.enabled
             return makeToggleCell("Return YouTube Dislike", isOn: rydOn) {
@@ -517,7 +517,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             }
             sheet.addAction(action)
         }
-        sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        sheet.addAction(UIAlertAction(title: "取消", style: .cancel))
         configureCenteredPopover(sheet)
         present(sheet, animated: true)
     }
@@ -534,7 +534,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
         )
         for days in options {
             let action = UIAlertAction(
-                title: "\(days) 天\(days == 1 ? "" : "s")",
+                title: "\(days) day\(days == 1 ? "" : "s")",
                 style: .default
             ) { _ in
                 UserDefaults.standard.set(
@@ -585,7 +585,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
     private func showSolverEndpointPicker() {
         let alert = UIAlertController(
             title: "播放源服务器",
-            message: "URL of the solver server.",
+            message: "求解器服务器的URL.",
             preferredStyle: .alert
         )
         alert.addTextField { field in
@@ -638,7 +638,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
         )
         for days in options {
             let action = UIAlertAction(
-                title: "\(days) 天\(days == 1 ? "" : "s")",
+                title: "\(days) day\(days == 1 ? "" : "s")",
                 style: .default
             ) { _ in
                 UserDefaults.standard.set(
@@ -704,7 +704,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             message: message,
             preferredStyle: .alert
         )
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        alert.addAction(UIAlertAction(title: "好的", style: .default))
         present(alert, animated: true)
     }
 
@@ -766,7 +766,7 @@ enum VideoQualityStore {
     static var selected: String {
         get {
             let key = UserDefaultsKeys.VideoQuality.selected
-            return UserDefaults.standard.string(forKey: key) ?? "Auto"
+            return UserDefaults.standard.string(forKey: key) ?? "自动"
         }
         set { UserDefaults.standard.set(newValue, forKey: UserDefaultsKeys.VideoQuality.selected) }
     }
