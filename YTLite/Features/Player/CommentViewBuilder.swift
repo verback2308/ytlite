@@ -44,7 +44,7 @@ enum CommentViewBuilder {
         label.textColor = ThemeManager.shared.primaryText
         label.numberOfLines = 1
         label.text = comment.isPinned
-            ? "\(comment.authorName) • Pinned"
+            ? "\(comment.authorName) • 置顶"
             : comment.authorName
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
@@ -57,8 +57,8 @@ enum CommentViewBuilder {
         label.numberOfLines = 0
         label.text = [
             comment.publishedTime,
-            comment.likeCount.map { "\($0) likes" },
-            comment.replyCount.map { "\($0) replies" }
+            comment.likeCount.map { "\($0) 喜欢" },
+            comment.replyCount.map { "\($0) 回复" }
         ]
         .compactMap { $0 }
         .filter { !$0.isEmpty }
