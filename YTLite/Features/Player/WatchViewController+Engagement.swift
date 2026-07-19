@@ -74,7 +74,7 @@ extension WatchViewController {
 
     func applyThemeToSubscribeButton() {
         let theme = ThemeManager.shared
-        if subscribeButton.currentTitle == "Subscribed" {
+        if subscribeButton.currentTitle == "已订阅" {
             subscribeButton.backgroundColor = theme.surface
             subscribeButton.setTitleColor(theme.primaryText, for: .normal)
         } else {
@@ -93,7 +93,7 @@ extension WatchViewController {
         channelTopToDesc?.isActive = descriptionExpanded
         descriptionButton.isHidden = !hasDesc
         descriptionButton.setTitle(
-            descriptionExpanded ? "Less" : "More",
+            descriptionExpanded ? "更少" : "更多",
             for: .normal
         )
         view.setNeedsLayout()
@@ -128,7 +128,7 @@ extension WatchViewController {
     ) {
         DispatchQueue.main.async { [weak self] in
             let label = wasLiked
-                ? "removeLike" : "sendLike"
+                ? "取消点赞" : "点赞"
             switch result {
             case .success:
                 AppLog.player("\(label) success for \(videoId)")
@@ -159,7 +159,7 @@ extension WatchViewController {
     ) {
         DispatchQueue.main.async {
             let label = wasDisliked
-                ? "removeDislike" : "sendDislike"
+                ? "移除不喜欢" : "发送不喜欢"
             switch result {
             case .success:
                 AppLog.player("\(label) success for \(videoId)")
