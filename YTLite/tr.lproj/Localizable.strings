@@ -1,0 +1,367 @@
+/*
+  YTLite — Turkish.
+
+  Keys are stable API: never rename one casually — it orphans the key in
+  every translation. Comments give translator context. Positional
+  placeholders (%1$@) must be preserved verbatim in translations.
+*/
+
+/* ===== Player: settings menu ===== */
+
+/* Title of the gear menu in the player */
+"player.menu.settings" = "Oynatma ayarları";
+/* Menu item + picker title: video quality */
+"player.menu.quality" = "Kalite";
+/* Menu item + picker title: audio track (dub) selection */
+"player.menu.audioTrack" = "Ses parçası";
+/* Menu item: toggles the playback statistics overlay */
+"player.menu.stats" = "İstatistikler";
+/* Picker title: subtitles */
+"player.menu.subtitles" = "Altyazılar";
+
+/* ===== Player: pickers ===== */
+
+/* Subtitle picker: disables subtitles */
+"player.subtitles.off" = "Kapalı";
+/* Suffix on auto-generated subtitle tracks, e.g. "English (auto)" */
+"player.subtitles.autoSuffix" = " (otomatik)";
+/* Suffix on AI auto-dubbed audio tracks, e.g. "Russian (AI)" */
+"player.audioTrack.aiSuffix" = " (AI)";
+
+/* ===== Player: status / errors ===== */
+
+/* Status label while switching; %1$@ = quality label or track name */
+"player.status.loading" = "%1$@ yükleniyor...";
+/* Status label while the stream URL is being resolved */
+"player.status.resolving" = "Akış çözümleniyor...";
+/* Shown when a video cannot be played at all */
+"player.error.playback" = "Oynatma başarısız oldu.";
+/* Shown when switching video quality failed (playback continues) */
+"player.error.qualitySwitch" = "Kalite değişimi başarısız oldu.";
+/* Shown when switching the audio track failed (playback continues) */
+"player.error.audioTrackSwitch" = "Ses parçası değişimi başarısız oldu.";
+
+/* ===== Common ===== */
+
+/* Subscribe button, not-subscribed state */
+"common.subscribe" = "Abone ol";
+/* Subscribe button, subscribed state */
+"common.subscribed" = "Abone";
+/* Generic cancel action */
+"common.cancel" = "İptal";
+/* Generic confirmation button */
+"common.ok" = "Tamam";
+/* Generic save action */
+"common.save" = "Kaydet";
+/* Generic done action */
+"common.done" = "Bitti";
+/* Fallback title/label of a playlist tile */
+"common.playlist" = "Oynatma listesi";
+/* Library tab title */
+"library.title" = "Kitaplık";
+
+/* ===== Player: status ===== */
+
+/* Status label while the player prepares the first video */
+"player.status.preparing" = "Video hazırlanıyor...";
+/* Status label while an expired stream URL is re-resolved */
+"player.status.refreshing" = "Akış yenileniyor...";
+
+/* ===== Player: watch page ===== */
+
+/* Expands the video description */
+"player.description.more" = "Daha fazla";
+/* Collapses the video description */
+"player.description.less" = "Daha az";
+/* Action bar: share the video */
+"player.action.share" = "Paylaş";
+/* Action bar: save to playlist */
+"player.action.save" = "Kaydet";
+/* Action bar: download */
+"player.action.download" = "İndir";
+
+/* ===== Player: comments ===== */
+
+/* Comments section header */
+"player.comments.title" = "Yorumlar";
+/* Comments header with count; %1$d = number of comments */
+"player.comments.titleCount" = "Yorumlar (%1$d)";
+/* Shown while comments load */
+"player.comments.loading" = "Yorumlar yükleniyor...";
+/* Shown when the comments request failed */
+"player.comments.unavailable" = "Yorumlar kullanılamıyor";
+/* Shown before the watch page has loaded enough to fetch comments */
+"player.comments.unavailableYet" = "Yorumlar henüz kullanılamıyor.";
+/* Button loading the next page of comments */
+"player.comments.loadMore" = "Daha fazla yorum yükle";
+/* Author line of a pinned comment; %1$@ = author name */
+"player.comments.pinned" = "%1$@ • Sabitlendi";
+/* Comment like count; %1$@ = formatted number */
+"player.comments.likes" = "%1$@ beğeni";
+/* Comment reply count; %1$@ = formatted number */
+"player.comments.replies" = "%1$@ yanıt";
+
+/* ===== Player: autoplay overlay ===== */
+
+/* Header above the next video suggestion */
+"player.autoplay.upNext" = "Sıradaki";
+/* Starts the suggested video immediately, skipping the countdown */
+"player.autoplay.playNow" = "Şimdi oynat";
+
+/* ===== Player: related section ===== */
+
+/* Header of an unnamed autoplay queue/playlist */
+"player.related.mix" = "Karışık";
+/* Header of the related-videos section */
+"player.related.title" = "İlgili";
+/* Status label on fatal playback failure; %1$@ = error description */
+"player.error.withMessage" = "Oynatma hatası: %1$@";
+
+/* ===== Player: speed ===== */
+
+/* The 1x playback speed */
+"player.speed.normal" = "Normal";
+
+/* ===== SponsorBlock ===== */
+
+/* Skip button; %1$@ = localized category name, e.g. "Skip Sponsor" */
+"sponsorblock.skip" = "%1$@ atla";
+
+/* Skip-behavior options (per-category setting) */
+"sponsorblock.behavior.autoSkip" = "Otomatik atla";
+"sponsorblock.behavior.showButton" = "Düğmeyi göster";
+"sponsorblock.behavior.disabled" = "Devre dışı bırak";
+
+/* Footer under the SponsorBlock section (project attribution) */
+"sponsorblock.attribution" = "SponsorBlock (sponsor.ajay.app) tarafından desteklenmektedir — açık bir topluluk projesi.";
+/* Header above the per-category skip settings */
+"sponsorblock.segmentCategories" = "Segment Kategorileri";
+
+/* Category names (SponsorBlock project terms) and their descriptions */
+"sponsorblock.category.sponsor.name" = "Sponsor";
+"sponsorblock.category.sponsor.description" = "Ücretli tanıtım, ücretli yönlendirmeler ve doğrudan reklamlar. Kişisel tanıtım veya beğendikleri nedenler/yaratıcılar/web siteleri/ürünler için ücretsiz tanıtım için değildir.";
+"sponsorblock.category.selfpromo.name" = "Ücretsiz/Kişisel Tanıtım";
+"sponsorblock.category.selfpromo.description" = "\"Sponsor\"a benzer, ücretsiz veya kişisel tanıtım hariç. Ürünler, bağışlar veya işbirliği yaptıkları kişiler hakkında bilgi bölümleri dahildir.";
+"sponsorblock.category.exclusive_access.name" = "Özel Erişim";
+"sponsorblock.category.exclusive_access.description" = "Yalnızca tüm videoları etiketlemek için kullanılır. Bir video, ücretsiz veya sübvansiyonlu erişim elde ettikleri bir ürünü, hizmeti veya konumu sergilediğinde kullanılır.";
+"sponsorblock.category.interaction.name" = "Etkileşim Hatırlatması (Abone Ol)";
+"sponsorblock.category.interaction.description" = "İçeriğin ortasında beğenme, abone olma veya takip etme hatırlatması olduğunda. Uzun veya belirli bir şey hakkındaysa, kişisel tanıtım altında olmalıdır.";
+"sponsorblock.category.highlight.name" = "Öne Çıkan";
+"sponsorblock.category.highlight.description" = "Çoğu kişinin aradığı video kısmı. \"Video x'te başlar\" yorumlarına benzer.";
+"sponsorblock.category.intro.name" = "Ara/Giriş Animasyonu";
+"sponsorblock.category.intro.description" = "Gerçek içerik olmadan bir aralık. Duraklama, statik kare veya tekrarlayan animasyon olabilir. Bilgi içeren geçişler için kullanılmamalıdır.";
+"sponsorblock.category.outro.name" = "Son Kartları/Jenerik";
+"sponsorblock.category.outro.description" = "Jenerik veya YouTube son kartları göründüğünde. Bilgi içeren sonuçlar için değildir.";
+"sponsorblock.category.preview.name" = "Önizleme/Özet";
+"sponsorblock.category.preview.description" = "Bu videoda veya bir dizideki diğer videolarda nelerin geleceğini gösteren klip koleksiyonu.";
+"sponsorblock.category.filler.name" = "Yan Konular/Şakalar";
+"sponsorblock.category.filler.description" = "Videonun ana içeriğini anlamak için gerekli olmayan yan sahneler veya şakalar. Bağlam veya arka plan ayrıntıları sağlayan segmentleri içermemelidir.";
+"sponsorblock.category.music_offtopic.name" = "Müzik Dışı Bölüm";
+"sponsorblock.category.music_offtopic.description" = "Yalnızca müzik videoları için. Müzik videosunun müzik dışı kısmı.";
+"sponsorblock.category.chapter.name" = "Bölüm";
+"sponsorblock.category.chapter.description" = "Videonun özel adlandırılmış bölümleri.";
+
+/* ===== Settings ===== */
+
+/* Settings sheet title */
+"settings.title" = "Ayarlar";
+
+/* Section headers */
+"settings.section.theme" = "Tema";
+"settings.section.playback" = "Oynatma";
+"settings.section.home" = "Ana Sayfa";
+"settings.section.cache" = "Önbellek";
+"settings.section.ryd" = "Return YouTube Dislike";
+"settings.section.sponsorblock" = "SponsorBlock";
+"settings.section.debug" = "Hata Ayıklama";
+
+/* Section footers */
+"settings.footer.themeAutoSystem" = "Otomatik olarak sistem görünümünü takip eder.";
+"settings.footer.themeAutoHours" = "Yukarıdaki saatler arasında otomatik olarak koyu temaya geçer.";
+"settings.footer.playback" = "Doldurma için yakınlaştırma, tam ekranda siyah çubuk kalmayacak şekilde videoyu otomatik olarak ölçekler. Oynatıcıda sıkıştırma her video için bunu geçersiz kılar.";
+"settings.footer.home" = "Öneri rafları nasıl gösterilir: sürekli bir ızgara veya TV tarzı yatay raylar.";
+"settings.footer.ryd" = "Beğenmeme sayıları Return YouTube Dislike (returnyoutubedislike.com) tarafından desteklenmektedir — açık bir topluluk projesi.";
+"settings.footer.debug" = "Belirli bir oynatma kaynağını zorla. Normalde Android VR otomatik geri dönüş ile kullanılır. Çözücü sunucusu Mobile Web + pot kaynağını besler (pot madenciliği ve iOS 12–13'te n-çözümleme).";
+
+/* Theme rows; segment labels for dark/light/auto modes */
+"settings.row.theme" = "Tema";
+"settings.theme.dark" = "Koyu";
+"settings.theme.light" = "Açık";
+"settings.theme.auto" = "Otomatik";
+/* Hour pickers bounding the iOS 12 scheduled dark mode */
+"settings.row.darkFrom" = "Koyu Tema Başlangıcı";
+"settings.row.darkUntil" = "Koyu Tema Bitişi";
+
+/* Playback rows */
+"settings.row.defaultQuality" = "Varsayılan Kalite";
+/* The "Auto" entry of the default-quality picker (stored value stays English) */
+"settings.quality.auto" = "Otomatik";
+"settings.row.backgroundPlayback" = "Arka Planda Oynatma";
+"settings.row.pip" = "Picture-in-Picture";
+"settings.row.hideStatusBar" = "Tam Ekranda Durum Çubuğunu Gizle";
+"settings.row.zoomToFill" = "Tam Ekranda Doldurma İçin Yakınlaştır";
+"settings.row.showShorts" = "Aboneliklerde YouTube Shorts Göster";
+
+/* Home layout row + option names */
+"settings.row.homeLayout" = "Ana Sayfa Düzeni";
+"settings.homeLayout.grid" = "Düz Izgara";
+"settings.homeLayout.rails" = "Raf Rayları";
+
+/* Cache rows */
+"settings.row.feedCache" = "Akış Önbelleği";
+"settings.row.feedCacheDuration" = "Akış Önbellek Süresi";
+"settings.row.imageCache" = "Görsel Önbelleği";
+"settings.row.imageCacheDuration" = "Görsel Önbellek Süresi";
+"settings.row.clearCache" = "Tüm Önbelleği Temizle";
+/* Alert after clearing all caches */
+"settings.cache.clearedTitle" = "Önbellek Temizlendi";
+"settings.cache.clearedMessage" = "Tüm önbellek temizlendi.";
+
+/* Integration rows */
+"settings.row.ryd" = "Return YouTube Dislike";
+"settings.row.sponsorblock" = "SponsorBlock";
+"settings.row.sponsorblockSettings" = "SponsorBlock Ayarları";
+
+/* Debug rows (values stay technical/English) */
+"settings.row.playbackSource" = "Oynatma Kaynağı";
+"settings.row.solverServer" = "Solver server";
+"settings.row.shareLog" = "Hata Ayıklama Kaydını Paylaş";
+/* Solver-server URL alert */
+"settings.solver.message" = "Çözücü sunucusunun URL'si.";
+"settings.solver.reset" = "Varsayılana sıfırla";
+/* Suffix shown after the solver URL when it is the built-in default */
+"settings.solver.defaultSuffix" = " (varsayılan)";
+/* Alert when no debug logs exist yet */
+"settings.log.noneTitle" = "Kayıt Yok";
+"settings.log.noneMessage" = "Henüz hata ayıklama kaydı mevcut değil.";
+
+/* ===== Profile ===== */
+
+"profile.title" = "Profil";
+"profile.signOut" = "Çıkış Yap";
+"profile.clearImageCache" = "Görsel Önbelleğini Temizle";
+"profile.imageCacheCleared" = "Görsel önbelleği temizlendi.";
+
+/* ===== Search ===== */
+
+"search.title" = "Ara";
+/* Search bar placeholder */
+"search.placeholder" = "YouTube'da ara";
+/* Header above the recent-search list */
+"search.recent" = "Son aramalar";
+/* Filters toolbar button; the dotted variant marks active filters */
+"search.filters" = "Filtreler";
+"search.filters.active" = "Filtreler •";
+/* Filters sheet title + reset action */
+"search.filters.title" = "Arama Filtreleri";
+"search.filters.reset" = "Filtreleri sıfırla";
+/* Filter rows; %1$@ = the current value */
+"search.filters.sort" = "Sırala: %1$@";
+"search.filters.date" = "Tarih: %1$@";
+"search.filters.type" = "Tür: %1$@";
+"search.filters.duration" = "Süre: %1$@";
+/* Sub-sheet titles */
+"search.filters.sortTitle" = "Sıralama ölçütü";
+"search.filters.dateTitle" = "Yükleme tarihi";
+"search.filters.typeTitle" = "Tür";
+"search.filters.durationTitle" = "Süre";
+
+/* Filter option values */
+"search.sort.relevance" = "İlgili";
+"search.sort.rating" = "Derecelendirme";
+"search.sort.uploadDate" = "Yükleme tarihi";
+"search.sort.viewCount" = "Görüntülenme sayısı";
+"search.date.any" = "Herhangi bir zaman";
+"search.date.lastHour" = "Son saat";
+"search.date.today" = "Bugün";
+"search.date.thisWeek" = "Bu hafta";
+"search.date.thisMonth" = "Bu ay";
+"search.date.thisYear" = "Bu yıl";
+"search.type.any" = "Herhangi bir tür";
+"search.type.video" = "Video";
+"search.type.channel" = "Kanal";
+"search.type.playlist" = "Oynatma listesi";
+"search.duration.any" = "Herhangi bir süre";
+"search.duration.short" = "4 dakikanın altında";
+"search.duration.medium" = "4-20 dakika";
+"search.duration.long" = "20 dakikanın üzerinde";
+
+/* ===== Home ===== */
+
+"home.title" = "Ana Sayfa";
+/* Chip resetting to the unfiltered feed */
+"home.category.all" = "Tümü";
+/* Static category chips (server shelf titles arrive already localized) */
+"home.category.live" = "Canlı";
+"home.category.news" = "Haberler";
+"home.category.gaming" = "Oyun";
+"home.category.sports" = "Spor";
+"home.category.learning" = "Öğrenme";
+"home.category.fashion" = "Moda";
+/* Error empty state (two lines) */
+"home.error.loadFailed" = "Akış yüklenemedi\nYeniden denemek için aşağı çekin";
+/* Signed-out empty state */
+"home.signIn" = "Önerilerinizi görmek için giriş yapın";
+
+/* ===== Channel ===== */
+
+/* Channel tab bar */
+"channel.tab.videos" = "Videolar";
+"channel.tab.live" = "Canlı";
+"channel.tab.playlists" = "Oynatma listeleri";
+/* About sheet */
+"channel.about.title" = "Hakkında";
+"channel.about.close" = "Kapat";
+"channel.about.subscribers" = "Aboneler";
+"channel.about.videos" = "Videolar";
+"channel.about.description" = "Açıklama";
+"channel.about.contact" = "İletişim";
+
+/* ===== Library ===== */
+
+"library.history" = "Geçmiş";
+"library.downloads" = "İndirmeler";
+"library.playlists" = "Oynatma listeleri";
+"library.downloads.comingSoon" = "İndirmeler yakında";
+"library.history.signIn" = "İzleme geçmişinizi görmek için giriş yapın";
+"library.history.empty" = "İzleme geçmişi bulunamadı";
+"library.history.loadFailed" = "Geçmiş yüklenemedi";
+"library.playlists.signIn" = "Oynatma listelerinizi görmek için giriş yapın";
+"library.playlists.loadFailed" = "Oynatma listeleri yüklenemedi";
+"library.playlist.empty" = "Bu oynatma listesinde video yok";
+"library.playlist.loadFailed" = "Oynatma listesi yüklenemedi";
+
+/* ===== Subscriptions ===== */
+
+"subscriptions.title" = "Abonelikler";
+"subscriptions.all" = "Tüm abonelikler";
+/* "All" button in the channel avatar bar */
+"subscriptions.allButton" = "Tümü";
+"subscriptions.signIn" = "Aboneliklerinizi görmek için giriş yapın";
+
+/* ===== Account (toolbar sheet) ===== */
+
+/* Fallback account name when the profile has none */
+"account.fallbackName" = "Hesap";
+"account.signIn" = "Giriş Yap";
+"account.signOut" = "Çıkış Yap";
+"account.notSignedIn" = "Giriş yapılmadı";
+
+/* Generic error alert title */
+"common.error" = "Hata";
+/* Channel screen failed to load */
+"channel.unavailable" = "Kanal kullanılamıyor";
+
+/* ===== Settings: language section ===== */
+
+"settings.section.language" = "Dil";
+"settings.footer.language" = "Uygulama dili arayüzü değiştirir. İçerik dili başlıkları, aramayı ve akışları değiştirir (YouTube, resmi uygulama gibi, meta verileri sunucu tarafında çevirir). Değişiklikler uygulama yeniden başlatıldıktan sonra tam olarak uygulanır.";
+/* Rows */
+"settings.row.appLanguage" = "Uygulama Dili";
+"settings.row.contentLanguage" = "İçerik Dili";
+"settings.row.region" = "Bölge";
+/* Picker option following the device language/region */
+"settings.language.system" = "Sistem";
+/* Alert after changing a language setting */
+"settings.language.restartTitle" = "Yeniden Başlatma Gerekli";
+"settings.language.restartMessage" = "Değişiklikler uygulama yeniden başlatıldıktan sonra tam olarak uygulanır.";
