@@ -1,0 +1,367 @@
+/*
+  YTLite — Afrikaans (af).
+
+  Keys are stable API: never rename one casually — it orphans the key in
+  every translation. Comments give translator context. Positional
+  placeholders (%1$@) must be preserved verbatim in translations.
+*/
+
+/* ===== Player: settings menu ===== */
+
+/* Title of the gear menu in the player */
+"player.menu.settings" = "Speelinstellings";
+/* Menu item + picker title: video quality */
+"player.menu.quality" = "Kwaliteit";
+/* Menu item + picker title: audio track (dub) selection */
+"player.menu.audioTrack" = "Audiospoor";
+/* Menu item: toggles the playback statistics overlay */
+"player.menu.stats" = "Statistieke vir nerds";
+/* Picker title: subtitles */
+"player.menu.subtitles" = "Subtitels";
+
+/* ===== Player: pickers ===== */
+
+/* Subtitle picker: disables subtitles */
+"player.subtitles.off" = "Af";
+/* Suffix on auto-generated subtitle tracks, e.g. "English (auto)" */
+"player.subtitles.autoSuffix" = " (outomaties)";
+/* Suffix on AI auto-dubbed audio tracks, e.g. "Russian (AI)" */
+"player.audioTrack.aiSuffix" = " (KI)";
+
+/* ===== Player: status / errors ===== */
+
+/* Status label while switching; %1$@ = quality label or track name */
+"player.status.loading" = "Laai %1$@...";
+/* Status label while the stream URL is being resolved */
+"player.status.resolving" = "Los stroom op...";
+/* Shown when a video cannot be played at all */
+"player.error.playback" = "Weergawe misluk.";
+/* Shown when switching video quality failed (playback continues) */
+"player.error.qualitySwitch" = "Kwaliteitwisseling misluk.";
+/* Shown when switching the audio track failed (playback continues) */
+"player.error.audioTrackSwitch" = "Audiospoorwisseling misluk.";
+
+/* ===== Common ===== */
+
+/* Subscribe button, not-subscribed state */
+"common.subscribe" = "Teken in";
+/* Subscribe button, subscribed state */
+"common.subscribed" = "Ingeteken";
+/* Generic cancel action */
+"common.cancel" = "Kanselleer";
+/* Generic confirmation button */
+"common.ok" = "OK";
+/* Generic save action */
+"common.save" = "Stoor";
+/* Generic done action */
+"common.done" = "Klaar";
+/* Fallback title/label of a playlist tile */
+"common.playlist" = "Speellys";
+/* Library tab title */
+"library.title" = "Bibliotheek";
+
+/* ===== Player: status ===== */
+
+/* Status label while the player prepares the first video */
+"player.status.preparing" = "Berei video voor...";
+/* Status label while an expired stream URL is re-resolved */
+"player.status.refreshing" = "Verfris stroom...";
+
+/* ===== Player: watch page ===== */
+
+/* Expands the video description */
+"player.description.more" = "Meer";
+/* Collapses the video description */
+"player.description.less" = "Minder";
+/* Action bar: share the video */
+"player.action.share" = "Deel";
+/* Action bar: save to playlist */
+"player.action.save" = "Stoor";
+/* Action bar: download */
+"player.action.download" = "Laai af";
+
+/* ===== Player: comments ===== */
+
+/* Comments section header */
+"player.comments.title" = "Kommentaar";
+/* Comments header with count; %1$d = number of comments */
+"player.comments.titleCount" = "Kommentaar (%1$d)";
+/* Shown while comments load */
+"player.comments.loading" = "Laai Kommentaar...";
+/* Shown when the comments request failed */
+"player.comments.unavailable" = "Kommentaar onbeskikbaar";
+/* Shown before the watch page has loaded enough to fetch comments */
+"player.comments.unavailableYet" = "Kommentaar is nog nie beskikbaar nie.";
+/* Button loading the next page of comments */
+"player.comments.loadMore" = "Laai Meer Kommentaar";
+/* Author line of a pinned comment; %1$@ = author name */
+"player.comments.pinned" = "%1$@ • Vasgemaak";
+/* Comment like count; %1$@ = formatted number */
+"player.comments.likes" = "%1$@ hou van";
+/* Comment reply count; %1$@ = formatted number */
+"player.comments.replies" = "%1$@ antwoorde";
+
+/* ===== Player: autoplay overlay ===== */
+
+/* Header above the next video suggestion */
+"player.autoplay.upNext" = "Volgende";
+/* Starts the suggested video immediately, skipping the countdown */
+"player.autoplay.playNow" = "Speel nou";
+
+/* ===== Player: related section ===== */
+
+/* Header of an unnamed autoplay queue/playlist */
+"player.related.mix" = "Mengsel";
+/* Header of the related-videos section */
+"player.related.title" = "Verwant";
+/* Status label on fatal playback failure; %1$@ = error description */
+"player.error.withMessage" = "Weergawe-fout: %1$@";
+
+/* ===== Player: speed ===== */
+
+/* The 1x playback speed */
+"player.speed.normal" = "Normaal";
+
+/* ===== SponsorBlock ===== */
+
+/* Skip button; %1$@ = localized category name, e.g. "Skip Sponsor" */
+"sponsorblock.skip" = "Spring %1$@ oor";
+
+/* Skip-behavior options (per-category setting) */
+"sponsorblock.behavior.autoSkip" = "Outomaties oorspring";
+"sponsorblock.behavior.showButton" = "Wys knoppie";
+"sponsorblock.behavior.disabled" = "Deaktiveer";
+
+/* Footer under the SponsorBlock section (project attribution) */
+"sponsorblock.attribution" = "Aangedryf deur SponsorBlock (sponsor.ajay.app) — 'n oop gemeenskapprojek.";
+/* Header above the per-category skip settings */
+"sponsorblock.segmentCategories" = "Segmentkategorieë";
+
+/* Category names (SponsorBlock project terms) and their descriptions */
+"sponsorblock.category.sponsor.name" = "Borg";
+"sponsorblock.category.sponsor.description" = "Betaaldepromosie, betaalde verwysings en direkte advertensies. Nie vir selfpromosie of gratis versoeke aan redes/skeppers/webwerwe/produkte wat hulle hou van nie.";
+"sponsorblock.category.selfpromo.name" = "Onbetaalde/Selfpromosie";
+"sponsorblock.category.selfpromo.description" = "Soortgelyk aan \"borg\" maar onbetaald of selfpromosie. Dit sluit in afdelings oor handelsware, donasies, of inligting oor met wie hulle saamgewerk het.";
+"sponsorblock.category.exclusive_access.name" = "Eksklusiewe Toegang";
+"sponsorblock.category.exclusive_access.description" = "Slegs vir die etikettering van heel video's. Gebruik wanneer 'n video 'n produk, diens of ligging toon waartoe hulle gratis of gesubsidieerde toegang gekry het.";
+"sponsorblock.category.interaction.name" = "Interaksie Herinnering (Teken In)";
+"sponsorblock.category.interaction.description" = "Wanneer daar 'n kort herinnering is om te hou van, teken in of volg te midde van die inhoud. As dit lank is of oor iets spesifieks gaan, behoort dit eerder onder selfpromosie te wees.";
+"sponsorblock.category.highlight.name" = "Hoogtepunt";
+"sponsorblock.category.highlight.description" = "Die deel van die video waarvoor die meeste mense soek. Soortgelyk aan \"Video begin by x\" kommentaar.";
+"sponsorblock.category.intro.name" = "Onderbreking/Inleidingsanimasie";
+"sponsorblock.category.intro.description" = "'n Interval sonder werklike inhoud. Kan 'n pouse, statiese raam, of herhalende animasie wees. Moenie vir oorgange wat inligting bevat, gebruik word nie.";
+"sponsorblock.category.outro.name" = "Eindkaarte/Krediete";
+"sponsorblock.category.outro.description" = "Krediete of wanneer die YouTube-eindkaarte verskyn. Nie vir gevolgtrekkings met inligting nie.";
+"sponsorblock.category.preview.name" = "Voorskou/Oorsig";
+"sponsorblock.category.preview.description" = "Versameling van klips wat toon wat in hierdie video of ander video's in 'n reeks kom waar alle inligting later in die video herhaal word.";
+"sponsorblock.category.filler.name" = "Afdwalingse/Grapjies";
+"sponsorblock.category.filler.description" = "Afdwalingstonele of grappies wat nie nodig is om die hoofinhoud van die video te verstaan nie. Moet nie segmente insluit wat konteks of agtergrondbesonderhede verskaf nie.";
+"sponsorblock.category.music_offtopic.name" = "Nie-Musiek Afdeling";
+"sponsorblock.category.music_offtopic.description" = "Slegs vir musiekvideo's. Nie-musiekdeel van 'n musiekvideo.";
+"sponsorblock.category.chapter.name" = "Hoofstuk";
+"sponsorblock.category.chapter.description" = "Pasgemaakte benoemde afdelings van die video.";
+
+/* ===== Settings ===== */
+
+/* Settings sheet title */
+"settings.title" = "Instellings";
+
+/* Section headers */
+"settings.section.theme" = "Tema";
+"settings.section.playback" = "Weergawe";
+"settings.section.home" = "Tuisblad";
+"settings.section.cache" = "Kas";
+"settings.section.ryd" = "Return YouTube Dislike";
+"settings.section.sponsorblock" = "SponsorBlock";
+"settings.section.debug" = "Ontfouting";
+
+/* Section footers */
+"settings.footer.themeAutoSystem" = "Volg outomaties die stelselverskyning.";
+"settings.footer.themeAutoHours" = "Skakel outomaties na die donker tema tussen die bostaande ure.";
+"settings.footer.playback" = "Zoom om te Vul skaal die video outomaties in volle skerm sodat geen swart kante oorbly nie. Knyp in die speler oorheen dit per video.";
+"settings.footer.home" = "Aanbevelingrakke word soos volg gewys: een volgehoue rooster of TV-styl horizontale relings.";
+"settings.footer.ryd" = "Aftellinggetalle word aangedryf deur Return YouTube Dislike (returnyoutubedislike.com) — 'n oop gemeenskapprojek.";
+"settings.footer.debug" = "Forseer 'n spesifieke weergawebron. Normaalweg word Android VR met outomatiese terugval gebruik. Die oplosserbediener kragtig die Mobiele Web + pot bron (pot muntvervaardiging, en n-oplossing op iOS 12–13).";
+
+/* Theme rows; segment labels for dark/light/auto modes */
+"settings.row.theme" = "Tema";
+"settings.theme.dark" = "Donker";
+"settings.theme.light" = "Lig";
+"settings.theme.auto" = "Outomaties";
+/* Hour pickers bounding the iOS 12 scheduled dark mode */
+"settings.row.darkFrom" = "Donker Tema Vanaf";
+"settings.row.darkUntil" = "Donker Tema Tot";
+
+/* Playback rows */
+"settings.row.defaultQuality" = "Verstek Kwaliteit";
+/* The "Auto" entry of the default-quality picker (stored value stays English) */
+"settings.quality.auto" = "Outomaties";
+"settings.row.backgroundPlayback" = "Agtergrondweergawe";
+"settings.row.pip" = "Prent-in-Prent";
+"settings.row.hideStatusBar" = "Versteek Statusbalk in Volle Skerm";
+"settings.row.zoomToFill" = "Zoom om te Vul in Volle Skerm";
+"settings.row.showShorts" = "Wys YouTube Shorts in Intekeninge";
+
+/* Home layout row + option names */
+"settings.row.homeLayout" = "Tuisbladuitleg";
+"settings.homeLayout.grid" = "Skoon Rooster";
+"settings.homeLayout.rails" = "Rakrelings";
+
+/* Cache rows */
+"settings.row.feedCache" = "Voedingskas";
+"settings.row.feedCacheDuration" = "Voedingskastyd";
+"settings.row.imageCache" = "Beeldkas";
+"settings.row.imageCacheDuration" = "Beeldkastyd";
+"settings.row.clearCache" = "Maak Alle Kas Skoon";
+/* Alert after clearing all caches */
+"settings.cache.clearedTitle" = "Kas Skoongemaak";
+"settings.cache.clearedMessage" = "Alle kas is skoongemaak.";
+
+/* Integration rows */
+"settings.row.ryd" = "Return YouTube Dislike";
+"settings.row.sponsorblock" = "SponsorBlock";
+"settings.row.sponsorblockSettings" = "SponsorBlock Instellings";
+
+/* Debug rows (values stay technical/English) */
+"settings.row.playbackSource" = "Weergawebron";
+"settings.row.solverServer" = "Solver server";
+"settings.row.shareLog" = "Deel Ontfoutingslog";
+/* Solver-server URL alert */
+"settings.solver.message" = "URL van die oplosserbediener.";
+"settings.solver.reset" = "Herstel na verstek";
+/* Suffix shown after the solver URL when it is the built-in default */
+"settings.solver.defaultSuffix" = " (verstek)";
+/* Alert when no debug logs exist yet */
+"settings.log.noneTitle" = "Geen Loge";
+"settings.log.noneMessage" = "Geen ontoutingsloge beskikbaar nie.";
+
+/* ===== Profile ===== */
+
+"profile.title" = "Profiel";
+"profile.signOut" = "Teken Uit";
+"profile.clearImageCache" = "Maak Beeldkas Skoon";
+"profile.imageCacheCleared" = "Beeldkas skoongemaak.";
+
+/* ===== Search ===== */
+
+"search.title" = "Soek";
+/* Search bar placeholder */
+"search.placeholder" = "Soek YouTube";
+/* Header above the recent-search list */
+"search.recent" = "Onlangse soektogte";
+/* Filters toolbar button; the dotted variant marks active filters */
+"search.filters" = "Filters";
+"search.filters.active" = "Filters •";
+/* Filters sheet title + reset action */
+"search.filters.title" = "Soekfilters";
+"search.filters.reset" = "Herstel filters";
+/* Filter rows; %1$@ = the current value */
+"search.filters.sort" = "Sorteer: %1$@";
+"search.filters.date" = "Datum: %1$@";
+"search.filters.type" = "Tipe: %1$@";
+"search.filters.duration" = "Duur: %1$@";
+/* Sub-sheet titles */
+"search.filters.sortTitle" = "Sorteer volgens";
+"search.filters.dateTitle" = "Oplaaidatum";
+"search.filters.typeTitle" = "Tipe";
+"search.filters.durationTitle" = "Duur";
+
+/* Filter option values */
+"search.sort.relevance" = "Relevansie";
+"search.sort.rating" = "Gradering";
+"search.sort.uploadDate" = "Oplaaidatum";
+"search.sort.viewCount" = "Aansigtelling";
+"search.date.any" = "Enige tyd";
+"search.date.lastHour" = "Laaste uur";
+"search.date.today" = "Vandag";
+"search.date.thisWeek" = "Hierdie week";
+"search.date.thisMonth" = "Hierdie maand";
+"search.date.thisYear" = "Hierdie jaar";
+"search.type.any" = "Enige tipe";
+"search.type.video" = "Video";
+"search.type.channel" = "Kanaal";
+"search.type.playlist" = "Speellys";
+"search.duration.any" = "Enige duur";
+"search.duration.short" = "Minder as 4 min";
+"search.duration.medium" = "4–20 min";
+"search.duration.long" = "Meer as 20 min";
+
+/* ===== Home ===== */
+
+"home.title" = "Tuisblad";
+/* Chip resetting to the unfiltered feed */
+"home.category.all" = "Alles";
+/* Static category chips (server shelf titles arrive already localized) */
+"home.category.live" = "Lewe";
+"home.category.news" = "Nuus";
+"home.category.gaming" = "Speletjies";
+"home.category.sports" = "Sport";
+"home.category.learning" = "Leer";
+"home.category.fashion" = "Mode";
+/* Error empty state (two lines) */
+"home.error.loadFailed" = "Kon nie voeding laai nie\nTrek af om te herhaal";
+/* Signed-out empty state */
+"home.signIn" = "Teken in om jou aanbevelings te sien";
+
+/* ===== Channel ===== */
+
+/* Channel tab bar */
+"channel.tab.videos" = "Video's";
+"channel.tab.live" = "Lewe";
+"channel.tab.playlists" = "Speellyste";
+/* About sheet */
+"channel.about.title" = "Oor";
+"channel.about.close" = "Maak toe";
+"channel.about.subscribers" = "Intekenare";
+"channel.about.videos" = "Video's";
+"channel.about.description" = "Beskrywing";
+"channel.about.contact" = "Kontak";
+
+/* ===== Library ===== */
+
+"library.history" = "Geskiedenis";
+"library.downloads" = "Aflaaie";
+"library.playlists" = "Speellyste";
+"library.downloads.comingSoon" = "Aflaaie binnekort beskikbaar";
+"library.history.signIn" = "Teken in om jou kykgeskiedenis te sien";
+"library.history.empty" = "Geen kykgeskiedenis gevind nie";
+"library.history.loadFailed" = "Kon nie geskiedenis laai nie";
+"library.playlists.signIn" = "Teken in om jou speellyste te sien";
+"library.playlists.loadFailed" = "Kon nie speellyste laai nie";
+"library.playlist.empty" = "Geen video's in hierdie speellys nie";
+"library.playlist.loadFailed" = "Kon nie speellys laai nie";
+
+/* ===== Subscriptions ===== */
+
+"subscriptions.title" = "Intekeninge";
+"subscriptions.all" = "Alle intekeninge";
+/* "All" button in the channel avatar bar */
+"subscriptions.allButton" = "Alles";
+"subscriptions.signIn" = "Teken in om jou intekeninge te sien";
+
+/* ===== Account (toolbar sheet) ===== */
+
+/* Fallback account name when the profile has none */
+"account.fallbackName" = "Rekening";
+"account.signIn" = "Teken In";
+"account.signOut" = "Teken Uit";
+"account.notSignedIn" = "Nie ingeteken nie";
+
+/* Generic error alert title */
+"common.error" = "Fout";
+/* Channel screen failed to load */
+"channel.unavailable" = "Kanaal onbeskikbaar";
+
+/* ===== Settings: language section ===== */
+
+"settings.section.language" = "Taalkieslys";
+"settings.footer.language" = "App-taal verander die koppelvlak. Inhoudtaal verander titels, soektogte en voedings (YouTube vertaal metadata bediener-sy, soos die amptelike program). Veranderinge word volledig toegepas na 'n herbegin van die program.";
+/* Rows */
+"settings.row.appLanguage" = "App-taal";
+"settings.row.contentLanguage" = "Inhoudtaal";
+"settings.row.region" = "Streek";
+/* Picker option following the device language/region */
+"settings.language.system" = "Stelsel";
+/* Alert after changing a language setting */
+"settings.language.restartTitle" = "Herbegin Vereis";
+"settings.language.restartMessage" = "Veranderinge word volledig toegepas na die herbegin van die program.";
