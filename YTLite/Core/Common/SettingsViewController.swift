@@ -256,7 +256,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             ) as? Int ?? 1
             let suffix = days == 1 ? "" : "s"
             return makeDisclosureCell(
-                "视频缓存时长", value: "\(天) day\(suffix)"
+                "视频缓存时长", value: "\(days) day\(suffix)"
             )
         case .imageCacheEnabled:
             return makeToggleCell(
@@ -534,7 +534,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
         )
         for days in options {
             let action = UIAlertAction(
-                title: "\(天) day\(days == 1 ? "" : "s")",
+                title: "\(days) day\(days == 1 ? "" : "s")",
                 style: .default
             ) { _ in
                 UserDefaults.standard.set(
@@ -638,7 +638,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
         )
         for days in options {
             let action = UIAlertAction(
-                title: "\(天) day\(days == 1 ? "" : "s")",
+                title: "\(days) day\(days == 1 ? "" : "s")",
                 style: .default
             ) { _ in
                 UserDefaults.standard.set(
