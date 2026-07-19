@@ -73,7 +73,7 @@ class HomeViewController: VideosViewController {
     }()
 
     lazy var signInEmptyView: SignInEmptyStateView = {
-        let emptyView = SignInEmptyStateView(message: "Sign in to see your recommendations")
+        let emptyView = SignInEmptyStateView(message: "登录以查看您的推荐")
         emptyView.isHidden = true
         emptyView.onSignIn = { [weak self] in self?.toolbarOpenProfile() }
         return emptyView
