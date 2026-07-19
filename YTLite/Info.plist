@@ -18,6 +18,7 @@
 		<string>ca</string>
 		<string>cs</string>
 		<string>da</string>
+		<string>de</string>
 	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
