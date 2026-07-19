@@ -237,7 +237,7 @@ extension VideoPlayerView {
         addSubview(speedOverlay)
         speedOverlay.addSubview(speedLabel)
         speedOverlay.addSubview(speedSlider)
-        speedLabel.text = "Normal"
+        speedLabel.text = "正常"
         speedSlider.addTarget(
             self,
             action: #selector(speedSliderChanged(_:)),
