@@ -7,20 +7,20 @@ extension WatchViewController {
         var items: [PlayerMenuItem] = []
         if activeSubtitleLanguage != nil {
             items.append(
-                PlayerMenuItem(title: "Off", isDestructive: true) { [weak self] in
+                PlayerMenuItem(title: "关闭", isDestructive: true) { [weak self] in
                     self?.deactivateSubtitles()
                 }
             )
         }
         for track in captionTracks {
-            let suffix = track.isAsr ? " (auto)" : ""
+            let suffix = track.isAsr ? " (自动)" : ""
             items.append(
                 PlayerMenuItem(title: track.name + suffix) { [weak self] in
                     self?.activateSubtitle(track: track)
                 }
             )
         }
-        presentPlayerMenu(title: "Subtitles", items: items)
+        presentPlayerMenu(title: "字幕", items: items)
     }
 
     func activateSubtitle(track: SubtitleTrack) {
