@@ -77,13 +77,13 @@ final class ChannelAboutViewController: UIViewController {
         statsStack.distribution = .fillEqually
 
         if let subs = page.info.subscriberCountText {
-            statsStack.addArrangedSubview(makeStatView(value: subs, label: "Subscribers"))
+            statsStack.addArrangedSubview(makeStatView(value: subs, label: "订阅者"))
         }
         if let vids = page.info.videoCountText {
             let count = vids
-                .replacingOccurrences(of: " videos", with: "", options: .caseInsensitive)
-                .replacingOccurrences(of: " video", with: "", options: .caseInsensitive)
-            statsStack.addArrangedSubview(makeStatView(value: count, label: "Videos"))
+                .replacingOccurrences(of: " 视频", with: "", options: .caseInsensitive)
+                .replacingOccurrences(of: " 视频", with: "", options: .caseInsensitive)
+            statsStack.addArrangedSubview(makeStatView(value: count, label: "视频"))
         }
         if !statsStack.arrangedSubviews.isEmpty {
             stack.addArrangedSubview(statsStack)
