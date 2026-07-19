@@ -113,7 +113,7 @@ extension VideoCell {
         durationLabel.textAlignment = .center
         thumbnail.addSubview(durationLabel)
 
-        liveBadgeView.text = "● LIVE"
+        liveBadgeView.text = "● 直播"
         liveBadgeView.textColor = .white
         liveBadgeView.font = UIFont.systemFont(ofSize: 10, weight: .bold)
         liveBadgeView.backgroundColor = ThemeManager.shared.liveBadgeBackground
