@@ -85,7 +85,7 @@ class ProfileViewController: UIViewController {
         themeSegment.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(themeSegment)
 
-        clearImageCacheButton.setTitle("Clear Image Cache", for: .normal)
+        clearImageCacheButton.setTitle("清除图片缓存", for: .normal)
         clearImageCacheButton.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
         clearImageCacheButton.layer.cornerRadius = 10
         let cacheInsets = UIEdgeInsets(top: 12, left: 18, bottom: 12, right: 18)
@@ -159,10 +159,10 @@ class ProfileViewController: UIViewController {
 
         let alert = UIAlertController(
             title: "完成",
-            message: "Image cache cleared.",
+            message: "图片缓存已清除.",
             preferredStyle: .alert
         )
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        alert.addAction(UIAlertAction(title: "好", style: .default))
         present(alert, animated: true)
     }
 
