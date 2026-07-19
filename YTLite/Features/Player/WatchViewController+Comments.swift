@@ -7,7 +7,7 @@ extension WatchViewController {
         commentsContinuation = nil
         visibleCommentsCount = commentsPageSize
         isLoadingComments = false
-        commentsLabel.text = "Comments"
+        commentsLabel.text = "评论"
         renderComments()
     }
 
@@ -19,11 +19,11 @@ extension WatchViewController {
         loadMoreCommentsButton.isEnabled = false
         loadMoreCommentsButton.isHidden = comments.isEmpty
         loadMoreCommentsButton.setTitle(
-            "Loading comments...",
+            "加载评论...",
             for: .normal
         )
         if comments.isEmpty {
-            commentsLabel.text = "Loading comments..."
+            commentsLabel.text = "加载评论..."
             renderComments()
         }
         client.fetchComments(
@@ -52,7 +52,7 @@ extension WatchViewController {
                 + "\(initialVideo.id): \(error)"
             )
             if comments.isEmpty {
-                commentsLabel.text = "Comments unavailable"
+                commentsLabel.text = "评论不可用"
             }
         case .success(let page):
             commentsContinuation = page.continuation
@@ -62,7 +62,7 @@ extension WatchViewController {
                 appendNewComments(page.comments)
             }
             commentsLabel.text = page.title
-                ?? "Comments (\(comments.count))"
+                ?? "评论 (\(comments.count))"
         }
         renderComments()
     }
@@ -102,8 +102,8 @@ extension WatchViewController {
         emptyLabel.textColor =
             ThemeManager.shared.secondaryText
         emptyLabel.text = isLoadingComments
-            ? "Loading comments..."
-            : "Comments are unavailable yet."
+            ? "加载评论..."
+            : "评论功能暂未开放."
         commentsStackView.addArrangedSubview(emptyLabel)
     }
 
@@ -114,13 +114,13 @@ extension WatchViewController {
             !hasMore && !hasCont
         if isLoadingComments {
             loadMoreCommentsButton.setTitle(
-                "Loading comments...",
+                "加载评论...",
                 for: .normal
             )
             loadMoreCommentsButton.isEnabled = false
         } else {
             loadMoreCommentsButton.setTitle(
-                "Load more comments",
+                "加载更多评论",
                 for: .normal
             )
             loadMoreCommentsButton.isEnabled = true
