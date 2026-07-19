@@ -31,7 +31,7 @@ extension VideoPlayerView {
 
     func formatSpeedLabel(_ speed: Float) -> String {
         speed == 1.0
-            ? "Normal"
+            ? "正常"
             : String(format: "%.2g", speed) + "x"
     }
 
