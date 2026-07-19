@@ -66,7 +66,7 @@ final class AutoplayOverlayView: UIView {
     }
 
     private func setupLabels() {
-        upNextLabel.text = "Up Next"
+        upNextLabel.text = "接下来"
         upNextLabel.font = .systemFont(ofSize: 11, weight: .semibold)
         upNextLabel.textColor = UIColor.white.withAlphaComponent(0.7)
         upNextLabel.textAlignment = .center
@@ -88,14 +88,14 @@ final class AutoplayOverlayView: UIView {
     }
 
     private func setupButtons() {
-        cancelButton.setTitle("Cancel", for: .normal)
+        cancelButton.setTitle("取消", for: .normal)
         cancelButton.setTitleColor(UIColor.white.withAlphaComponent(0.85), for: .normal)
         cancelButton.titleLabel?.font = .systemFont(ofSize: 13)
         cancelButton.translatesAutoresizingMaskIntoConstraints = false
         cancelButton.addTarget(self, action: #selector(cancelTapped), for: .touchUpInside)
         addSubview(cancelButton)
 
-        playButton.setTitle("Play now", for: .normal)
+        playButton.setTitle("立即播放", for: .normal)
         playButton.setTitleColor(.white, for: .normal)
         playButton.titleLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
         playButton.backgroundColor = UIColor.white.withAlphaComponent(0.2)
@@ -221,7 +221,7 @@ final class AutoplayOverlayView: UIView {
 // MARK: - Countdown & Ring
 extension AutoplayOverlayView {
     func startCountdown() {
-        countdownLabel.text = "\(secondsRemaining)"
+        countdownLabel.text = "\(剩余秒数)"
         animateRing()
         countdownTimer = Timer.scheduledTimer(
             withTimeInterval: 1.0,
@@ -233,7 +233,7 @@ extension AutoplayOverlayView {
 
     private func handleCountdownTick() {
         secondsRemaining -= 1
-        countdownLabel.text = "\(secondsRemaining)"
+        countdownLabel.text = "\(剩余秒数)"
         if secondsRemaining <= 0 {
             countdownTimer?.invalidate()
             countdownTimer = nil
