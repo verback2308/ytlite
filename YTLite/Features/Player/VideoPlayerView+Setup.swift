@@ -295,7 +295,7 @@ extension VideoPlayerView {
     }
 
     private func styleCCButton() {
-        ccButton.setTitle("CC", for: .normal)
+        ccButton.setTitle("字幕", for: .normal)
         ccButton.titleLabel?.font = UIFont.systemFont(
             ofSize: 12, weight: .bold
         )
