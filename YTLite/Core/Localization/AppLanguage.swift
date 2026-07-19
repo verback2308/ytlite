@@ -32,7 +32,18 @@ enum AppLanguage: String, CaseIterable {
             return override
         }
         let preferred = Locale.preferredLanguages.first ?? "en"
-        return AppLanguage(rawValue: String(preferred.prefix(2))) ?? .english
+        if let lang = AppLanguage(rawValue: preferred) {
+            return lang
+        }
+        let parts = preferred.split(separator: "-")
+        if parts.count >= 2 {
+            let withoutRegion = parts.prefix(2).joined(separator: "-")
+            if let lang = AppLanguage(rawValue: withoutRegion) {
+                return lang
+            }
+        }
+        let langCode = String(preferred.prefix(2))
+        return AppLanguage(rawValue: langCode) ?? .english
     }
 
     /// Native-script name for the settings picker.
