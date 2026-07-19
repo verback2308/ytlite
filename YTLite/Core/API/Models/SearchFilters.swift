@@ -84,7 +84,7 @@ struct SearchFilters: Equatable {
             case .long:
                 return "结束20分钟"
             case .medium:
-                return "4–20 min"
+                return "4–20分钟"
             }
         }
     }
