@@ -1,0 +1,367 @@
+/*
+  YTLite — Swahili (sw).
+
+  Keys are stable API: never rename one casually — it orphans the key in
+  every translation. Comments give translator context. Positional
+  placeholders (%1$@) must be preserved verbatim in translations.
+*/
+
+/* ===== Player: settings menu ===== */
+
+/* Title of the gear menu in the player */
+"player.menu.settings" = "Mipangilio ya kucheza";
+/* Menu item + picker title: video quality */
+"player.menu.quality" = "Ubora";
+/* Menu item + picker title: audio track (dub) selection */
+"player.menu.audioTrack" = "Wimbo wa sauti";
+/* Menu item: toggles the playback statistics overlay */
+"player.menu.stats" = "Takwimu za wasanifu";
+/* Picker title: subtitles */
+"player.menu.subtitles" = "Manukuu";
+
+/* ===== Player: pickers ===== */
+
+/* Subtitle picker: disables subtitles */
+"player.subtitles.off" = "Zimezimwa";
+/* Suffix on auto-generated subtitle tracks, e.g. "English (auto)" */
+"player.subtitles.autoSuffix" = " (moja kwa moja)";
+/* Suffix on AI auto-dubbed audio tracks, e.g. "Russian (AI)" */
+"player.audioTrack.aiSuffix" = " (AI)";
+
+/* ===== Player: status / errors ===== */
+
+/* Status label while switching; %1$@ = quality label or track name */
+"player.status.loading" = "Inapakia %1$@...";
+/* Status label while the stream URL is being resolved */
+"player.status.resolving" = "Inatokomeza mtiririko...";
+/* Shown when a video cannot be played at all */
+"player.error.playback" = "Kuchezeshwa kumeshindikana.";
+/* Shown when switching video quality failed (playback continues) */
+"player.error.qualitySwitch" = "Kubadilisha ubora kumeshindikana.";
+/* Shown when switching the audio track failed (playback continues) */
+"player.error.audioTrackSwitch" = "Kubadilisha wimbo wa sauti kumeshindikana.";
+
+/* ===== Common ===== */
+
+/* Subscribe button, not-subscribed state */
+"common.subscribe" = "Jiandikishe";
+/* Subscribe button, subscribed state */
+"common.subscribed" = "Umefungwa";
+/* Generic cancel action */
+"common.cancel" = "Ghairi";
+/* Generic confirmation button */
+"common.ok" = "Sawa";
+/* Generic save action */
+"common.save" = "Hifadhi";
+/* Generic done action */
+"common.done" = "Imekamilika";
+/* Fallback title/label of a playlist tile */
+"common.playlist" = "Orodha ya kucheza";
+/* Library tab title */
+"library.title" = "Maktaba";
+
+/* ===== Player: status ===== */
+
+/* Status label while the player prepares the first video */
+"player.status.preparing" = "Inaandaa video...";
+/* Status label while an expired stream URL is re-resolved */
+"player.status.refreshing" = "Inasasisha mtiririko...";
+
+/* ===== Player: watch page ===== */
+
+/* Expands the video description */
+"player.description.more" = "Zaidi";
+/* Collapses the video description */
+"player.description.less" = "Chache";
+/* Action bar: share the video */
+"player.action.share" = "Shiriki";
+/* Action bar: save to playlist */
+"player.action.save" = "Hifadhi";
+/* Action bar: download */
+"player.action.download" = "Pakua";
+
+/* ===== Player: comments ===== */
+
+/* Comments section header */
+"player.comments.title" = "Maoni";
+/* Comments header with count; %1$d = number of comments */
+"player.comments.titleCount" = "Maoni (%1$d)";
+/* Shown while comments load */
+"player.comments.loading" = "Inapakia maoni...";
+/* Shown when the comments request failed */
+"player.comments.unavailable" = "Maoni hayapatikani";
+/* Shown before the watch page has loaded enough to fetch comments */
+"player.comments.unavailableYet" = "Maoni bado hayapatikani.";
+/* Button loading the next page of comments */
+"player.comments.loadMore" = "Pakia maoni zaidi";
+/* Author line of a pinned comment; %1$@ = author name */
+"player.comments.pinned" = "%1$@ • Imefungwa";
+/* Comment like count; %1$@ = formatted number */
+"player.comments.likes" = "Mapendeleo %1$@";
+/* Comment reply count; %1$@ = formatted number */
+"player.comments.replies" = "Majibu %1$@";
+
+/* ===== Player: autoplay overlay ===== */
+
+/* Header above the next video suggestion */
+"player.autoplay.upNext" = "Ifuatayo";
+/* Starts the suggested video immediately, skipping the countdown */
+"player.autoplay.playNow" = "Cheza sasa";
+
+/* ===== Player: related section ===== */
+
+/* Header of an unnamed autoplay queue/playlist */
+"player.related.mix" = "Mchanganyiko";
+/* Header of the related-videos section */
+"player.related.title" = "Zinazohusiana";
+/* Status label on fatal playback failure; %1$@ = error description */
+"player.error.withMessage" = "Hitilafu ya kucheza: %1$@";
+
+/* ===== Player: speed ===== */
+
+/* The 1x playback speed */
+"player.speed.normal" = "Kawaida";
+
+/* ===== SponsorBlock ===== */
+
+/* Skip button; %1$@ = localized category name, e.g. "Skip Sponsor" */
+"sponsorblock.skip" = "Ruka %1$@";
+
+/* Skip-behavior options (per-category setting) */
+"sponsorblock.behavior.autoSkip" = "Ruka moja kwa moja";
+"sponsorblock.behavior.showButton" = "Onyesha kitufe";
+"sponsorblock.behavior.disabled" = "Lemaza";
+
+/* Footer under the SponsorBlock section (project attribution) */
+"sponsorblock.attribution" = "Inatumia SponsorBlock (sponsor.ajay.app) — mradi wa jamii wazi.";
+/* Header above the per-category skip settings */
+"sponsorblock.segmentCategories" = "Vikundi vya sehemu";
+
+/* Category names (SponsorBlock project terms) and their descriptions */
+"sponsorblock.category.sponsor.name" = "Mdhamini";
+"sponsorblock.category.sponsor.description" = "Utangazaji wa kulipwa, rifa za kulipwa na matangazo ya moja kwa moja. Si kwa utangazaji wa bure au mikono ya bure kwa masababu/woocommerce/tovuti/ bidhaa wanazopenda.";
+"sponsorblock.category.selfpromo.name" = "Utangazaji wa Bure/Sendi";
+"sponsorblock.category.selfpromo.description" = "Sawa na \"mdhamini\" isipokuwa ni utangazaji wa bure au wa kujitangaza. Hii inajumuisha sehemu kuhusu bidhaa, michango, au taarifa kuhusu walioshirikiana nao.";
+"sponsorblock.category.exclusive_access.name" = "Ufikiaji wa Kipekee";
+"sponsorblock.category.exclusive_access.description" = "Kwa lebo ya video nzima tu. Inatumika video inapoonyesha bidhaa, huduma, au eneo ambalo wamepata ufikiaji wa bure au wa bei nafuu.";
+"sponsorblock.category.interaction.name" = "Ukumbusho wa Mwingiliano (Jiandikishe)";
+"sponsorblock.category.interaction.description" = "Kuna ukumbusho mfupi wa kupenda, kujiandikisha, au kufuata katikati ya maudhui. Ukikuwa mrefu au kuhusu kitu maalum,apaswa kuwa chini ya utangazaji wa kujitangaza.";
+"sponsorblock.category.highlight.name" = "Kiinuzi";
+"sponsorblock.category.highlight.description" = "Sehemu ya video ambayo watu wengi wanatafuta. Sawa na maoni ya \"Video inaanza saa x\".";
+"sponsorblock.category.intro.name" = "Pumziko/Uanimishaji wa Utangulizi";
+"sponsorblock.category.intro.description" = "Kipindi bila maudhui halisi. Kinaweza kuwa kusimama, fremu thabiti, au uanimishaji unaojirudia. Hii isipaswe kutumika kwa vibali vinavyojumuisha taarifa.";
+"sponsorblock.category.outro.name" = "Kadi za Mwisho/Maelezo ya Mwisho";
+"sponsorblock.category.outro.description" = "Maelezo ya mwisho au kadi za YouTube zinapoonekana. Si kwa muhtasari unaoshirikisha taarifa.";
+"sponsorblock.category.preview.name" = "Hakikisho/Rudia";
+"sponsorblock.category.preview.description" = "Mkusanyiko wa klipu unaonyesha kinachofuata katika video hii au video nyingine katika mlolongo ambapo taarifa zote zinarudiwa baadaye katika video.";
+"sponsorblock.category.filler.name" = "Tangents/Sherehe";
+"sponsorblock.category.filler.description" = "Majukwaa ya mada tata au sherehe ambazo si lazima kuelewa maudhui makuu ya video. Hii isijumuishe sehemu zinazotoa muktadha au maelezo ya nyuma.";
+"sponsorblock.category.music_offtopic.name" = "Sehemu Isiyopaswa";
+"sponsorblock.category.music_offtopic.description" = "Kwa video za muziki tu. Sehemu isiyopaswa ya video ya muziki.";
+"sponsorblock.category.chapter.name" = "Sura";
+"sponsorblock.category.chapter.description" = "Sehemu zenye jina za kawaida za video.";
+
+/* ===== Settings ===== */
+
+/* Settings sheet title */
+"settings.title" = "Mipangilio";
+
+/* Section headers */
+"settings.section.theme" = "Mandhari";
+"settings.section.playback" = "Kucheza";
+"settings.section.home" = "Nyumbani";
+"settings.section.cache" = "Kaoti";
+"settings.section.ryd" = "Rejesha Kupenda YouTube";
+"settings.section.sponsorblock" = "SponsorBlock";
+"settings.section.debug" = "Tatua Hitilafu";
+
+/* Section footers */
+"settings.footer.themeAutoSystem" = "Inafuata mandhari ya mfumo moja kwa moja.";
+"settings.footer.themeAutoHours" = "Hubadilisha mandhari ya giza kati ya masaa yaliyotajwa.";
+"settings.footer.playback" = "Kuzidi Kujaza husakinisha video kwa skrini nzima bila baa za nyeusi. Kubana katika kichezaji kinabatilisha kwa kila video.";
+"settings.footer.home" = "Jinsi bao za mapendekezo zinavyoonyeshwa: gridi moja endelevu au reli za mlalo za mtindo wa TV.";
+"settings.footer.ryd" = "Hesabu za kukataa zinatumia Return YouTube Dislike (returnyoutubedislike.com) — mradi wa jamii wazi.";
+"settings.footer.debug" = "Lazimisha chanzo maalum cha kucheza. Kwa kawaida Android VR inatumika na urejeaji wa moja kwa moja. Seva ya suluhisho inawezesha chanzo la Mtandao wa Simu + pot (utengenezaji wa pot, na n-solving kwenye iOS 12–13).";
+
+/* Theme rows; segment labels for dark/light/auto modes */
+"settings.row.theme" = "Mandhari";
+"settings.theme.dark" = "Giza";
+"settings.theme.light" = "Nuru";
+"settings.theme.auto" = "Moja kwa moja";
+/* Hour pickers bounding the iOS 12 scheduled dark mode */
+"settings.row.darkFrom" = "Mandhari ya Giza Kuanzia";
+"settings.row.darkUntil" = "Mandhari ya Giza Hadi";
+
+/* Playback rows */
+"settings.row.defaultQuality" = "Ubora Chaguo-msingi";
+/* The "Auto" entry of the default-quality picker (stored value stays English) */
+"settings.quality.auto" = "Moja kwa moja";
+"settings.row.backgroundPlayback" = "Kucheza Nyuma";
+"settings.row.pip" = "Picha katika Picha";
+"settings.row.hideStatusBar" = "Ficha Up wa Hadhi Katika Skrini Nzima";
+"settings.row.zoomToFill" = "Kuzidi Kujaza Katika Skrini Nzima";
+"settings.row.showShorts" = "Onyesha YouTube Shorts Katika Usajili";
+
+/* Home layout row + option names */
+"settings.row.homeLayout" = "Mpangilio wa Nyumbani";
+"settings.homeLayout.grid" = "Gridi Nyeupe";
+"settings.homeLayout.rails" = "Reli za Bao";
+
+/* Cache rows */
+"settings.row.feedCache" = "Kaoti ya Lishe";
+"settings.row.feedCacheDuration" = "Muda wa Kaoti ya Lishe";
+"settings.row.imageCache" = "Kaoti ya Picha";
+"settings.row.imageCacheDuration" = "Muda wa Kaoti ya Picha";
+"settings.row.clearCache" = "Futa Kaoti Yote";
+/* Alert after clearing all caches */
+"settings.cache.clearedTitle" = "Kaoti Imefutwa";
+"settings.cache.clearedMessage" = "Kaoti yote imefutwa.";
+
+/* Integration rows */
+"settings.row.ryd" = "Rejesha Kupenda YouTube";
+"settings.row.sponsorblock" = "SponsorBlock";
+"settings.row.sponsorblockSettings" = "Mipangilio ya SponsorBlock";
+
+/* Debug rows (values stay technical/English) */
+"settings.row.playbackSource" = "Chanzo cha Kucheza";
+"settings.row.solverServer" = "Solver server";
+"settings.row.shareLog" = "Shiriki Kumbuka ya Tatua Hitilafu";
+/* Solver-server URL alert */
+"settings.solver.message" = "URL ya seva ya suluhisho.";
+"settings.solver.reset" = "Weka upya";
+/* Suffix shown after the solver URL when it is the built-in default */
+"settings.solver.defaultSuffix" = " (chaguo-msingi)";
+/* Alert when no debug logs exist yet */
+"settings.log.noneTitle" = "Hakuna Kumbuka";
+"settings.log.noneMessage" = "Hakuna kumbuka za tatua hitilafu bado.";
+
+/* ===== Profile ===== */
+
+"profile.title" = "Wasifu";
+"profile.signOut" = "Ondoka";
+"profile.clearImageCache" = "Futa Kaoti ya Picha";
+"profile.imageCacheCleared" = "Kaoti ya picha imefutwa.";
+
+/* ===== Search ===== */
+
+"search.title" = "Tafuta";
+/* Search bar placeholder */
+"search.placeholder" = "Tafuta YouTube";
+/* Header above the recent-search list */
+"search.recent" = "Utafutaji wa hivi karibuni";
+/* Filters toolbar button; the dotted variant marks active filters */
+"search.filters" = "Vichujio";
+"search.filters.active" = "Vichujio •";
+/* Filters sheet title + reset action */
+"search.filters.title" = "Vichujio vya Utafutaji";
+"search.filters.reset" = "Weka upya vichujio";
+/* Filter rows; %1$@ = the current value */
+"search.filters.sort" = "Panga: %1$@";
+"search.filters.date" = "Tarehe: %1$@";
+"search.filters.type" = "Aina: %1$@";
+"search.filters.duration" = "Muda: %1$@";
+/* Sub-sheet titles */
+"search.filters.sortTitle" = "Panga kwa";
+"search.filters.dateTitle" = "Tarehe ya kupakia";
+"search.filters.typeTitle" = "Aina";
+"search.filters.durationTitle" = "Muda";
+
+/* Filter option values */
+"search.sort.relevance" = "Uhusiano";
+"search.sort.rating" = "Ukadiriaji";
+"search.sort.uploadDate" = "Tarehe ya kupakia";
+"search.sort.viewCount" = "Idadi ya mtazamo";
+"search.date.any" = "Wakati wowote";
+"search.date.lastHour" = "Saa iliyopita";
+"search.date.today" = "Leo";
+"search.date.thisWeek" = "Wiki hii";
+"search.date.thisMonth" = "Mwezi huu";
+"search.date.thisYear" = "Mwaka huu";
+"search.type.any" = "Aina yoyote";
+"search.type.video" = "Video";
+"search.type.channel" = "Kituo";
+"search.type.playlist" = "Orodha ya kucheza";
+"search.duration.any" = "Muda wowote";
+"search.duration.short" = "Chini ya dakika 4";
+"search.duration.medium" = "Dakika 4–20";
+"search.duration.long" = "Zaidi ya dakika 20";
+
+/* ===== Home ===== */
+
+"home.title" = "Nyumbani";
+/* Chip resetting to the unfiltered feed */
+"home.category.all" = "Yote";
+/* Static category chips (server shelf titles arrive already localized) */
+"home.category.live" = "Moja kwa moja";
+"home.category.news" = "Habari";
+"home.category.gaming" = "Michezo";
+"home.category.sports" = "Michezo";
+"home.category.learning" = "Kujifunza";
+"home.category.fashion" = "Mitindo";
+/* Error empty state (two lines) */
+"home.error.loadFailed" = "Imeshindwa kupakia lishe\nBofya chini kujaribu tena";
+/* Signed-out empty state */
+"home.signIn" = "Ingia kuona mapendekezo yako";
+
+/* ===== Channel ===== */
+
+/* Channel tab bar */
+"channel.tab.videos" = "Video";
+"channel.tab.live" = "Moja kwa moja";
+"channel.tab.playlists" = "Oroda za kucheza";
+/* About sheet */
+"channel.about.title" = "Kuhusu";
+"channel.about.close" = "Funga";
+"channel.about.subscribers" = "Wafuataji";
+"channel.about.videos" = "Video";
+"channel.about.description" = "Maelezo";
+"channel.about.contact" = "Wasiliana";
+
+/* ===== Library ===== */
+
+"library.history" = "Historia";
+"library.downloads" = "Upakuaji";
+"library.playlists" = "Oroda za kucheza";
+"library.downloads.comingSoon" = "Upakuaji unakaribia";
+"library.history.signIn" = "Ingia kuona historia yako ya kutazama";
+"library.history.empty" = "Hakuna historia ya kutazama iliyopatikana";
+"library.history.loadFailed" = "Imeshindwa kupakia historia";
+"library.playlists.signIn" = "Ingia kuona orodha zako za kucheza";
+"library.playlists.loadFailed" = "Imeshindwa kupakia orodha za kucheza";
+"library.playlist.empty" = "Hakuna video katika orodha hii";
+"library.playlist.loadFailed" = "Imeshindwa kupakia orodha ya kucheza";
+
+/* ===== Subscriptions ===== */
+
+"subscriptions.title" = "Usajili";
+"subscriptions.all" = "Usajili wote";
+/* "All" button in the channel avatar bar */
+"subscriptions.allButton" = "Wote";
+"subscriptions.signIn" = "Ingia kuona usajili wako";
+
+/* ===== Account (toolbar sheet) ===== */
+
+/* Fallback account name when the profile has none */
+"account.fallbackName" = "Akaunti";
+"account.signIn" = "Ingia";
+"account.signOut" = "Ondoka";
+"account.notSignedIn" = "Hujasajiliwa";
+
+/* Generic error alert title */
+"common.error" = "Hitilafu";
+/* Channel screen failed to load */
+"channel.unavailable" = "Kituo hakipatikani";
+
+/* ===== Settings: language section ===== */
+
+"settings.section.language" = "Lugha";
+"settings.footer.language" = "Lugha ya programu hubadilisha kiolesura. Lugha ya maudhui hubadilisha vichwa, utafutaji na lishe (YouTube inatafsiri metadata upande wa seva, kama programu rasmi). Mabadiliko yote yanatumika baada ya kuanzisha upya programu.";
+/* Rows */
+"settings.row.appLanguage" = "Lugha ya Programu";
+"settings.row.contentLanguage" = "Lugha ya Maudhui";
+"settings.row.region" = "Mkoa";
+/* Picker option following the device language/region */
+"settings.language.system" = "Mfumo";
+/* Alert after changing a language setting */
+"settings.language.restartTitle" = "Kuanzisha Upya Inahitajika";
+"settings.language.restartMessage" = "Mabadiliko yote yanatumika baada ya kuanzisha upya programu.";
