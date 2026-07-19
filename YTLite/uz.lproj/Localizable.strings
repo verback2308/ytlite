@@ -1,0 +1,367 @@
+/*
+  YTLite — Uzbek (Oʻzbekcha).
+
+  Keys are stable API: never rename one casually — it orphans the key in
+  every translation. Comments give translator context. Positional
+  placeholders (%1$@) must be preserved verbatim in translations.
+*/
+
+/* ===== Player: settings menu ===== */
+
+/* Title of the gear menu in the player */
+"player.menu.settings" = "Ishga tushirish sozlamalari";
+/* Menu item + picker title: video quality */
+"player.menu.quality" = "Sifat";
+/* Menu item + picker title: audio track (dub) selection */
+"player.menu.audioTrack" = "Audio iz";
+/* Menu item: toggles the playback statistics overlay */
+"player.menu.stats" = "Statistika ishqibozlari uchun";
+/* Picker title: subtitles */
+"player.menu.subtitles" = "Subtitrlar";
+
+/* ===== Player: pickers ===== */
+
+/* Subtitle picker: disables subtitles */
+"player.subtitles.off" = "Oʻchirish";
+/* Suffix on auto-generated subtitle tracks, e.g. "English (auto)" */
+"player.subtitles.autoSuffix" = " (avto)";
+/* Suffix on AI auto-dubbed audio tracks, e.g. "Russian (AI)" */
+"player.audioTrack.aiSuffix" = " (AI)";
+
+/* ===== Player: status / errors ===== */
+
+/* Status label while switching; %1$@ = quality label or track name */
+"player.status.loading" = "Yuklanmoqda %1$@...";
+/* Status label while the stream URL is being resolved */
+"player.status.resolving" = "Oqim hal qilinmoqda...";
+/* Shown when a video cannot be played at all */
+"player.error.playback" = "Ishga tushirish amalga oshmadi.";
+/* Shown when switching video quality failed (playback continues) */
+"player.error.qualitySwitch" = "Sifatni oʻzgartirish amalga oshmadi.";
+/* Shown when switching the audio track failed (playback continues) */
+"player.error.audioTrackSwitch" = "Audio izni oʻzgartirish amalga oshmadi.";
+
+/* ===== Common ===== */
+
+/* Subscribe button, not-subscribed state */
+"common.subscribe" = "Obuna boʻlish";
+/* Subscribe button, subscribed state */
+"common.subscribed" = "Obuna boʻlingan";
+/* Generic cancel action */
+"common.cancel" = "Bekor qilish";
+/* Generic confirmation button */
+"common.ok" = "OK";
+/* Generic save action */
+"common.save" = "Saqlash";
+/* Generic done action */
+"common.done" = "Tayyor";
+/* Fallback title/label of a playlist tile */
+"common.playlist" = "Pleylist";
+/* Library tab title */
+"library.title" = "Kutubxona";
+
+/* ===== Player: status ===== */
+
+/* Status label while the player prepares the first video */
+"player.status.preparing" = "Video tayyorlanmoqda...";
+/* Status label while an expired stream URL is re-resolved */
+"player.status.refreshing" = "Oqim yangilanmoqda...";
+
+/* ===== Player: watch page ===== */
+
+/* Expands the video description */
+"player.description.more" = "Koʻproq";
+/* Collapses the video description */
+"player.description.less" = "Kamroq";
+/* Action bar: share the video */
+"player.action.share" = "Ulashish";
+/* Action bar: save to playlist */
+"player.action.save" = "Saqlash";
+/* Action bar: download */
+"player.action.download" = "Yuklab olish";
+
+/* ===== Player: comments ===== */
+
+/* Comments section header */
+"player.comments.title" = "Izohlar";
+/* Comments header with count; %1$d = number of comments */
+"player.comments.titleCount" = "Izohlar (%1$d)";
+/* Shown while comments load */
+"player.comments.loading" = "Izohlar yuklanmoqda...";
+/* Shown when the comments request failed */
+"player.comments.unavailable" = "Izohlar mavjud emas";
+/* Shown before the watch page has loaded enough to fetch comments */
+"player.comments.unavailableYet" = "Izohlar hali mavjud emas.";
+/* Button loading the next page of comments */
+"player.comments.loadMore" = "Koʻproq izoh yuklash";
+/* Author line of a pinned comment; %1$@ = author name */
+"player.comments.pinned" = "%1$@ • Mahkamlangan";
+/* Comment like count; %1$@ = formatted number */
+"player.comments.likes" = "%1$@ yoqtirish";
+/* Comment reply count; %1$@ = formatted number */
+"player.comments.replies" = "%1$@ javob";
+
+/* ===== Player: autoplay overlay ===== */
+
+/* Header above the next video suggestion */
+"player.autoplay.upNext" = "Keyingi";
+/* Starts the suggested video immediately, skipping the countdown */
+"player.autoplay.playNow" = "Hozir ishga tushirish";
+
+/* ===== Player: related section ===== */
+
+/* Header of an unnamed autoplay queue/playlist */
+"player.related.mix" = "Aralashma";
+/* Header of the related-videos section */
+"player.related.title" = "Oʻxshash";
+/* Status label on fatal playback failure; %1$@ = error description */
+"player.error.withMessage" = "Ishga tushirish xatosi: %1$@";
+
+/* ===== Player: speed ===== */
+
+/* The 1x playback speed */
+"player.speed.normal" = "Oddiy";
+
+/* ===== SponsorBlock ===== */
+
+/* Skip button; %1$@ = localized category name, e.g. "Skip Sponsor" */
+"sponsorblock.skip" = "Oʻtkazib yuborish %1$@";
+
+/* Skip-behavior options (per-category setting) */
+"sponsorblock.behavior.autoSkip" = "Avtomatik oʻtkazish";
+"sponsorblock.behavior.showButton" = "Tugmani koʻrsatish";
+"sponsorblock.behavior.disabled" = "Oʻchirish";
+
+/* Footer under the SponsorBlock section (project attribution) */
+"sponsorblock.attribution" = "SponsorBlock (sponsor.ajay.app) asosida — ochiq hamjamiyat loyihasi.";
+/* Header above the per-category skip settings */
+"sponsorblock.segmentCategories" = "Segment toifalari";
+
+/* Category names (SponsorBlock project terms) and their descriptions */
+"sponsorblock.category.sponsor.name" = "Sponsor";
+"sponsorblock.category.sponsor.description" = "Pullik reklama, pullik referallar va toʻgʻridan-toʻgʻri reklamalar. Oʻzini reklama qilish yoki bepul maqtash uchun emas.";
+"sponsorblock.category.selfpromo.name" = "Bepul/Oʻzini reklama qilish";
+"sponsorblock.category.selfpromo.description" = "\"Sponsor\" ga oʻxshash, lekin bepul yoki oʻzini reklama qilish. Bunga mahsulotlar, homiylik yoki hamkorlar haqida maʻlumot kiradi.";
+"sponsorblock.category.exclusive_access.name" = "Eksklyuziv kirish";
+"sponsorblock.category.exclusive_access.description" = "Faqat toʻliq videolarni belgilash uchun. Bepul yoki imtiyozli olingan mahsulot, xizmat yoki joyni koʻrsatgan videolarda ishlatiladi.";
+"sponsorblock.category.interaction.name" = "Interaktsiya eslatmasi (Obuna)";
+"sponsorblock.category.interaction.description" = "Kontent orasida layk, obuna yoki kuzatish haqida qisqa eslatma boʻlganda. Uzoq boʻlsa yoki aniq narsa haqida boʻlsa, oʻzini reklama qilish boʻlimiga tegishli.";
+"sponsorblock.category.highlight.name" = "Asosiy qism";
+"sponsorblock.category.highlight.description" = "Koʻpchilik izlayotgan video qismi. \"Video x dan boshlanadi\" izohlari kabi.";
+"sponsorblock.category.intro.name" = "Tanaffus/Kirish animatsiyasi";
+"sponsorblock.category.intro.description" = "Haqiqiy kontent yoʻq tanaffus. Pauza, statik kadrlar yoki takrorlanuvchi animatsiya boʻlishi mumkin. Maʻlumot oʻz ichiga olgan oʻtishlarda ishlatmaslik kerak.";
+"sponsorblock.category.outro.name" = "Oxirgi kadrlar/Titrlar";
+"sponsorblock.category.outro.description" = "Titrlar yoki YouTube oxirgi kadrlari paydo boʻlganda. Maʻlumot oʻz ichiga olgan xulosa qismlarida ishlatmaslik kerak.";
+"sponsorblock.category.preview.name" = "Oldindan koʻrish/Qayta koʻrish";
+"sponsorblock.category.preview.description" = "Bu videoda yoki seriyadagi boshqa videolarda nima boʻlishini koʻrsatadigan klip yigʻindisi.";
+"sponsorblock.category.filler.name" = "Qoʻshimcha gaplar/Kulgu";
+"sponsorblock.category.filler.description" = "Videoning asosiy kontentini tushunish uchun kerak boʻlmagan qoʻshimcha sahnalar yoki kulgu. Boshlangʻich maʻlumot beruvchi segmentlarni oʻz ichiga olmaydi.";
+"sponsorblock.category.music_offtopic.name" = "Musiqa boʻlmagan qism";
+"sponsorblock.category.music_offtopic.description" = "Faqat musiqa videolari uchun. Musiqa videoning musiqa boʻlmagan qismi.";
+"sponsorblock.category.chapter.name" = "Bob";
+"sponsorblock.category.chapter.description" = "Videoning nomlangan qismlari.";
+
+/* ===== Settings ===== */
+
+/* Settings sheet title */
+"settings.title" = "Sozlamalar";
+
+/* Section headers */
+"settings.section.theme" = "Mavzu";
+"settings.section.playback" = "Ishga tushirish";
+"settings.section.home" = "Bosh sahifa";
+"settings.section.cache" = "Kesh";
+"settings.section.ryd" = "YouTube yoqtirmaslikni qaytarish";
+"settings.section.sponsorblock" = "SponsorBlock";
+"settings.section.debug" = "Xatolarni tuzatish";
+
+/* Section footers */
+"settings.footer.themeAutoSystem" = "Tizim koʻrinishini avtomatik takrorlaydi.";
+"settings.footer.themeAutoHours" = "Yuqoridagi soatlar orasida qorongʻu mavzuga avtomatik oʻtadi.";
+"settings.footer.playback" = "Toʻliq ekranlda videoni avtomatik masshtablaydi, qorongʻi chiziqlar qolmaydi. Pleyerdagi barmoq bilan ochish uni har bir video uchun oʻzgartiradi.";
+"settings.footer.home" = "Tavsiya tokchalari qanday koʻrsatiladi: bir uzluksiz toʻr yoki TV uslubidagi gorizontal chiziqlar.";
+"settings.footer.ryd" = "Yoqtirmaslik soni Return YouTube Dislike (returnyoutubedislike.com) asosida ishlaydi — ochiq hamjamiyat loyihasi.";
+"settings.footer.debug" = "Aniq ishga tushirish manbasini majburlash. Odatda Android VR avtomatik qayta yoʻnaltirish bilan ishlatiladi. Hal qiluvchi server Mobile Web + manbasini taqdim etadi (pot yaratish va iOS 12–13 da n-hal qilish).";
+
+/* Theme rows; segment labels for dark/light/auto modes */
+"settings.row.theme" = "Mavzu";
+"settings.theme.dark" = "Qorongʻu";
+"settings.theme.light" = "Yorugʻ";
+"settings.theme.auto" = "Avtomatik";
+/* Hour pickers bounding the iOS 12 scheduled dark mode */
+"settings.row.darkFrom" = "Qorongʻu mavzu boshlanishi";
+"settings.row.darkUntil" = "Qorongʻu mavzu tugashi";
+
+/* Playback rows */
+"settings.row.defaultQuality" = "Standart sifat";
+/* The "Auto" entry of the default-quality picker (stored value stays English) */
+"settings.quality.auto" = "Avtomatik";
+"settings.row.backgroundPlayback" = "Fonoviy ishga tushirish";
+"settings.row.pip" = "Rasm ichidagi rasm";
+"settings.row.hideStatusBar" = "Toʻliq ekranlda holat chizigʻini yashirish";
+"settings.row.zoomToFill" = "Toʻliq ekranlda masshtablash";
+"settings.row.showShorts" = "Obunalarda YouTube Shorts koʻrsatish";
+
+/* Home layout row + option names */
+"settings.row.homeLayout" = "Bosh sahifa joylashuvi";
+"settings.homeLayout.grid" = "Oddiy toʻr";
+"settings.homeLayout.rails" = "Tokcha chiziqlari";
+
+/* Cache rows */
+"settings.row.feedCache" = "Lenta keshi";
+"settings.row.feedCacheDuration" = "Lenta kesh muddati";
+"settings.row.imageCache" = "Rasm keshi";
+"settings.row.imageCacheDuration" = "Rasm kesh muddati";
+"settings.row.clearCache" = "Barcha keshni tozalash";
+/* Alert after clearing all caches */
+"settings.cache.clearedTitle" = "Kesh tozalandi";
+"settings.cache.clearedMessage" = "Barcha kesh tozalandi.";
+
+/* Integration rows */
+"settings.row.ryd" = "YouTube yoqtirmaslikni qaytarish";
+"settings.row.sponsorblock" = "SponsorBlock";
+"settings.row.sponsorblockSettings" = "SponsorBlock sozlamalari";
+
+/* Debug rows (values stay technical/English) */
+"settings.row.playbackSource" = "Ishga tushirish manbai";
+"settings.row.solverServer" = "Solver server";
+"settings.row.shareLog" = "Xatolarni tuzatish jurnalini ulashish";
+/* Solver-server URL alert */
+"settings.solver.message" = "Hal qiluvchi server URL manzili.";
+"settings.solver.reset" = "Standart qiymatga qaytarish";
+/* Suffix shown after the solver URL when it is the built-in default */
+"settings.solver.defaultSuffix" = " (standart)";
+/* Alert when no debug logs exist yet */
+"settings.log.noneTitle" = "Jurnallar yoʻq";
+"settings.log.noneMessage" = "Hali xatolarni tuzatish jurnallari mavjud emas.";
+
+/* ===== Profile ===== */
+
+"profile.title" = "Profil";
+"profile.signOut" = "Chiqish";
+"profile.clearImageCache" = "Rasm keshini tozalash";
+"profile.imageCacheCleared" = "Rasm keshi tozalandi.";
+
+/* ===== Search ===== */
+
+"search.title" = "Qidirish";
+/* Search bar placeholder */
+"search.placeholder" = "YouTube da qidirish";
+/* Header above the recent-search list */
+"search.recent" = "Oxirgi qidirishlar";
+/* Filters toolbar button; the dotted variant marks active filters */
+"search.filters" = "Filtrlar";
+"search.filters.active" = "Filtrlar •";
+/* Filters sheet title + reset action */
+"search.filters.title" = "Qidirish filtrlari";
+"search.filters.reset" = "Filtrlarni tiklash";
+/* Filter rows; %1$@ = the current value */
+"search.filters.sort" = "Saralash: %1$@";
+"search.filters.date" = "Sana: %1$@";
+"search.filters.type" = "Turi: %1$@";
+"search.filters.duration" = "Davomiyligi: %1$@";
+/* Sub-sheet titles */
+"search.filters.sortTitle" = "Saralash usuli";
+"search.filters.dateTitle" = "Yuklash sanasi";
+"search.filters.typeTitle" = "Turi";
+"search.filters.durationTitle" = "Davomiyligi";
+
+/* Filter option values */
+"search.sort.relevance" = "Moslik";
+"search.sort.rating" = "Baholash";
+"search.sort.uploadDate" = "Yuklash sanasi";
+"search.sort.viewCount" = "Koʻrish soni";
+"search.date.any" = "Har qanday vaqt";
+"search.date.lastHour" = "Oxirgi soat";
+"search.date.today" = "Bugun";
+"search.date.thisWeek" = "Shu hafta";
+"search.date.thisMonth" = "Shu oy";
+"search.date.thisYear" = "Shu yil";
+"search.type.any" = "Har qanday tur";
+"search.type.video" = "Video";
+"search.type.channel" = "Kanal";
+"search.type.playlist" = "Pleylist";
+"search.duration.any" = "Har qanday davomiylilik";
+"search.duration.short" = "4 minut gacha";
+"search.duration.medium" = "4–20 minut";
+"search.duration.long" = "20 minut dan ortiq";
+
+/* ===== Home ===== */
+
+"home.title" = "Bosh sahifa";
+/* Chip resetting to the unfiltered feed */
+"home.category.all" = "Hammasi";
+/* Static category chips (server shelf titles arrive already localized) */
+"home.category.live" = "Jonli efir";
+"home.category.news" = "Yangiliklar";
+"home.category.gaming" = "Oʻyinlar";
+"home.category.sports" = "Sport";
+"home.category.learning" = "Taʻlim";
+"home.category.fashion" = "Moda";
+/* Error empty state (two lines) */
+"home.error.loadFailed" = "Lentani yuklab boʻlmadi\nQayta urinish uchun pastga torting";
+/* Signed-out empty state */
+"home.signIn" = "Tavsiyalaringizni koʻrish uchun tizimga kiring";
+
+/* ===== Channel ===== */
+
+/* Channel tab bar */
+"channel.tab.videos" = "Videolar";
+"channel.tab.live" = "Jonli efir";
+"channel.tab.playlists" = "Pleylistlar";
+/* About sheet */
+"channel.about.title" = "Haqida";
+"channel.about.close" = "Yopish";
+"channel.about.subscribers" = "Obunachilar";
+"channel.about.videos" = "Videolar";
+"channel.about.description" = "Tavsif";
+"channel.about.contact" = "Aloqa";
+
+/* ===== Library ===== */
+
+"library.history" = "Tarix";
+"library.downloads" = "Yuklab olishlar";
+"library.playlists" = "Pleylistlar";
+"library.downloads.comingSoon" = "Yuklab olishlar tez orada";
+"library.history.signIn" = "Koʻrish tarixingizni koʻrish uchun tizimga kiring";
+"library.history.empty" = "Koʻrish tarixi topilmadi";
+"library.history.loadFailed" = "Tarixni yuklab boʻlmadi";
+"library.playlists.signIn" = "Pleylistlaringizni koʻrish uchun tizimga kiring";
+"library.playlists.loadFailed" = "Pleylistlarni yuklab boʻlmadi";
+"library.playlist.empty" = "Bu pleylistda video yoʻq";
+"library.playlist.loadFailed" = "Pleylistni yuklab boʻlmadi";
+
+/* ===== Subscriptions ===== */
+
+"subscriptions.title" = "Obunalar";
+"subscriptions.all" = "Barcha obunalar";
+/* "All" button in the channel avatar bar */
+"subscriptions.allButton" = "Hammasi";
+"subscriptions.signIn" = "Obunalaringizni koʻrish uchun tizimga kiring";
+
+/* ===== Account (toolbar sheet) ===== */
+
+/* Fallback account name when the profile has none */
+"account.fallbackName" = "Hisob";
+"account.signIn" = "Tizimga kirish";
+"account.signOut" = "Chiqish";
+"account.notSignedIn" = "Tizimga kirmagan";
+
+/* Generic error alert title */
+"common.error" = "Xato";
+/* Channel screen failed to load */
+"channel.unavailable" = "Kanal mavjud emas";
+
+/* ===== Settings: language section ===== */
+
+"settings.section.language" = "Til";
+"settings.footer.language" = "Ilova tili interfeysni oʻzgartiradi. Kontent tili sarlavhalarni, qidirishni va lentalarni oʻzgartiradi (YouTube metani server tomonidan tarjima qiladi, rasmiy ilova kabi). Oʻzgarishlar ilovani qayta ishga tushirgandan keyin toʻliq qoʻllaniladi.";
+/* Rows */
+"settings.row.appLanguage" = "Ilova tili";
+"settings.row.contentLanguage" = "Kontent tili";
+"settings.row.region" = "Hudud";
+/* Picker option following the device language/region */
+"settings.language.system" = "Tizim";
+/* Alert after changing a language setting */
+"settings.language.restartTitle" = "Qayta ishga tushirish talab qilinadi";
+"settings.language.restartMessage" = "Oʻzgarishlar ilovani qayta ishga tushirgandan keyin toʻliq qoʻllaniladi.";
