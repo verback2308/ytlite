@@ -1,0 +1,367 @@
+/*
+  YTLite — Belarusian.
+
+  Keys are stable API: never rename one casually — it orphans the key in
+  every translation. Comments give translator context. Positional
+  placeholders (%1$@) must be preserved verbatim in translations.
+*/
+
+/* ===== Player: settings menu ===== */
+
+/* Title of the gear menu in the player */
+"player.menu.settings" = "Налады прайгравання";
+/* Menu item + picker title: video quality */
+"player.menu.quality" = "Якасць";
+/* Menu item + picker title: audio track (dub) selection */
+"player.menu.audioTrack" = "Аўдыяцяж";
+/* Menu item: toggles the playback statistics overlay */
+"player.menu.stats" = "Статыстыка";
+/* Picker title: subtitles */
+"player.menu.subtitles" = "Субцітры";
+
+/* ===== Player: pickers ===== */
+
+/* Subtitle picker: disables subtitles */
+"player.subtitles.off" = "Выкл";
+/* Suffix on auto-generated subtitle tracks, e.g. "English (auto)" */
+"player.subtitles.autoSuffix" = " (аўта)";
+/* Suffix on AI auto-dubbed audio tracks, e.g. "Russian (AI)" */
+"player.audioTrack.aiSuffix" = " (ШІ)";
+
+/* ===== Player: status / errors ===== */
+
+/* Status label while switching; %1$@ = quality label or track name */
+"player.status.loading" = "Загрузка %1$@...";
+/* Status label while the stream URL is being resolved */
+"player.status.resolving" = "Атрыманне патоку...";
+/* Shown when a video cannot be played at all */
+"player.error.playback" = "Памылка прайгравання.";
+/* Shown when switching video quality failed (playback continues) */
+"player.error.qualitySwitch" = "Памылка змены якасці.";
+/* Shown when switching the audio track failed (playback continues) */
+"player.error.audioTrackSwitch" = "Памылка змены аўдыяцяжу.";
+
+/* ===== Common ===== */
+
+/* Subscribe button, not-subscribed state */
+"common.subscribe" = "Падпісацца";
+/* Subscribe button, subscribed state */
+"common.subscribed" = "Падпісаны";
+/* Generic cancel action */
+"common.cancel" = "Скасаваць";
+/* Generic confirmation button */
+"common.ok" = "OK";
+/* Generic save action */
+"common.save" = "Захаваць";
+/* Generic done action */
+"common.done" = "Гатова";
+/* Fallback title/label of a playlist tile */
+"common.playlist" = "Плэйліст";
+/* Library tab title */
+"library.title" = "Бібліятэка";
+
+/* ===== Player: status ===== */
+
+/* Status label while the player prepares the first video */
+"player.status.preparing" = "Падрыхтоўка відэа...";
+/* Status label while an expired stream URL is re-resolved */
+"player.status.refreshing" = "Абнаўленне патоку...";
+
+/* ===== Player: watch page ===== */
+
+/* Expands the video description */
+"player.description.more" = "Яшчэ";
+/* Collapses the video description */
+"player.description.less" = "Менш";
+/* Action bar: share the video */
+"player.action.share" = "Падзяліцца";
+/* Action bar: save to playlist */
+"player.action.save" = "Захаваць";
+/* Action bar: download */
+"player.action.download" = "Спампаваць";
+
+/* ===== Player: comments ===== */
+
+/* Comments section header */
+"player.comments.title" = "Каментарыі";
+/* Comments header with count; %1$d = number of comments */
+"player.comments.titleCount" = "Каментарыі (%1$d)";
+/* Shown while comments load */
+"player.comments.loading" = "Загрузка каментарыяў...";
+/* Shown when the comments request failed */
+"player.comments.unavailable" = "Каментарыі недаступныя";
+/* Shown before the watch page has loaded enough to fetch comments */
+"player.comments.unavailableYet" = "Каментарыі яшчэ недаступныя.";
+/* Button loading the next page of comments */
+"player.comments.loadMore" = "Загрузіць яшчэ каментарыі";
+/* Author line of a pinned comment; %1$@ = author name */
+"player.comments.pinned" = "%1$@ • Замацаваны";
+/* Comment like count; %1$@ = formatted number */
+"player.comments.likes" = "%1$@ спадабанняў";
+/* Comment reply count; %1$@ = formatted number */
+"player.comments.replies" = "%1$@ адказаў";
+
+/* ===== Player: autoplay overlay ===== */
+
+/* Header above the next video suggestion */
+"player.autoplay.upNext" = "Далей";
+/* Starts the suggested video immediately, skipping the countdown */
+"player.autoplay.playNow" = "Прайграць зараз";
+
+/* ===== Player: related section ===== */
+
+/* Header of an unnamed autoplay queue/playlist */
+"player.related.mix" = "Мікс";
+/* Header of the related-videos section */
+"player.related.title" = "Падобнае";
+/* Status label on fatal playback failure; %1$@ = error description */
+"player.error.withMessage" = "Памылка прайгравання: %1$@";
+
+/* ===== Player: speed ===== */
+
+/* The 1x playback speed */
+"player.speed.normal" = "Нармальная";
+
+/* ===== SponsorBlock ===== */
+
+/* Skip button; %1$@ = localized category name, e.g. "Skip Sponsor" */
+"sponsorblock.skip" = "Прапусціць %1$@";
+
+/* Skip-behavior options (per-category setting) */
+"sponsorblock.behavior.autoSkip" = "Аўтаматычны прапуск";
+"sponsorblock.behavior.showButton" = "Паказаць кнопку";
+"sponsorblock.behavior.disabled" = "Адключыць";
+
+/* Footer under the SponsorBlock section (project attribution) */
+"sponsorblock.attribution" = "Зроблена з дапамогай SponsorBlock (sponsor.ajay.app) — адкрыты суполкавы праект.";
+/* Header above the per-category skip settings */
+"sponsorblock.segmentCategories" = "Катэгорыі сегментаў";
+
+/* Category names (SponsorBlock project terms) and their descriptions */
+"sponsorblock.category.sponsor.name" = "Спонсар";
+"sponsorblock.category.sponsor.description" = "Платная прасоўванне, платныя рэфералы і прамая рэклама. Не для самапрасоўвання ці бясплатных крыкаў пра прычыны/аўтараў/сайты/прадукты.";
+"sponsorblock.category.selfpromo.name" = "Бясплатнае/Самапрасоўванне";
+"sponsorblock.category.selfpromo.description" = "Падобна да «спонсара», акрамя бясплатнага ці самапрасоўвання. Уключае раздзелы пра тавары, ахвяраванні ці інфармацыю пра супрацоўніцтва.";
+"sponsorblock.category.exclusive_access.name" = "Эксклюзіўны доступ";
+"sponsorblock.category.exclusive_access.description" = "Толькі для маркіроўкі цэлых відэа. Выкарыстоўваецца, калі відэа дэманструе прадукт, паслугу ці месца, да якога яны атрымалі бясплатны ці субсідаваны доступ.";
+"sponsorblock.category.interaction.name" = "Нагадванне пра ўзаемадзеянне (Падпісацца)";
+"sponsorblock.category.interaction.description" = "Калі ёсць кароткае нагадванне пра лайк, падпіску ці сачэнне ў сярэдзіне кантэнту. Калі яно доўгае ці пра нешта канкрэтнае, яно павінна быць у самапасоўванні.";
+"sponsorblock.category.highlight.name" = "Асноўнае";
+"sponsorblock.category.highlight.description" = "Частка відэа, якую шукаюць большасць людзей. Падобна да каментарыяў «Відэа пачынаецца з x».";
+"sponsorblock.category.intro.name" = "Прамежкавая/Уводная анімацыя";
+"sponsorblock.category.intro.description" = "Інтэрвал без фактычнага кантэнту. Можа быць паўза, статычны кадр ці паўтаральная анімацыя. Не павінен выкарыстоўвацца для пераходаў з інфармацыяй.";
+"sponsorblock.category.outro.name" = "Фінальныя карткі/Тытры";
+"sponsorblock.category.outro.description" = "Тытры ці калі з'яўляюцца фінальныя карткі YouTube. Не для высноў з інфармацыяй.";
+"sponsorblock.category.preview.name" = "Папярэдні прагляд/Падвядзенне";
+"sponsorblock.category.preview.description" = "Калекцыя кліпаў, якія паказваюць, што чакаецца ў гэтым відэа ці іншых відэа ў серыі, дзе ўся інфармацыя паўтараецца пазней.";
+"sponsorblock.category.filler.name" = "Адступленні/Жарты";
+"sponsorblock.category.filler.description" = "Адступленні ці жарты, якія не патрабуюцца для разумення асноўнага кантэнту відэа. Не павінен уключаць сегменты з кантэкстам ці фонавымі дэталямі.";
+"sponsorblock.category.music_offtopic.name" = "Не-музычны раздзел";
+"sponsorblock.category.music_offtopic.description" = "Толькі для музычных відэа. Не-музычная частка музычнага відэа.";
+"sponsorblock.category.chapter.name" = "Раздзел";
+"sponsorblock.category.chapter.description" = "Карыстальніцкія названыя раздзелы відэа.";
+
+/* ===== Settings ===== */
+
+/* Settings sheet title */
+"settings.title" = "Налады";
+
+/* Section headers */
+"settings.section.theme" = "Тэма";
+"settings.section.playback" = "Прайграванне";
+"settings.section.home" = "Галоўная";
+"settings.section.cache" = "Кэш";
+"settings.section.ryd" = "Return YouTube Dislike";
+"settings.section.sponsorblock" = "SponsorBlock";
+"settings.section.debug" = "Адладка";
+
+/* Section footers */
+"settings.footer.themeAutoSystem" = "Аўтаматычна прытрымліваецца выгляду сістэмы.";
+"settings.footer.themeAutoHours" = "Аўтаматычна пераключаецца на цёмную тэму паміж вышэй указанымі гадзінамі.";
+"settings.footer.playback" = "Павелічэнне для запаўнення аўтаматычна масштабуе відэа на поўным экране, каб не заставалася чорных палос. Сцісканне ў плэеры перавызначае гэта для кожнага відэа.";
+"settings.footer.home" = "Як паказваюцца паліцы рэкамендацый: адна бесперапынная сетка ці гарызантальныя рэйкі ў стылі тэлевізара.";
+"settings.footer.ryd" = "Лік нездаволенняў забяспечваецца Return YouTube Dislike (returnyoutubedislike.com) — адкрыты суполкавы праект.";
+"settings.footer.debug" = "Прымусовы выбар крыніцы прайгравання. Звычайна выкарыстоўваецца Android VR з аўтаматычнай рэзервовай крыніцай. Solver server абслугоўвае крыніцу Mobile Web + pot (выпуск pot і рашэнне n на iOS 12–13).";
+
+/* Theme rows; segment labels for dark/light/auto modes */
+"settings.row.theme" = "Тэма";
+"settings.theme.dark" = "Цёмная";
+"settings.theme.light" = "Светлая";
+"settings.theme.auto" = "Аўтаматычная";
+/* Hour pickers bounding the iOS 12 scheduled dark mode */
+"settings.row.darkFrom" = "Цёмная тэма з";
+"settings.row.darkUntil" = "Цёмная тэма да";
+
+/* Playback rows */
+"settings.row.defaultQuality" = "Стандартная якасць";
+/* The "Auto" entry of the default-quality picker (stored value stays English) */
+"settings.quality.auto" = "Аўтаматычная";
+"settings.row.backgroundPlayback" = "Фонавае прайграванне";
+"settings.row.pip" = "Picture-in-Picture";
+"settings.row.hideStatusBar" = "Схаваць панэль стану на поўным экране";
+"settings.row.zoomToFill" = "Павелічэнне для запаўнення на поўным экране";
+"settings.row.showShorts" = "Паказваць YouTube Shorts у Падпісках";
+
+/* Home layout row + option names */
+"settings.row.homeLayout" = "Макет галоўнай";
+"settings.homeLayout.grid" = "Простая сетка";
+"settings.homeLayout.rails" = "Рэйкі паліц";
+
+/* Cache rows */
+"settings.row.feedCache" = "Кэш стужкі";
+"settings.row.feedCacheDuration" = "Працягласць кэшу стужкі";
+"settings.row.imageCache" = "Кэш выяваў";
+"settings.row.imageCacheDuration" = "Працягласць кэшу выяваў";
+"settings.row.clearCache" = "Ачысціць увесь кэш";
+/* Alert after clearing all caches */
+"settings.cache.clearedTitle" = "Кэш ачышчаны";
+"settings.cache.clearedMessage" = "Увесь кэш ачышчаны.";
+
+/* Integration rows */
+"settings.row.ryd" = "Return YouTube Dislike";
+"settings.row.sponsorblock" = "SponsorBlock";
+"settings.row.sponsorblockSettings" = "Налады SponsorBlock";
+
+/* Debug rows (values stay technical/English) */
+"settings.row.playbackSource" = "Крыніца прайгравання";
+"settings.row.solverServer" = "Solver server";
+"settings.row.shareLog" = "Падзяліцца журналам адладкі";
+/* Solver-server URL alert */
+"settings.solver.message" = "Адрас solver server.";
+"settings.solver.reset" = "Скінуць да стандартных";
+/* Suffix shown after the solver URL when it is the built-in default */
+"settings.solver.defaultSuffix" = " (стандартны)";
+/* Alert when no debug logs exist yet */
+"settings.log.noneTitle" = "Няма журналаў";
+"settings.log.noneMessage" = "Журналы адладкі яшчэ недаступныя.";
+
+/* ===== Profile ===== */
+
+"profile.title" = "Профіль";
+"profile.signOut" = "Выйсці";
+"profile.clearImageCache" = "Ачысціць кэш выяваў";
+"profile.imageCacheCleared" = "Кэш выяваў ачышчаны.";
+
+/* ===== Search ===== */
+
+"search.title" = "Пошук";
+/* Search bar placeholder */
+"search.placeholder" = "Шукаць на YouTube";
+/* Header above the recent-search list */
+"search.recent" = "Апошнія пошукі";
+/* Filters toolbar button; the dotted variant marks active filters */
+"search.filters" = "Фільтры";
+"search.filters.active" = "Фільтры •";
+/* Filters sheet title + reset action */
+"search.filters.title" = "Фільтры пошуку";
+"search.filters.reset" = "Скінуць фільтры";
+/* Filter rows; %1$@ = the current value */
+"search.filters.sort" = "Сартаванне: %1$@";
+"search.filters.date" = "Дата: %1$@";
+"search.filters.type" = "Тып: %1$@";
+"search.filters.duration" = "Працягласць: %1$@";
+/* Sub-sheet titles */
+"search.filters.sortTitle" = "Сартаваць па";
+"search.filters.dateTitle" = "Дата загрузкі";
+"search.filters.typeTitle" = "Тып";
+"search.filters.durationTitle" = "Працягласць";
+
+/* Filter option values */
+"search.sort.relevance" = "Рэlevantнасць";
+"search.sort.rating" = "Рэйтынг";
+"search.sort.uploadDate" = "Дата загрузкі";
+"search.sort.viewCount" = "Колькасць праглядаў";
+"search.date.any" = "Любы час";
+"search.date.lastHour" = "Апошняя гадзіна";
+"search.date.today" = "Сёння";
+"search.date.thisWeek" = "Гэты тыдзень";
+"search.date.thisMonth" = "Гэты месяц";
+"search.date.thisYear" = "Гэты год";
+"search.type.any" = "Любы тып";
+"search.type.video" = "Відэа";
+"search.type.channel" = "Канал";
+"search.type.playlist" = "Плэйліст";
+"search.duration.any" = "Любая працягласць";
+"search.duration.short" = "Менш за 4 хв";
+"search.duration.medium" = "4–20 хв";
+"search.duration.long" = "Больш за 20 хв";
+
+/* ===== Home ===== */
+
+"home.title" = "Галоўная";
+/* Chip resetting to the unfiltered feed */
+"home.category.all" = "Усе";
+/* Static category chips (server shelf titles arrive already localized) */
+"home.category.live" = "Прамая трансляцыя";
+"home.category.news" = "Навіны";
+"home.category.gaming" = "Гульні";
+"home.category.sports" = "Спорт";
+"home.category.learning" = "Адукацыя";
+"home.category.fashion" = "Мода";
+/* Error empty state (two lines) */
+"home.error.loadFailed" = "Не ўдалося загрузіць стужку\nЦягніце ўніз, каб паспрабаваць зноў";
+/* Signed-out empty state */
+"home.signIn" = "Увайдзіце, каб убачыць вашы рэкамендацыі";
+
+/* ===== Channel ===== */
+
+/* Channel tab bar */
+"channel.tab.videos" = "Відэа";
+"channel.tab.live" = "Прамая трансляцыя";
+"channel.tab.playlists" = "Плэйлісты";
+/* About sheet */
+"channel.about.title" = "Пра канал";
+"channel.about.close" = "Закрыць";
+"channel.about.subscribers" = "Падпісчыкі";
+"channel.about.videos" = "Відэа";
+"channel.about.description" = "Апісанне";
+"channel.about.contact" = "Кантакт";
+
+/* ===== Library ===== */
+
+"library.history" = "Гісторыя";
+"library.downloads" = "Спампаванні";
+"library.playlists" = "Плэйлісты";
+"library.downloads.comingSoon" = "Спампаванні хутка";
+"library.history.signIn" = "Увайдзіце, каб убачыць вашу гісторыю праглядаў";
+"library.history.empty" = "Гісторыя праглядаў не знойдзена";
+"library.history.loadFailed" = "Не ўдалося загрузіць гісторыю";
+"library.playlists.signIn" = "Увайдзіце, каб убачыць вашы плэйлісты";
+"library.playlists.loadFailed" = "Не ўдалося загрузіць плэйлісты";
+"library.playlist.empty" = "Няма відэа ў гэтым плэйлісце";
+"library.playlist.loadFailed" = "Не ўдалося загрузіць плэйліст";
+
+/* ===== Subscriptions ===== */
+
+"subscriptions.title" = "Падпіскі";
+"subscriptions.all" = "Усе падпіскі";
+/* "All" button in the channel avatar bar */
+"subscriptions.allButton" = "Усе";
+"subscriptions.signIn" = "Увайдзіце, каб убачыць вашы падпіскі";
+
+/* ===== Account (toolbar sheet) ===== */
+
+/* Fallback account name when the profile has none */
+"account.fallbackName" = "Уліковы запіс";
+"account.signIn" = "Увайсці";
+"account.signOut" = "Выйсці";
+"account.notSignedIn" = "Не ўвайшлі";
+
+/* Generic error alert title */
+"common.error" = "Памылка";
+/* Channel screen failed to load */
+"channel.unavailable" = "Канал недаступны";
+
+/* ===== Settings: language section ===== */
+
+"settings.section.language" = "Мова";
+"settings.footer.language" = "Мова прыкладання змяняе інтэрфейс. Мова кантэнту змяняе загалоўкі, пошук і стужкі (YouTube перакладае метаданыя на баку сервера, як афіцыйнае прыкладанне). Змены поўнасцю ўступаюць у сілу пасля перазапуску прыкладання.";
+/* Rows */
+"settings.row.appLanguage" = "Мова прыкладання";
+"settings.row.contentLanguage" = "Мова кантэнту";
+"settings.row.region" = "Рэгіён";
+/* Picker option following the device language/region */
+"settings.language.system" = "Сістэмная";
+/* Alert after changing a language setting */
+"settings.language.restartTitle" = "Патрабуецца перазапуск";
+"settings.language.restartMessage" = "Змены поўнасцю ўступаюць у сілу пасля перазапуску прыкладання.";
