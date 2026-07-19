@@ -46,7 +46,7 @@ extension PlaybackFacade {
         let source = DefaultVideoSourceFactory(apiClient: apiClient)
             .make(kind: PlaybackSource.selected.sourceKind)
         activeVideoSource = source
-        context?.updateStatusLabel("Resolving stream...")
+        context?.updateStatusLabel("解析流...")
         source.loadPlayback(
             videoId: videoId,
             cancellation: cancellationToken
@@ -75,7 +75,7 @@ extension PlaybackFacade {
             fetchWatchtimeAndTrack()
         case .failure(let error):
             AppLog.player("source playback failed: \(error)")
-            context?.showPlaybackError("Playback failed.")
+            context?.showPlaybackError("播放失败.")
         }
     }
 
