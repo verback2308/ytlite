@@ -1,0 +1,279 @@
+/*
+  YTLite — Euskara (Basque).
+
+  Keys are stable API: never rename one casually — it orphans the key in
+  every translation. Comments give translator context. Positional
+  placeholders (%1$@) must be preserved verbatim in translations.
+*/
+
+/* ===== Player: settings menu ===== */
+
+/* Title of the gear menu in the player */
+"player.menu.settings" = "Erreprodukzio-ezarpenak";
+/* Menu item + picker title: video quality */
+"player.menu.quality" = "Kalitatea";
+/* Menu item + picker title: audio track (dub) selection */
+"player.menu.audioTrack" = "Audio-atalera";
+/* Menu item: toggles the playback statistics overlay */
+"player.menu.stats" = "Estatistikak";
+/* Picker title: subtitles */
+"player.menu.subtitles" = "Azpitituluak";
+
+/* ===== Player: pickers ===== */
+
+/* Subtitle picker: disables subtitles */
+"player.subtitles.off" = "Desaktibatuta";
+/* Suffix on auto-generated subtitle tracks */
+"player.subtitles.autoSuffix" = " (automatikoa)";
+/* Suffix on AI auto-dubbed audio tracks */
+"player.audioTrack.aiSuffix" = " (IA)";
+
+/* ===== Player: status / errors ===== */
+
+"player.status.loading" = "Kargatzen %1$@...";
+"player.status.resolving" = "Stream-a ebazten...";
+"player.error.playback" = "Erreprodukzioak huts egin du.";
+"player.error.qualitySwitch" = "Kalitate-aldaketak huts egin du.";
+"player.error.audioTrackSwitch" = "Audio-atalera aldaketak huts egin du.";
+
+/* ===== Common ===== */
+
+"common.subscribe" = "Harpidetu";
+"common.subscribed" = "Harpidetuta";
+"common.cancel" = "Utzi";
+"common.ok" = "Ados";
+"common.save" = "Gorde";
+"common.done" = "Eginda";
+"common.playlist" = "Erreprodukzio-zerrenda";
+"library.title" = "Liburutegia";
+
+/* ===== Player: status ===== */
+
+"player.status.preparing" = "Bideoa prestatzen...";
+"player.status.refreshing" = "Stream-a freskatzen...";
+
+/* ===== Player: watch page ===== */
+
+"player.description.more" = "Gehiago";
+"player.description.less" = "Gutxiago";
+"player.action.share" = "Partekatu";
+"player.action.save" = "Gorde";
+"player.action.download" = "Deskargatu";
+
+/* ===== Player: comments ===== */
+
+"player.comments.title" = "Iruzkinak";
+"player.comments.titleCount" = "Iruzkinak (%1$d)";
+"player.comments.loading" = "Iruzkinak kargatzen...";
+"player.comments.unavailable" = "Iruzkinak ez daude eskuragarri";
+"player.comments.unavailableYet" = "Iruzkinak oraindik ez daude eskuragarri.";
+"player.comments.loadMore" = "Iruzkin gehiago kargatu";
+"player.comments.pinned" = "%1$@ \u2022 Finkatuta";
+"player.comments.likes" = "%1$@ gustuko";
+"player.comments.replies" = "%1$@ erantzun";
+
+/* ===== Player: autoplay overlay ===== */
+
+"player.autoplay.upNext" = "Hurrengoa";
+"player.autoplay.playNow" = "Orain erreproduzitu";
+
+/* ===== Player: related section ===== */
+
+"player.related.mix" = "Nahasketa";
+"player.related.title" = "Lotutakoak";
+"player.error.withMessage" = "Erreprodukzio-errorea: %1$@";
+
+/* ===== Player: speed ===== */
+
+"player.speed.normal" = "Normala";
+
+/* ===== SponsorBlock ===== */
+
+"sponsorblock.skip" = "Saltatu %1$@";
+"sponsorblock.behavior.autoSkip" = "Automatikoki saltatu";
+"sponsorblock.behavior.showButton" = "Botoia erakutsi";
+"sponsorblock.behavior.disabled" = "Desaktibatu";
+"sponsorblock.attribution" = "SponsorBlock-ek hornitua (sponsor.ajay.app) \u2014 komunitate irekiko proiektua.";
+"sponsorblock.segmentCategories" = "Segmentu-kategoriak";
+"sponsorblock.category.sponsor.name" = "Babeslea";
+"sponsorblock.category.sponsor.description" = "Ordaindutako promozioa, ordaindutako berariazko sustapenak eta zuzeneko iragarkiak. Ez dagokie auto-promozioari edo doako aipamenari.";
+"sponsorblock.category.selfpromo.name" = "Ordaindu gabe/auto-promozioa";
+"sponsorblock.category.selfpromo.description" = "\"Babeslea\" bezalakoa baina ordaindu gabe edo auto-promozioa. Merkataritza, dohaintzak edo lankidetzei buruzko atalak barne hartzen ditu.";
+"sponsorblock.category.exclusive_access.name" = "Atzipen esklusiboa";
+"sponsorblock.category.exclusive_access.description" = "Bideo osoak etiketatzeko soilik. Bideoak doan edo diruz lagunduta jasotako produktu, zerbitzu edo leku bat erakusten duenean erabiltzen da.";
+"sponsorblock.category.interaction.name" = "Interakzio-errekordua (Harpidetu)";
+"sponsorblock.category.interaction.description" = "Edukiaren erdian gustuko, harpidetu edo jarraitu gogorarazpen laburra dagoenean. Luzea bada edo zerbait zehatzari buruzkoa, auto-promozioan egon beharko luke.";
+"sponsorblock.category.highlight.name" = "Nabarmendua";
+"sponsorblock.category.highlight.description" = "Gehien bilatzen den bideoaren atala. \"Bideoa x-tan hasten da\" iruzkinen antzera.";
+"sponsorblock.category.intro.name" = "Tarteko/Hasiera-animazioa";
+"sponsorblock.category.intro.description" = "Eduki benetaririk gabeko tartea. Pausoa, frame estatikoa edo animazio errepikakorra izan daiteke. Informazioa duten trantsizioetarako ez da erabili behar.";
+"sponsorblock.category.outro.name" = "Amaierako txartelak/Kredituak";
+"sponsorblock.category.outro.description" = "Kredituak edo YouTube amaierako-txartelak agertzen direnean. Informazioa duten ondorioetarako ez da egokia.";
+"sponsorblock.category.preview.name" = "Aurreikuspena/Errepasoa";
+"sponsorblock.category.preview.description" = "Bideo honetan edo beste bideoetan zer datorren erakusten duten klipen bilduma, non informazio guztia bideoan zehar errepikatzen den.";
+"sponsorblock.category.filler.name" = "Tangentzak/Txantxak";
+"sponsorblock.category.filler.description" = "Bideoaren eduki nagusia ulertzeko beharrezkoak ez diren eszena tangenteak edo txantxak. Testuinguru edo atzeko xehetasunak ematen dituzten segmentuak ez ditu barne hartu behar.";
+"sponsorblock.category.music_offtopic.name" = "Musika-atoko atala";
+"sponsorblock.category.music_offtopic.description" = "Musika-bideoentzat soilik. Musika-bideoaren atal ez-musikala.";
+"sponsorblock.category.chapter.name" = "Kapitulua";
+"sponsorblock.category.chapter.description" = "Bideoaren atal pertsonalizatuak.";
+
+/* ===== Settings ===== */
+
+"settings.title" = "Ezarpenak";
+"settings.section.theme" = "Itxura";
+"settings.section.playback" = "Erreprodukzioa";
+"settings.section.home" = "Hasiera";
+"settings.section.cache" = "Cachea";
+"settings.section.ryd" = "Return YouTube Dislike";
+"settings.section.sponsorblock" = "SponsorBlock";
+"settings.section.debug" = "Arazketa";
+"settings.footer.themeAutoSystem" = "Sistemaren itxurari automatikoki jarraitzen dio.";
+"settings.footer.themeAutoHours" = "Gai iluna automatikoki aktibatzen da goian zehaztutako orduen artean.";
+"settings.footer.playback" = "Zoom to Fill automatikoki eskalatzen du bideoa pantaila osokoan, barra beltzak ez izateko. Baterian jartzeak bideo bakoitza gainjartzen du.";
+"settings.footer.home" = "Gomendio-apaletak nola erakusten diren: sare jarraitu bakarrean edo telebista-estiloko errail horizontaletan.";
+"settings.footer.ryd" = "Gorroto-kontagailuak Return YouTube Dislike (returnyoutubedislike.com) \u2014 komunitate irekiko proiektuak bultzatzen ditu.";
+"settings.footer.debug" = "Erreprodukzio-iturburu zehatz bat behartu. Normalean Android VR erabiltzen da automatikoki. Ebazpen-zerbitzaria Mobile Web + pot iturburuak bultzatzen du (pot minting eta n-ebazpena iOS 12\u201313).";
+"settings.row.theme" = "Itxura";
+"settings.theme.dark" = "Iluna";
+"settings.theme.light" = "Argia";
+"settings.theme.auto" = "Automatikoa";
+"settings.row.darkFrom" = "Gai iluna honengandik";
+"settings.row.darkUntil" = "Gai iluna honetara";
+"settings.row.defaultQuality" = "Lehenetsitako kalitatea";
+"settings.quality.auto" = "Automatikoa";
+"settings.row.backgroundPlayback" = "Atzeko erreprodukzioa";
+"settings.row.pip" = "Irudia Irudian";
+"settings.row.hideStatusBar" = "Egoera-barra ezkutatu pantaila osokoan";
+"settings.row.zoomToFill" = "Zoom to Fill pantaila osokoan";
+"settings.row.showShorts" = "YouTube Shorts erakutsi harpidetzetan";
+"settings.row.homeLayout" = "Hasieraren diseinua";
+"settings.homeLayout.grid" = "Sare laua";
+"settings.homeLayout.rails" = "Apaleta errailak";
+"settings.row.feedCache" = "Elikadura-cachea";
+"settings.row.feedCacheDuration" = "Elikadura-cachearen iraupena";
+"settings.row.imageCache" = "Irudi-cachea";
+"settings.row.imageCacheDuration" = "Irudi-cachearen iraupena";
+"settings.row.clearCache" = "Cache guztia garbitu";
+"settings.cache.clearedTitle" = "Cachea garbituta";
+"settings.cache.clearedMessage" = "Cache guztia garbitu da.";
+"settings.row.ryd" = "Return YouTube Dislike";
+"settings.row.sponsorblock" = "SponsorBlock";
+"settings.row.sponsorblockSettings" = "SponsorBlock ezarpenak";
+"settings.row.playbackSource" = "Erreprodukzio-iturburua";
+"settings.row.solverServer" = "Solver server";
+"settings.row.shareLog" = "Arazketa-egunkaria partekatu";
+"settings.solver.message" = "Ebazpen-zerbitzariaren URLa.";
+"settings.solver.reset" = "Lehenetsira berrezarri";
+"settings.solver.defaultSuffix" = " (lehenetsia)";
+"settings.log.noneTitle" = "Ez dago egunkaririk";
+"settings.log.noneMessage" = "Ez dago arazketa-egunkari eskuragarri oraindik.";
+
+/* ===== Profile ===== */
+
+"profile.title" = "Profila";
+"profile.signOut" = "Saioa itxi";
+"profile.clearImageCache" = "Irudi-cachea garbitu";
+"profile.imageCacheCleared" = "Irudi-cachea garbitu da.";
+
+/* ===== Search ===== */
+
+"search.title" = "Bilaketa";
+"search.placeholder" = "YouTube bilatu";
+"search.recent" = "Azken bilaketak";
+"search.filters" = "Iragazkiak";
+"search.filters.active" = "Iragazkiak \u2022";
+"search.filters.title" = "Bilaketa-iragazkiak";
+"search.filters.reset" = "Iragazkiak berrezarri";
+"search.filters.sort" = "Ordenatu: %1$@";
+"search.filters.date" = "Data: %1$@";
+"search.filters.type" = "Mota: %1$@";
+"search.filters.duration" = "Iraupena: %1$@";
+"search.filters.sortTitle" = "Ordenatu honen arabera";
+"search.filters.dateTitle" = "Kargatze-data";
+"search.filters.typeTitle" = "Mota";
+"search.filters.durationTitle" = "Iraupena";
+"search.sort.relevance" = "Garrantzia";
+"search.sort.rating" = "Balorazioa";
+"search.sort.uploadDate" = "Kargatze-data";
+"search.sort.viewCount" = "Ikustaldi-kopurua";
+"search.date.any" = "Edozein momentu";
+"search.date.lastHour" = "Azken ordua";
+"search.date.today" = "Gaur";
+"search.date.thisWeek" = "Aste honetan";
+"search.date.thisMonth" = "Hilabete honetan";
+"search.date.thisYear" = "Urte honetan";
+"search.type.any" = "Edozein mota";
+"search.type.video" = "Bideoa";
+"search.type.channel" = "Kanala";
+"search.type.playlist" = "Erreprodukzio-zerrenda";
+"search.duration.any" = "Edozein iraupen";
+"search.duration.short" = "4 min azpitik";
+"search.duration.medium" = "4\u201320 min";
+"search.duration.long" = "20 min gainditik";
+
+/* ===== Home ===== */
+
+"home.title" = "Hasiera";
+"home.category.all" = "Denak";
+"home.category.live" = "Zuzenean";
+"home.category.news" = "Albisteak";
+"home.category.gaming" = "Jokoak";
+"home.category.sports" = "Kirolak";
+"home.category.learning" = "Ikaskuntza";
+"home.category.fashion" = "Moda";
+"home.error.loadFailed" = "Ezin izan da elikadura kargatu\nTiratu behera berriro saiatzeko";
+"home.signIn" = "Hasi saioa zure gomendioak ikusteko";
+
+/* ===== Channel ===== */
+
+"channel.tab.videos" = "Bideoak";
+"channel.tab.live" = "Zuzenean";
+"channel.tab.playlists" = "Erreprodukzio-zerrendak";
+"channel.about.title" = "Honi buruz";
+"channel.about.close" = "Itxi";
+"channel.about.subscribers" = "Harpidetuak";
+"channel.about.videos" = "Bideoak";
+"channel.about.description" = "Deskribapena";
+"channel.about.contact" = "Kontaktua";
+
+/* ===== Library ===== */
+
+"library.history" = "Historia";
+"library.downloads" = "Deskargak";
+"library.playlists" = "Erreprodukzio-zerrendak";
+"library.downloads.comingSoon" = "Deskargak laster etorriko dira";
+"library.history.signIn" = "Hasi saioa zure ikusteko historia ikusteko";
+"library.history.empty" = "Ez da ikusteko historiarik aurkitu";
+"library.history.loadFailed" = "Ezin izan da historia kargatu";
+"library.playlists.signIn" = "Hasi saioa zure erreprodukzio-zerrendak ikusteko";
+"library.playlists.loadFailed" = "Ezin izan dira erreprodukzio-zerrendak kargatu";
+"library.playlist.empty" = "Ez dago bidorik erreprodukzio-zerrenda honetan";
+"library.playlist.loadFailed" = "Ezin izan da erreprodukzio-zerrenda kargatu";
+
+/* ===== Subscriptions ===== */
+
+"subscriptions.title" = "Harpidetzak";
+"subscriptions.all" = "Harpidetza guztiak";
+"subscriptions.allButton" = "Denak";
+"subscriptions.signIn" = "Hasi saioa zure harpidetzak ikusteko";
+
+/* ===== Account (toolbar sheet) ===== */
+
+"account.fallbackName" = "Kontua";
+"account.signIn" = "Hasi saioa";
+"account.signOut" = "Saioa itxi";
+"account.notSignedIn" = "Ez zaude saioan hasita";
+"common.error" = "Errorea";
+"channel.unavailable" = "Kanala ez dago eskuragarri";
+
+/* ===== Settings: language section ===== */
+
+"settings.section.language" = "Hizkuntza";
+"settings.footer.language" = "Aplikazioaren hizkuntzak interfazea aldatzen du. Eduki-hizkuntzak tituluak, bilaketa eta elikadurak aldatzen ditu (YouTube-ren zerbitzaritik metadatuak itzultzen ditu, aplikazio ofizialaren antzera). Aldaketak aplikazioa berrabiarazi ondoren aplikatzen dira osorik.";
+"settings.row.appLanguage" = "Aplikazioaren hizkuntza";
+"settings.row.contentLanguage" = "Eduki-hizkuntza";
+"settings.row.region" = "Eskualdea";
+"settings.language.system" = "Sistema";
+"settings.language.restartTitle" = "Berrabiaraztea beharrezkoa";
+"settings.language.restartMessage" = "Aldaketak aplikazioa berrabiarazi ondoren aplikatzen dira osorik.";
