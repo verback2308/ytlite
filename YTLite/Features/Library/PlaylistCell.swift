@@ -90,7 +90,7 @@ final class PlaylistCell: UITableViewCell {
         applyTheme()
         titleLabel.text = playlist.title
         if let count = playlist.itemCount {
-            countLabel.text = "\(count) videos"
+            countLabel.text = "common.videosCount".localized(with: count)
         } else {
             countLabel.text = nil
         }

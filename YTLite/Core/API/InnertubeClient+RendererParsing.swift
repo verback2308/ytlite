@@ -154,7 +154,7 @@ extension InnertubeClient {
         }
         let title = simpleText(
             from: pr["title"]
-        ) ?? "Playlist"
+        ) ?? "common.playlist".localized
         let thumbURL = playlistThumbURL(
             pr, videoId: videoId
         )
@@ -163,10 +163,14 @@ extension InnertubeClient {
             id: videoId,
             title: title,
             channelId: nil,
-            channelName: "Playlist",
+            channelName: "common.playlist".localized,
             channelAvatarURL: nil,
             thumbnailURL: thumbURL,
-            viewCount: count.map { "\($0) videos" },
+            viewCount: count.map { raw in
+                Int(raw).map {
+                    "common.videosCount".localized(with: $0)
+                } ?? raw
+            },
             publishedAt: nil,
             duration: nil,
             isLive: false

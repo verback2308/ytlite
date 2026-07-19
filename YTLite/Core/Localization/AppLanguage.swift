@@ -6,6 +6,7 @@ import Foundation
 /// until a leading/trailing constraint audit.
 enum AppLanguage: String, CaseIterable {
     case english = "en"
+    case russian = "ru"
 
     /// The user's in-app override, nil = follow the system language.
     static var override: AppLanguage? {
@@ -34,11 +35,13 @@ enum AppLanguage: String, CaseIterable {
         return AppLanguage(rawValue: String(preferred.prefix(2))) ?? .english
     }
 
-    /// Native-script name for the future settings picker.
+    /// Native-script name for the settings picker.
     var displayName: String {
         switch self {
         case .english:
             "English"
+        case .russian:
+            "Русский"
         }
     }
 }

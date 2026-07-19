@@ -23,12 +23,16 @@ extension InnertubeClient {
         }
         let labels = (about["infoRows"] as? [[String: Any]] ?? [])
             .compactMap { $0["label"] as? String }
+        // Localized-text classification — keyword tables per content
+        // language live in ContentKeywords.
         if fields.subscriberCountText == nil {
             fields.subscriberCountText = labels.first {
-                $0.contains("subscriber")
+                ContentKeywords.isSubscriberCount($0)
             }
         }
-        fields.videoCountText = labels.first { $0.contains("video") }
+        fields.videoCountText = labels.first {
+            ContentKeywords.isVideoCount($0)
+        }
     }
 }
 
@@ -44,7 +48,7 @@ private extension InnertubeClient {
                 let rdr = item[RendererKey.lineItem] as? [String: Any]
                 return simpleText(from: rdr?[JSONKey.text])
             }
-            .first { $0.contains("subscriber") }
+            .first { ContentKeywords.isSubscriberCount($0) }
     }
 
     static func headerAboutViewModel(

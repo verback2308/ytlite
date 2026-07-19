@@ -19,6 +19,10 @@ struct ContentKeywordTable {
     let viewCount: [String]
     /// Marks a metadata line as a relative published date ("3 days ago").
     let published: [String]
+    /// Marks a channel-header line as a subscriber count.
+    let subscribers: [String]
+    /// Marks a channel-header line as a video count.
+    let videos: [String]
     /// Unit stems for relative-date parsing, one field per magnitude.
     let seconds: [String]
     let minutes: [String]
@@ -33,6 +37,8 @@ enum ContentKeywords {
     static let english = ContentKeywordTable(
         viewCount: ["view", "watching"],
         published: ["ago", "hour", "day", "week", "month", "year"],
+        subscribers: ["subscriber"],
+        videos: ["video"],
         seconds: ["sec"],
         minutes: ["min"],
         hours: ["hour"],
@@ -45,6 +51,8 @@ enum ContentKeywords {
     static let russian = ContentKeywordTable(
         viewCount: ["просмотр", "смотр"],
         published: ["назад", "час", "нед", "мес", "лет", "дн", "мин", "сек"],
+        subscribers: ["подписчик"],
+        videos: ["видео"],
         seconds: ["сек"],
         minutes: ["мин"],
         hours: ["час"],
@@ -67,6 +75,18 @@ enum ContentKeywords {
     static func isPublished(_ text: String) -> Bool {
         all.contains { table in
             table.published.contains { text.contains($0) }
+        }
+    }
+
+    static func isSubscriberCount(_ text: String) -> Bool {
+        all.contains { table in
+            table.subscribers.contains { text.contains($0) }
+        }
+    }
+
+    static func isVideoCount(_ text: String) -> Bool {
+        all.contains { table in
+            table.videos.contains { text.contains($0) }
         }
     }
 

@@ -2,7 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Cache duration; used as "N day(s)" in Settings cells and pickers -->
+	<!-- Срок кэша: "N день/дня/дней" -->
 	<key>settings.daysCount</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
@@ -14,12 +14,16 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>%d day</string>
+			<string>%d день</string>
+			<key>few</key>
+			<string>%d дня</string>
+			<key>many</key>
+			<string>%d дней</string>
 			<key>other</key>
-			<string>%d days</string>
+			<string>%d дня</string>
 		</dict>
 	</dict>
-	<!-- Playlist tile metadata; "N video(s)" -->
+	<!-- Метаданные плейлиста: "N видео" (не склоняется) -->
 	<key>common.videosCount</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
@@ -31,9 +35,13 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>%d video</string>
+			<string>%d видео</string>
+			<key>few</key>
+			<string>%d видео</string>
+			<key>many</key>
+			<string>%d видео</string>
 			<key>other</key>
-			<string>%d videos</string>
+			<string>%d видео</string>
 		</dict>
 	</dict>
 </dict>

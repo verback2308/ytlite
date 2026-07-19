@@ -76,11 +76,6 @@ final class SettingsViewController: UIViewController {
                 rows: [.homeLayout]
             ),
             Section(
-                header: "settings.section.cache".localized,
-                footer: nil,
-                rows: cacheRows
-            ),
-            Section(
                 header: "settings.section.ryd".localized,
                 footer: rydFooter,
                 rows: [.rydEnabled]
@@ -89,6 +84,11 @@ final class SettingsViewController: UIViewController {
                 header: "settings.section.sponsorblock".localized,
                 footer: sbFooter,
                 rows: sponsorBlockRows
+            ),
+            Section(
+                header: "settings.section.cache".localized,
+                footer: nil,
+                rows: cacheRows
             ),
             Section(
                 header: "settings.section.debug".localized,

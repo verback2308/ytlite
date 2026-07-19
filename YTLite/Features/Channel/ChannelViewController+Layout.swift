@@ -19,10 +19,12 @@ extension ChannelViewController {
             id: playlist.id,
             title: playlist.title,
             channelId: nil,
-            channelName: "Playlist",
+            channelName: "common.playlist".localized,
             channelAvatarURL: nil,
             thumbnailURL: playlist.thumbnailURL ?? "",
-            viewCount: playlist.itemCount.map { "\($0) videos" },
+            viewCount: playlist.itemCount.map {
+                "common.videosCount".localized(with: $0)
+            },
             publishedAt: nil,
             duration: nil,
             isLive: false

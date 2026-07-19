@@ -99,7 +99,7 @@ class MainTabBarController: UITabBarController {
             )
         )
         home.tabBarItem = UITabBarItem(
-            title: "Home",
+            title: "home.title".localized,
             image: TabBarIcons.home(),
             tag: 0
         )
@@ -112,7 +112,7 @@ class MainTabBarController: UITabBarController {
                 dependencies.makeSubscriptionsViewController()
         )
         subs.tabBarItem = UITabBarItem(
-            title: "Subscriptions",
+            title: "subscriptions.title".localized,
             image: TabBarIcons.subscriptions(),
             tag: 1
         )
@@ -126,7 +126,7 @@ class MainTabBarController: UITabBarController {
             )
         )
         library.tabBarItem = UITabBarItem(
-            title: "Library",
+            title: "library.title".localized,
             image: TabBarIcons.library(),
             tag: 2
         )

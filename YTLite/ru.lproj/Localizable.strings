@@ -1,0 +1,282 @@
+/*
+  YTLite — Russian.
+  Переводите только значения (справа от "="), никогда — ключи.
+  Плейсхолдеры %1$@ / %1$d сохраняются дословно.
+*/
+
+/* ===== Player: settings menu ===== */
+
+"player.menu.settings" = "Параметры воспроизведения";
+"player.menu.quality" = "Качество";
+"player.menu.audioTrack" = "Аудиодорожка";
+"player.menu.stats" = "Статистика для сисадминов";
+"player.menu.subtitles" = "Субтитры";
+
+/* ===== Player: pickers ===== */
+
+"player.subtitles.off" = "Выкл.";
+"player.subtitles.autoSuffix" = " (авто)";
+"player.audioTrack.aiSuffix" = " (ИИ)";
+
+/* ===== Player: status / errors ===== */
+
+"player.status.loading" = "Загрузка %1$@...";
+"player.status.resolving" = "Получение потока...";
+"player.error.playback" = "Не удалось воспроизвести видео.";
+"player.error.qualitySwitch" = "Не удалось переключить качество.";
+"player.error.audioTrackSwitch" = "Не удалось переключить аудиодорожку.";
+
+/* ===== Common ===== */
+
+"common.subscribe" = "Подписаться";
+"common.subscribed" = "Вы подписаны";
+"common.cancel" = "Отмена";
+"common.ok" = "ОК";
+"common.save" = "Сохранить";
+"common.done" = "Готово";
+"common.playlist" = "Плейлист";
+"library.title" = "Библиотека";
+
+/* ===== Player: status ===== */
+
+"player.status.preparing" = "Подготовка видео...";
+"player.status.refreshing" = "Обновление потока...";
+
+/* ===== Player: watch page ===== */
+
+"player.description.more" = "Ещё";
+"player.description.less" = "Свернуть";
+"player.action.share" = "Поделиться";
+"player.action.save" = "Сохранить";
+"player.action.download" = "Скачать";
+
+/* ===== Player: comments ===== */
+
+"player.comments.title" = "Комментарии";
+"player.comments.titleCount" = "Комментарии (%1$d)";
+"player.comments.loading" = "Загрузка комментариев...";
+"player.comments.unavailable" = "Комментарии недоступны";
+"player.comments.unavailableYet" = "Комментарии пока недоступны.";
+"player.comments.loadMore" = "Ещё комментарии";
+"player.comments.pinned" = "%1$@ • Закреплено";
+"player.comments.likes" = "Нравится: %1$@";
+"player.comments.replies" = "Ответы: %1$@";
+
+/* ===== Player: autoplay overlay ===== */
+
+"player.autoplay.upNext" = "Далее";
+"player.autoplay.playNow" = "Смотреть сейчас";
+
+/* ===== Player: related section ===== */
+
+"player.related.mix" = "Микс";
+"player.related.title" = "Похожие";
+"player.error.withMessage" = "Ошибка воспроизведения: %1$@";
+
+/* ===== Player: speed ===== */
+
+"player.speed.normal" = "Обычная";
+
+/* ===== SponsorBlock ===== */
+
+"sponsorblock.skip" = "Пропустить: %1$@";
+
+"sponsorblock.behavior.autoSkip" = "Автопропуск";
+"sponsorblock.behavior.showButton" = "Показывать кнопку";
+"sponsorblock.behavior.disabled" = "Отключить";
+
+"sponsorblock.attribution" = "Работает на основе SponsorBlock (sponsor.ajay.app) — открытого проекта сообщества.";
+"sponsorblock.segmentCategories" = "Категории сегментов";
+
+"sponsorblock.category.sponsor.name" = "Спонсор";
+"sponsorblock.category.sponsor.description" = "Платное продвижение, платные рефералы и прямая реклама. Не для саморекламы и бесплатных упоминаний понравившихся авторов, сайтов или продуктов.";
+"sponsorblock.category.selfpromo.name" = "Бесплатная/самореклама";
+"sponsorblock.category.selfpromo.description" = "Как «Спонсор», но для бесплатного продвижения или саморекламы: мерч, донаты, информация о коллаборациях.";
+"sponsorblock.category.exclusive_access.name" = "Эксклюзивный доступ";
+"sponsorblock.category.exclusive_access.description" = "Только для пометки целых видео. Когда в видео показан продукт, услуга или место, доступ к которым автор получил бесплатно или со скидкой.";
+"sponsorblock.category.interaction.name" = "Напоминание о взаимодействии";
+"sponsorblock.category.interaction.description" = "Короткое напоминание поставить лайк, подписаться или подписаться на соцсети посреди контента. Если оно длинное или о чём-то конкретном — это самореклама.";
+"sponsorblock.category.highlight.name" = "Основной момент";
+"sponsorblock.category.highlight.description" = "Часть видео, ради которой большинство его открывает. Аналог комментариев «видео начинается с X».";
+"sponsorblock.category.intro.name" = "Заставка/интро";
+"sponsorblock.category.intro.description" = "Интервал без содержания: пауза, статичный кадр, повторяющаяся анимация. Не для переходов с информацией.";
+"sponsorblock.category.outro.name" = "Титры/концовка";
+"sponsorblock.category.outro.description" = "Титры или конечные заставки YouTube. Не для выводов с информацией.";
+"sponsorblock.category.preview.name" = "Превью/повтор";
+"sponsorblock.category.preview.description" = "Нарезка кадров о том, что будет дальше в этом или других видео серии, если вся информация повторяется позже.";
+"sponsorblock.category.filler.name" = "Отступления/шутки";
+"sponsorblock.category.filler.description" = "Отступления и шутки, не нужные для понимания основного содержания. Не включает сегменты с контекстом или деталями.";
+"sponsorblock.category.music_offtopic.name" = "Немузыкальная часть";
+"sponsorblock.category.music_offtopic.description" = "Только для клипов. Немузыкальная часть музыкального видео.";
+"sponsorblock.category.chapter.name" = "Глава";
+"sponsorblock.category.chapter.description" = "Именованные разделы видео.";
+
+/* ===== Settings ===== */
+
+"settings.title" = "Настройки";
+
+"settings.section.theme" = "Тема";
+"settings.section.playback" = "Воспроизведение";
+"settings.section.home" = "Главная";
+"settings.section.cache" = "Кэш";
+"settings.section.ryd" = "Return YouTube Dislike";
+"settings.section.sponsorblock" = "SponsorBlock";
+"settings.section.debug" = "Отладка";
+
+"settings.footer.themeAutoSystem" = "«Авто» следует за оформлением системы.";
+"settings.footer.themeAutoHours" = "«Авто» включает тёмную тему в часы, указанные выше.";
+"settings.footer.playback" = "«Заполнять экран» автоматически масштабирует видео в полноэкранном режиме, убирая чёрные полосы. Жест щипка в плеере переопределяет это для конкретного видео.";
+"settings.footer.home" = "Как показывать полки рекомендаций: единая сетка или горизонтальные ленты в стиле ТВ.";
+"settings.footer.ryd" = "Счётчики дизлайков работают через Return YouTube Dislike (returnyoutubedislike.com) — открытый проект сообщества.";
+"settings.footer.debug" = "Принудительный выбор источника воспроизведения. Обычно используется Android VR с автоматическим фолбэком. Solver server обслуживает источник Mobile Web + pot (выпуск pot и решение n на iOS 12–13).";
+
+"settings.row.theme" = "Тема";
+"settings.theme.dark" = "Тёмная";
+"settings.theme.light" = "Светлая";
+"settings.theme.auto" = "Авто";
+"settings.row.darkFrom" = "Тёмная тема с";
+"settings.row.darkUntil" = "Тёмная тема до";
+
+"settings.row.defaultQuality" = "Качество по умолчанию";
+"settings.quality.auto" = "Авто";
+"settings.row.backgroundPlayback" = "Фоновое воспроизведение";
+"settings.row.pip" = "Картинка в картинке";
+"settings.row.hideStatusBar" = "Скрывать статус-бар в полноэкранном режиме";
+"settings.row.zoomToFill" = "Заполнять экран в полноэкранном режиме";
+"settings.row.showShorts" = "Показывать Shorts в подписках";
+
+"settings.row.homeLayout" = "Вид главной";
+"settings.homeLayout.grid" = "Простая сетка";
+"settings.homeLayout.rails" = "Горизонтальные ленты";
+
+"settings.row.feedCache" = "Кэш ленты";
+"settings.row.feedCacheDuration" = "Срок кэша ленты";
+"settings.row.imageCache" = "Кэш изображений";
+"settings.row.imageCacheDuration" = "Срок кэша изображений";
+"settings.row.clearCache" = "Очистить весь кэш";
+"settings.cache.clearedTitle" = "Кэш очищен";
+"settings.cache.clearedMessage" = "Весь кэш был очищен.";
+
+"settings.row.ryd" = "Return YouTube Dislike";
+"settings.row.sponsorblock" = "SponsorBlock";
+"settings.row.sponsorblockSettings" = "Настройки SponsorBlock";
+
+"settings.row.playbackSource" = "Источник";
+"settings.row.solverServer" = "Solver server";
+"settings.row.shareLog" = "Поделиться логом отладки";
+"settings.solver.message" = "Адрес solver server.";
+"settings.solver.reset" = "Сбросить по умолчанию";
+"settings.solver.defaultSuffix" = " (по умолчанию)";
+"settings.log.noneTitle" = "Нет логов";
+"settings.log.noneMessage" = "Логи отладки пока отсутствуют.";
+
+/* ===== Profile ===== */
+
+"profile.title" = "Профиль";
+"profile.signOut" = "Выйти";
+"profile.clearImageCache" = "Очистить кэш изображений";
+"profile.imageCacheCleared" = "Кэш изображений очищен.";
+
+/* ===== Search ===== */
+
+"search.title" = "Поиск";
+"search.placeholder" = "Поиск на YouTube";
+"search.recent" = "Недавние запросы";
+"search.filters" = "Фильтры";
+"search.filters.active" = "Фильтры •";
+"search.filters.title" = "Фильтры поиска";
+"search.filters.reset" = "Сбросить фильтры";
+"search.filters.sort" = "Сортировка: %1$@";
+"search.filters.date" = "Дата: %1$@";
+"search.filters.type" = "Тип: %1$@";
+"search.filters.duration" = "Длительность: %1$@";
+"search.filters.sortTitle" = "Сортировать";
+"search.filters.dateTitle" = "Дата загрузки";
+"search.filters.typeTitle" = "Тип";
+"search.filters.durationTitle" = "Длительность";
+
+"search.sort.relevance" = "По релевантности";
+"search.sort.rating" = "По рейтингу";
+"search.sort.uploadDate" = "По дате загрузки";
+"search.sort.viewCount" = "По числу просмотров";
+"search.date.any" = "За всё время";
+"search.date.lastHour" = "За последний час";
+"search.date.today" = "Сегодня";
+"search.date.thisWeek" = "На этой неделе";
+"search.date.thisMonth" = "В этом месяце";
+"search.date.thisYear" = "В этом году";
+"search.type.any" = "Любой тип";
+"search.type.video" = "Видео";
+"search.type.channel" = "Канал";
+"search.type.playlist" = "Плейлист";
+"search.duration.any" = "Любая длительность";
+"search.duration.short" = "До 4 минут";
+"search.duration.medium" = "4–20 минут";
+"search.duration.long" = "Более 20 минут";
+
+/* ===== Home ===== */
+
+"home.title" = "Главная";
+"home.category.all" = "Все";
+"home.category.live" = "Трансляции";
+"home.category.news" = "Новости";
+"home.category.gaming" = "Игры";
+"home.category.sports" = "Спорт";
+"home.category.learning" = "Обучение";
+"home.category.fashion" = "Мода";
+"home.error.loadFailed" = "Не удалось загрузить ленту\nПотяните вниз, чтобы повторить";
+"home.signIn" = "Войдите, чтобы видеть рекомендации";
+
+/* ===== Channel ===== */
+
+"channel.tab.videos" = "Видео";
+"channel.tab.live" = "Трансляции";
+"channel.tab.playlists" = "Плейлисты";
+"channel.about.title" = "О канале";
+"channel.about.close" = "Закрыть";
+"channel.about.subscribers" = "Подписчики";
+"channel.about.videos" = "Видео";
+"channel.about.description" = "Описание";
+"channel.about.contact" = "Контакты";
+
+/* ===== Library ===== */
+
+"library.history" = "История";
+"library.downloads" = "Загрузки";
+"library.playlists" = "Плейлисты";
+"library.downloads.comingSoon" = "Загрузки скоро появятся";
+"library.history.signIn" = "Войдите, чтобы видеть историю просмотров";
+"library.history.empty" = "История просмотров пуста";
+"library.history.loadFailed" = "Не удалось загрузить историю";
+"library.playlists.signIn" = "Войдите, чтобы видеть плейлисты";
+"library.playlists.loadFailed" = "Не удалось загрузить плейлисты";
+"library.playlist.empty" = "В этом плейлисте нет видео";
+"library.playlist.loadFailed" = "Не удалось загрузить плейлист";
+
+/* ===== Subscriptions ===== */
+
+"subscriptions.title" = "Подписки";
+"subscriptions.all" = "Все подписки";
+"subscriptions.allButton" = "Все";
+"subscriptions.signIn" = "Войдите, чтобы видеть подписки";
+
+/* ===== Account (toolbar sheet) ===== */
+
+"account.fallbackName" = "Аккаунт";
+"account.signIn" = "Войти";
+"account.signOut" = "Выйти";
+"account.notSignedIn" = "Вход не выполнен";
+
+"common.error" = "Ошибка";
+"channel.unavailable" = "Канал недоступен";
+
+/* ===== Settings: language section ===== */
+
+"settings.section.language" = "Язык";
+"settings.footer.language" = "Язык приложения меняет интерфейс. Язык контента меняет названия видео, поиск и ленты (YouTube переводит метаданные на сервере, как официальное приложение). Изменения полностью вступают в силу после перезапуска.";
+"settings.row.appLanguage" = "Язык приложения";
+"settings.row.contentLanguage" = "Язык контента";
+"settings.row.region" = "Регион";
+"settings.language.system" = "Системный";
+"settings.language.restartTitle" = "Требуется перезапуск";
+"settings.language.restartMessage" = "Изменения полностью вступят в силу после перезапуска приложения.";

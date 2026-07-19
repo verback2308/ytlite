@@ -55,6 +55,10 @@
 "common.save" = "Save";
 /* Generic done action */
 "common.done" = "Done";
+/* Fallback title/label of a playlist tile */
+"common.playlist" = "Playlist";
+/* Library tab title */
+"library.title" = "Library";
 
 /* ===== Player: status ===== */
 
@@ -173,9 +177,9 @@
 
 /* Section footers */
 "settings.footer.themeAutoSystem" = "Auto follows the system appearance.";
-"settings.footer.themeAutoHours" = "Auto switches to the dark theme between the hours below.";
+"settings.footer.themeAutoHours" = "Auto switches to the dark theme between the hours above.";
 "settings.footer.playback" = "Zoom to Fill automatically scales the video in fullscreen so no black bars remain. Pinch in the player overrides it per video.";
-"settings.footer.home" = "How recommendation shelves are shown: one continuous grid, a grid grouped under shelf titles, or TV-style horizontal rails.";
+"settings.footer.home" = "How recommendation shelves are shown: one continuous grid or TV-style horizontal rails.";
 "settings.footer.ryd" = "Dislike counts are powered by Return YouTube Dislike (returnyoutubedislike.com) — an open community project.";
 "settings.footer.debug" = "Force a specific playback source. Normally Android VR is used with automatic fallback. The solver server powers the Mobile Web + pot source (pot minting, and n-solving on iOS 12–13).";
 
