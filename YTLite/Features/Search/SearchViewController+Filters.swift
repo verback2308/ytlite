@@ -11,7 +11,7 @@ extension SearchViewController {
     }
 
     private func updateFiltersButton() {
-        filtersButton.title = filters.isDefault ? "Filters" : "Filters •"
+        filtersButton.title = filters.isDefault ? "过滤器" : "过滤器 •"
     }
 
     @objc
@@ -30,7 +30,7 @@ extension SearchViewController {
                 }
             )
         }
-        sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        sheet.addAction(UIAlertAction(title: "取消", style: .cancel))
         sheet.popoverPresentationController?.barButtonItem = filtersButton
         present(sheet, animated: true)
     }
