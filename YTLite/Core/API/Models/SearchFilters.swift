@@ -38,7 +38,7 @@ struct SearchFilters: Equatable {
             case .lastHour:
                 return "最近一小时"
             case .today:
-                return "今天"
+                return "任意时长"
             case .thisWeek:
                 return "本周"
             case .thisMonth:
@@ -78,7 +78,7 @@ struct SearchFilters: Equatable {
         var displayName: String {
             switch self {
             case .any:
-                return "今年"
+                return "任意时长"
             case .short:
                 return "4分钟以下"
             case .long:
