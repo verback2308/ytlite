@@ -6,10 +6,12 @@ import Foundation
 /// keeps talking to a single `VideoSource`.
 ///
 /// Audio tracks (dubs) are the in-place source switch this composite exists
-/// for: the primary (android_vr) never lists dubs, so after it starts playing
-/// the fallback is probed in the background for metadata only, its tracks are
-/// surfaced through this facade, and picking one rebuilds playback on the
-/// fallback and makes it the active source.
+/// for. The dub probe starts TOGETHER with the primary load: when the
+/// auto-dub preference decides a dub before the primary finishes, the load
+/// commits to the fallback (mweb) starting directly on that track and the
+/// primary result is discarded — no original-audio flash. When the primary
+/// wins the race, the shell performs a visible switch instead; picking a dub
+/// from the menu rebuilds on the fallback and makes it the active source.
 final class AutoVideoSource: VideoSource {
     private static let noTrackError = NSError(
         domain: "AutoVideoSource",
@@ -17,14 +19,23 @@ final class AutoVideoSource: VideoSource {
         userInfo: [NSLocalizedDescriptionKey: "Audio track unavailable"]
     )
 
-    private let primary: VideoSource
+    // Non-private for the auto-dub race extension (AutoVideoSource+AutoDub).
+    let primary: VideoSource
     private let makeFallback: () -> VideoSource
     /// The inner source currently answering playback/quality questions.
-    private var active: VideoSource
+    var active: VideoSource
     /// Lazily created fallback instance — shared between the background dub
     /// probe and a later switch, so the probed /player info is built on
     /// directly instead of being fetched twice.
-    private var fallback: VideoSource?
+    var fallback: VideoSource?
+    /// The primary result once it lands — kept even after committing to a
+    /// dub start so a failed dub build can still deliver the primary.
+    var primaryOutcome: Result<PreparedPlayback, Error>?
+    /// Probe decided a dub before the primary finished: the fallback owns
+    /// the load completion and the primary result is discarded on arrival.
+    var committedToDub = false
+    /// The committed dub build failed — deliver the primary result instead.
+    var dubStartFailed = false
 
     var kind: VideoSourceKind { active.kind }
     var supportsQualitySelection: Bool { active.supportsQualitySelection }
@@ -57,27 +68,20 @@ final class AutoVideoSource: VideoSource {
         completion: @escaping (Result<PreparedPlayback, Error>) -> Void
     ) {
         active = primary
+        primaryOutcome = nil
+        committedToDub = false
+        dubStartFailed = false
+        probeAudioTracksEarly(
+            videoId: videoId, cancellation: cancellation, completion: completion
+        )
         primary.loadPlayback(
             videoId: videoId, cancellation: cancellation
         ) { [weak self] result in
-            guard let self else {
-                return
-            }
-            switch result {
-            case .success:
-                self.probeFallbackAudioTracks(
-                    videoId: videoId, cancellation: cancellation
-                )
-                completion(result)
-            case .failure(let error):
-                guard cancellation?.isCancelled != true else {
-                    completion(result)
-                    return
-                }
-                AppLog.player(
-                    "auto: \(self.primary.kind) failed (\(error)), falling back"
-                )
-                self.loadFallback(
+            // Probe and primary complete on different queues; all composite
+            // state transitions happen on main.
+            DispatchQueue.main.async {
+                self?.handlePrimaryResult(
+                    result,
                     videoId: videoId,
                     cancellation: cancellation,
                     completion: completion
@@ -120,38 +124,22 @@ final class AutoVideoSource: VideoSource {
         }
     }
 
-    // MARK: - Private
+    // MARK: - Internal (shared with the auto-dub extension)
 
-    /// Background metadata probe — no pot mint, no playback preparation; the
-    /// menu simply gains an "Audio track" entry once tracks land.
-    private func probeFallbackAudioTracks(
-        videoId: String, cancellation: CancellationToken?
-    ) {
-        guard cancellation?.isCancelled != true else {
-            return
-        }
+    /// Creates and retains the shared fallback instance — the probe and a
+    /// later switch/load must build on the same one.
+    func makeFallbackShared() -> VideoSource {
         let source = fallback ?? makeFallback()
         fallback = source
-        source.probeAudioTracks(videoId: videoId) { [weak self] tracks in
-            guard let self, !tracks.isEmpty,
-                  cancellation?.isCancelled != true else {
-                return
-            }
-            AppLog.player("auto: probe found \(tracks.count) audio tracks")
-            // Completion arrives on main; lets the shell auto-pick a dub.
-            NotificationCenter.default.post(
-                name: .sourceAudioTracksDidChange, object: self
-            )
-        }
+        return source
     }
 
-    private func loadFallback(
+    func loadFallback(
         videoId: String,
         cancellation: CancellationToken?,
         completion: @escaping (Result<PreparedPlayback, Error>) -> Void
     ) {
-        let source = fallback ?? makeFallback()
-        fallback = source
+        let source = makeFallbackShared()
         active = source
         source.loadPlayback(
             videoId: videoId,

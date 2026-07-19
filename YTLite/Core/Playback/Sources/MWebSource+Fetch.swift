@@ -37,7 +37,12 @@ extension MWebSource {
                     completion([])
                     return
                 }
-                self.applyProbedTracks(infos)
+                // The probe now races the full load (composite starts both
+                // at once): metadata-only state must never clobber real
+                // /player track state.
+                if self.info == nil {
+                    self.applyProbedTracks(infos)
+                }
                 completion(self.availableAudioTracks)
             }
         }
