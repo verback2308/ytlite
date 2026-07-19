@@ -145,12 +145,12 @@ final class PlaylistVideosViewController: UIViewController {
                     self.continuationToken = page.continuation
                     self.emptyLabel.isHidden = !page.videos.isEmpty
                     if page.videos.isEmpty {
-                        self.emptyLabel.text = "No videos in this playlist"
+                        self.emptyLabel.text = "此播放列表中没有视频"
                     }
                     self.tableView.reloadData()
                 case .failure(let error):
                     AppLog.log("Playlist", "load error: \(error)")
-                    self.emptyLabel.text = "Could not load playlist"
+                    self.emptyLabel.text = "无法加载播放列表"
                     self.emptyLabel.isHidden = false
                     self.tableView.reloadData()
                 }
