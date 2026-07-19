@@ -29,7 +29,7 @@ final class DownloadsViewController: UIViewController {
         }
 
         let label = UILabel()
-        label.text = "Downloads coming soon"
+        label.text = "即将提供下载"
         label.textColor = .lightGray
         label.font = UIFont.systemFont(ofSize: 15)
         label.textAlignment = .center
