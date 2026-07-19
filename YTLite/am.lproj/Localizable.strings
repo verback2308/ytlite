@@ -270,9 +270,7 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "ቋንቋ";
-"settings.footer.language" = "የመተግበሪያ ቋንቋ ተግባሩን ይቀይራል። የይዘት ቋንቋ ሥም ርዕሶችን፣ ፍለሳ እና ፍናዎችን ይቀይራል (YouTube የመተግበሪያ ተጠቃሚ እንደ ሁሉ የይዘት ማ ማ መቀየር ይሠራል።) ለውጦች ከመተግበሪያ እንደገና ሲጀምሩ ሙሉ በሙሉ ይፈጸማሉ።";
 "settings.row.appLanguage" = "የመተግበሪያ ቋንቋ";
-"settings.row.contentLanguage" = "የይዘት ቋንቋ";
 "settings.row.region" = "ክልል";
 "settings.language.system" = "ስርዓት";
 "settings.language.restartTitle" = "ዳinnie እንደገና መጀመር ያስፈልጋል";

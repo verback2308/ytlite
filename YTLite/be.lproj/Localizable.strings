@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Мова";
-"settings.footer.language" = "Мова прыкладання змяняе інтэрфейс. Мова кантэнту змяняе загалоўкі, пошук і стужкі (YouTube перакладае метаданыя на баку сервера, як афіцыйнае прыкладанне). Змены поўнасцю ўступаюць у сілу пасля перазапуску прыкладання.";
 /* Rows */
 "settings.row.appLanguage" = "Мова прыкладання";
-"settings.row.contentLanguage" = "Мова кантэнту";
 "settings.row.region" = "Рэгіён";
 /* Picker option following the device language/region */
 "settings.language.system" = "Сістэмная";

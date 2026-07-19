@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Valoda";
-"settings.footer.language" = "Lietotnes valoda maina saskarni. Satura valoda maina virsrakstus, meklēšanu un barības (YouTube tulkos metadatus servera pusē, tāpat kā oficiālā lietotne). Izmaiņas stājas spēkā pilnībā pēc lietotnes restartēšanas.";
 /* Rows */
 "settings.row.appLanguage" = "Lietotnes valoda";
-"settings.row.contentLanguage" = "Satura valoda";
 "settings.row.region" = "Reģions";
 /* Picker option following the device language/region */
 "settings.language.system" = "Sistēmas";

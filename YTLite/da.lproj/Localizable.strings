@@ -270,9 +270,7 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Sprog";
-"settings.footer.language" = "Appsprog ændrer brugerfladen. Indholdssprog ændrer titler, søgning og feeds (YouTube oversætter metadata på serversiden som den officielle app). Ændringer træder fuldt i kraft efter genstart af appen.";
 "settings.row.appLanguage" = "Appsprog";
-"settings.row.contentLanguage" = "Indholdssprog";
 "settings.row.region" = "Område";
 "settings.language.system" = "System";
 "settings.language.restartTitle" = "Genstart påkrævet";

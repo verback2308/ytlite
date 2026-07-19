@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Γλώσσα";
-"settings.footer.language" = "Η γλώσσα εφαρμογής αλλάζει τη διεπαφή. Η γλώσσα περιεχομένου αλλάζει τίτλους, αναζήτηση και ροές (το YouTube μεταφράζει τα μεταδεδομένα στην πλευρά του διακομιστή, όπως η επίσημη εφαρμογή). Οι αλλαγές εφαρμόζονται πλήρως μετά από επανεκκίνηση της εφαρμογής.";
 /* Rows */
 "settings.row.appLanguage" = "Γλώσσα εφαρμογής";
-"settings.row.contentLanguage" = "Γλώσσα περιεχομένου";
 "settings.row.region" = "Περιοχή";
 /* Picker option following the device language/region */
 "settings.language.system" = "Σύστημα";

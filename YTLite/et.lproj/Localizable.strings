@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Keel";
-"settings.footer.language" = "Rakenduse keel muudab liidese. Sisu keel muudab pealkirju, otsinguid ja vooge (YouTube tõlgib metateadusi serveripoolset, nagu ametlik rakendus). Muudatused rakenduvad täielikult pärast rakenduse taaskäivitamist.";
 /* Rows */
 "settings.row.appLanguage" = "Rakenduse keel";
-"settings.row.contentLanguage" = "Sisu keel";
 "settings.row.region" = "Piirkond";
 /* Picker option following the device language/region */
 "settings.language.system" = "Süsteemi";

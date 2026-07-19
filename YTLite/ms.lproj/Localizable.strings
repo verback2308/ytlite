@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Bahasa";
-"settings.footer.language" = "Bahasa aplikasi menukar antara muka. Bahasa kandungan menukar tajuk, carian dan feed (YouTube menterjemahkan metadata di pihak pelayan, seperti aplikasi rasmi). Perubahan dikuatkuasakan sepenuhnya selepas permulaan semula aplikasi.";
 /* Rows */
 "settings.row.appLanguage" = "Bahasa Aplikasi";
-"settings.row.contentLanguage" = "Bahasa Kandungan";
 "settings.row.region" = "Kawasan";
 /* Picker option following the device language/region */
 "settings.language.system" = "Sistem";

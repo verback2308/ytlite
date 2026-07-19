@@ -353,10 +353,8 @@
 /* ===== Ustawienia: sekcja języka ===== */
 
 "settings.section.language" = "Język";
-"settings.footer.language" = "Język aplikacji zmienia interfejs. Język treści zmienia tytuły, wyszukiwanie i feedy (YouTube tłumaczy metadane po stronie serwera, jak oficjalna aplikacja). Zmiany w pełni zastosowują się po restarcie aplikacji.";
 /* Wiersze */
 "settings.row.appLanguage" = "Język aplikacji";
-"settings.row.contentLanguage" = "Język treści";
 "settings.row.region" = "Region";
 /* Opcja wyboru następująca po języku/regionali urządzenia */
 "settings.language.system" = "Systemowy";

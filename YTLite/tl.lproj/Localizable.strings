@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Wika";
-"settings.footer.language" = "Ang pagbabago ng wikang app ay nagbabago sa interface. Ang wikang content ay nagbabago sa mga pamagat, paghahanap at feed (isinasalin ng YouTube ang metadata sa server side, tulad ng opisyal na app). Epektibo ang mga pagbabago pagkatapos i-restart ang app.";
 /* Rows */
 "settings.row.appLanguage" = "Wika ng App";
-"settings.row.contentLanguage" = "Wika ng Content";
 "settings.row.region" = "Rehiyon";
 /* Picker option following the device language/region */
 "settings.language.system" = "Sistema";

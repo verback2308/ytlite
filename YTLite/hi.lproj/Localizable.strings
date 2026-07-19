@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "भाषा";
-"settings.footer.language" = "ऐप भाषा इंटरफ़ेस बदलती है। सामग्री भाषा शीर्षक, खोज और फ़ीड बदलती है (YouTube आधिकारिक ऐप की तरह मेटाडेटा सर्वर-साइड अनुवादित करता है)। परिवर्तन ऐप पुनरारंभ के बाद पूरी तरह लागू होते हैं।";
 /* Rows */
 "settings.row.appLanguage" = "ऐप भाषा";
-"settings.row.contentLanguage" = "सामग्री भाषा";
 "settings.row.region" = "क्षेत्र";
 /* Picker option following the device language/region */
 "settings.language.system" = "सिस्टम";

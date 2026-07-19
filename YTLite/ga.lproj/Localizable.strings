@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Teanga";
-"settings.footer.language" = "Athraíonn teanga na feidhmchlár an comhéadan. Athraíonn teanga an ábhair na teidill, cuardach agus fothaí (aistríonn YouTube comhthéacs freastalaithe, cosúil leis an bhfeidhmchlár oifigiúil). Cuirtear i bhfeidhm iad go hiomlán tar éis atosú feidhmchláir.";
 /* Rows */
 "settings.row.appLanguage" = "Teanga feidhmchláir";
-"settings.row.contentLanguage" = "Teanga ábhair";
 "settings.row.region" = "Ríochtain";
 /* Picker option following the device language/region */
 "settings.language.system" = "Córais";

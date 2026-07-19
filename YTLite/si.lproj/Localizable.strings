@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "භාෂාව";
-"settings.footer.language" = "යෙදුම් භාෂාව හැඩැස්ම වෙනස් කරයි. අන්තර්ගත භාෂාව මාතෘකා, සෙවුම් සහ පෝෂණ වෙනස් කරයි (YouTube නිල යෙදුම මෙන් මෙටාඩේටා සේවාදායක පැත්තේ පරිවර්තනය කරයි). වෙනස්කම් යෙදුම නැවත ආරම්භ කළ පසු සම්පූර්ණයෙන් බලාත්මක වේ.";
 /* Rows */
 "settings.row.appLanguage" = "යෙදුම් භාෂාව";
-"settings.row.contentLanguage" = "අන්තර්ගත භාෂාව";
 "settings.row.region" = "ප්‍රදේශය";
 /* Picker option following the device language/region */
 "settings.language.system" = "පද්ධතිය";

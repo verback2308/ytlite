@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Kieli";
-"settings.footer.language" = "Sovelluksen kieli vaihtaa käyttöliittymän. Sisällön kieli vaihtaa otsikot, haut ja syötteet (YouTube kääntää metatiedot palvelinpuolella, kuten virallinen sovellus). Muutokset tulevat täysin voimaan sovelluksen käynnistämisen jälkeen.";
 /* Rows */
 "settings.row.appLanguage" = "Sovelluksen kieli";
-"settings.row.contentLanguage" = "Sisällön kieli";
 "settings.row.region" = "Alue";
 /* Picker option following the device language/region */
 "settings.language.system" = "Järjestelmän kieli";

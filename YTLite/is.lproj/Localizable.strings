@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Tungumál";
-"settings.footer.language" = "Tungumál forritsins breytir viðmótinu. Tungumál efnis breytir titlum, leit og fæðum (YouTube þýðir lýsigögn á þjónustuhlið, eins og opinbera forritið). Breytingar koma að fullu eftir endurræsingu forritsins.";
 /* Rows */
 "settings.row.appLanguage" = "Tungumál forrits";
-"settings.row.contentLanguage" = "Tungumál efnis";
 "settings.row.region" = "Svæði";
 /* Picker option following the device language/region */
 "settings.language.system" = "Kerfistungumál";

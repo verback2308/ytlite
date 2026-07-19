@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Ulimi";
-"settings.footer.language" = "Ulimi we-app buyiguqula int face. Ulimi wokokuqukethwe buyiguqula izihloko, ukusesha nokondla (i-YouTube ithumbulula imethadatha ngaphandle kwendawo, njengohlelo olusemthethweni). Izintshintsho ziyasebenza ngokugcwele ngemuva kokuphinda uqale i-app.";
 /* Rows */
 "settings.row.appLanguage" = "Ulimi We-app";
-"settings.row.contentLanguage" = "Ulimi Wokokuqukethwe";
 "settings.row.region" = "Isifunda";
 /* Picker option following the device language/region */
 "settings.language.system" = "Isistimu";

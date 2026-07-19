@@ -353,10 +353,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Jezik";
-"settings.footer.language" = "Jezik aplikacije mijenja sučelje. Jezik sadržaja mijenja naslove, pretrage i feedove (YouTube prevodi metapodatke poslužiteljski, poput službene aplikacije). Promjene se u potpunosti primjenjuju nakon ponovnog pokretanja aplikacije.";
 /* Rows */
 "settings.row.appLanguage" = "Jezik aplikacije";
-"settings.row.contentLanguage" = "Jezik sadržaja";
 "settings.row.region" = "Regija";
 /* Picker option following the device language/region */
 "settings.language.system" = "Sustavski";

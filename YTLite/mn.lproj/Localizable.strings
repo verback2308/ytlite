@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Хэл";
-"settings.footer.language" = "Аппликейшнийн хэл интерфейсийг өөрчилдөг. Агуулгын хэл нэршлийг, хайлтыг, нийлүүлгийг өөрчилдөг (YouTube метадатыг сервер талаас орчуулдаг, албан ёсны аппликейшн шиг). Өөрчлөлтүүдийг аппликейшнийг дахин эхлүүлсний дараа бүрэн хэрэгжүүлнэ.";
 /* Rows */
 "settings.row.appLanguage" = "Аппликейшнийн хэл";
-"settings.row.contentLanguage" = "Агуулгын хэл";
 "settings.row.region" = "Бүс нутаг";
 /* Picker option following the device language/region */
 "settings.language.system" = "Системийн";

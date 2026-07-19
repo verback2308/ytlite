@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Тил";
-"settings.footer.language" = "Колдонмо тили интерфейсти өзгөртөт. Мазмун тили аталыштарды, издөөнү жана ленталарды өзгөртөт (YouTube метадайындыларды сервер тараптан которот, расмий колдонмо окшош). Өзгөртүүлөр колдонмону кайра ишке киргизгенден кийин толук колдонулат.";
 /* Rows */
 "settings.row.appLanguage" = "Колдонмо тили";
-"settings.row.contentLanguage" = "Мазмун тили";
 "settings.row.region" = "Аймак";
 /* Picker option following the device language/region */
 "settings.language.system" = "Система";

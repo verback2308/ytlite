@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Dil";
-"settings.footer.language" = "Tətbiq dili interfeysi dəyişir. Məzmun dili başlıqları, axtarışı və lentləri dəyişir (YouTube metadatanı server tərəfindən tərcümə edir, rəsmi tətbiq kimi). Dəyişikliklər tətbiq yenidən başlandıqdan sonra tam tətbiq olunur.";
 /* Rows */
 "settings.row.appLanguage" = "Tətbiq dili";
-"settings.row.contentLanguage" = "Məzmun dili";
 "settings.row.region" = "Bölgə";
 /* Picker option following the device language/region */
 "settings.language.system" = "Sistem";

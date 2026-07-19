@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Språk";
-"settings.footer.language" = "Appspråk ändrar gränssnittet. Innehållsspråk ändrar rubriker, sökningar och flöden (YouTube översätter metadata på serversidan, som den officiella appen). Ändringar tillämpas helt efter omstart av appen.";
 /* Rows */
 "settings.row.appLanguage" = "Appspråk";
-"settings.row.contentLanguage" = "Innehållsspråk";
 "settings.row.region" = "Region";
 /* Picker option following the device language/region */
 "settings.language.system" = "System";

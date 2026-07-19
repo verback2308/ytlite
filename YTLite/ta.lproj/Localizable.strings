@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "மொழி";
-"settings.footer.language" = "ஆப் மொழி இடைமுகத்தை மாற்றுகிறது. உள்ளடக்க மொழி தலைப்புகள், தேடல் மற்றும் ஃபீட்களை மாற்றுகிறது (YouTube அதிகாரப்பூர்வ ஆப் போல மெட்டாடேட்டாவை சேவையகப் புறமாக மொழிபெயர்க்கிறது). மாற்றங்கள் ஆப் மீண்டும் தொடங்கிய பின் முழுமையாக நடைமுறைப்படுத்தப்படும்.";
 /* Rows */
 "settings.row.appLanguage" = "ஆப் மொழி";
-"settings.row.contentLanguage" = "உள்ளடக்க மொழி";
 "settings.row.region" = "பிராந்தியம்";
 /* Picker option following the device language/region */
 "settings.language.system" = "கருவி";

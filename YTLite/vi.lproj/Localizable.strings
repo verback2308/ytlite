@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Ngôn ngữ";
-"settings.footer.language" = "Ngôn ngữ ứng dụng thay đổi giao diện. Ngôn ngữ nội dung thay đổi tiêu đề, tìm kiếm và feed (YouTube dịch metadata ở phía server, giống ứng dụng chính thức). Thay đổi có hiệu lực đầy đủ sau khi khởi động lại ứng dụng.";
 /* Rows */
 "settings.row.appLanguage" = "Ngôn ngữ ứng dụng";
-"settings.row.contentLanguage" = "Ngôn ngữ nội dung";
 "settings.row.region" = "Vùng";
 /* Picker option following the device language/region */
 "settings.language.system" = "Hệ thống";

@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Език";
-"settings.footer.language" = "Езикът на приложението променя интерфейса. Езикът на съдържанието променя заглавията, търсенето и емисиите (YouTube превежда метаданните сървърно, като официалното приложение). Промените се прилагат напълно след рестартиране на приложението.";
 /* Rows */
 "settings.row.appLanguage" = "Език на приложението";
-"settings.row.contentLanguage" = "Език на съдържанието";
 "settings.row.region" = "Регион";
 /* Picker option following the device language/region */
 "settings.language.system" = "Системен";

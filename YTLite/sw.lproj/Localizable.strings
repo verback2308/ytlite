@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Lugha";
-"settings.footer.language" = "Lugha ya programu hubadilisha kiolesura. Lugha ya maudhui hubadilisha vichwa, utafutaji na lishe (YouTube inatafsiri metadata upande wa seva, kama programu rasmi). Mabadiliko yote yanatumika baada ya kuanzisha upya programu.";
 /* Rows */
 "settings.row.appLanguage" = "Lugha ya Programu";
-"settings.row.contentLanguage" = "Lugha ya Maudhui";
 "settings.row.region" = "Mkoa";
 /* Picker option following the device language/region */
 "settings.language.system" = "Mfumo";

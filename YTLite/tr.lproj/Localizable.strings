@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Dil";
-"settings.footer.language" = "Uygulama dili arayüzü değiştirir. İçerik dili başlıkları, aramayı ve akışları değiştirir (YouTube, resmi uygulama gibi, meta verileri sunucu tarafında çevirir). Değişiklikler uygulama yeniden başlatıldıktan sonra tam olarak uygulanır.";
 /* Rows */
 "settings.row.appLanguage" = "Uygulama Dili";
-"settings.row.contentLanguage" = "İçerik Dili";
 "settings.row.region" = "Bölge";
 /* Picker option following the device language/region */
 "settings.language.system" = "Sistem";

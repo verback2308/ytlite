@@ -5,7 +5,7 @@ import UIKit
 final class SettingsViewController: UIViewController {
     enum Row {
         case theme, autoDarkStart, autoDarkEnd
-        case appLanguage, contentLanguage, region
+        case appLanguage, region
         case quality, backgroundPlayback, pipEnabled, hideStatusBar, showShorts
         case autoZoomToFill
         case homeLayout
@@ -60,7 +60,7 @@ final class SettingsViewController: UIViewController {
             Section(
                 header: "settings.section.language".localized,
                 footer: "settings.footer.language".localized,
-                rows: [.appLanguage, .contentLanguage, .region]
+                rows: [.appLanguage, .region]
             ),
             Section(
                 header: "settings.section.playback".localized,
@@ -222,8 +222,6 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             return makeThemeCell()
         case .appLanguage:
             return makeAppLanguageCell()
-        case .contentLanguage:
-            return makeContentLanguageCell()
         case .region:
             return makeRegionCell()
         case .autoDarkStart:

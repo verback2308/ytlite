@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Jezik";
-"settings.footer.language" = "Jezik aplikacije spremeni vmesnik. Jezik vsebine spremeni naslove, iskanje in vire (YouTube prevaja metapodatke na strani strežnika, kot uradna aplikacija). Spremembe se v celoti uveljavijo po ponovnem zagonu aplikacije.";
 /* Rows */
 "settings.row.appLanguage" = "Jezik aplikacije";
-"settings.row.contentLanguage" = "Jezik vsebine";
 "settings.row.region" = "Regija";
 /* Picker option following the device language/region */
 "settings.language.system" = "Sistem";

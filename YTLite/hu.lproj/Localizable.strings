@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Nyelv";
-"settings.footer.language" = "Az alkalmazás nyelve megváltoztatja a felületet. A tartalom nyelve megváltoztatja a címeket, a keresést és a hírfolyamokat (a YouTube szerveroldalon fordítja le a metaadatokat, mint a hivatalos alkalmazás). A változások az alkalmazás újraindítása után lépnek teljesen életbe.";
 /* Rows */
 "settings.row.appLanguage" = "Alkalmazás nyelve";
-"settings.row.contentLanguage" = "Tartalom nyelve";
 "settings.row.region" = "Régió";
 /* Picker option following the device language/region */
 "settings.language.system" = "Rendszer";

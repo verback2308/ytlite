@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Gjuha";
-"settings.footer.language" = "Gjuha e aplikacionit ndryshon ndërfaqen. Gjuha e përmbajtjes ndryshon titujt, kërkimin dhe ushqimet (YouTube përkthen metadatat në anën e serverit, si aplikacioni zyrtar). Ndryshimet aplikohen plotësisht pas ri fillimit të aplikacionit.";
 /* Rows */
 "settings.row.appLanguage" = "Gjuha e aplikacionit";
-"settings.row.contentLanguage" = "Gjuha e përmbajtjes";
 "settings.row.region" = "Rajoni";
 /* Picker option following the device language/region */
 "settings.language.system" = "Sistemi";

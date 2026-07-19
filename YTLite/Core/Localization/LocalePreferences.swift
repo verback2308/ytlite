@@ -10,20 +10,13 @@ protocol LocalePreferences {
     var gl: String { get }
 }
 
-/// UserDefaults-backed preferences: content language defaults to the SYSTEM
-/// language (not the clamped UI language — YouTube localizes content for
-/// far more languages than the app ships UI strings for), region to the
-/// device region.
+/// UserDefaults-backed preferences: content FOLLOWS THE APP LANGUAGE —
+/// the official client behaves the same way, and a separate content
+/// language proved to be a useless extra knob (it also allowed picking a
+/// language without a ContentKeywords table, silently degrading metadata
+/// parsing). Region stays independent.
 struct DefaultLocalePreferences: LocalePreferences {
-    var hl: String {
-        if let stored = UserDefaults.standard.string(
-            forKey: UserDefaultsKeys.Localization.contentLanguage
-        ) {
-            return stored
-        }
-        let preferred = Locale.preferredLanguages.first ?? "en"
-        return String(preferred.prefix(2))
-    }
+    var hl: String { AppLanguage.effective.rawValue }
 
     var gl: String {
         UserDefaults.standard.string(

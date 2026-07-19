@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "ພາສາ";
-"settings.footer.language" = "ພາສາແອັບປ່ຽນອິນເຕີເຟດ. ພາສາເນື້ອໃນປ່ຽນຫົວຂໍ້, ການຄົ້ນຫາ ແລະ feed (YouTube ປະຊາທິປະໄຕ metadata ຢູ່ຝ່າຍ server, ແບບດັ້ງເດີມແອັບ). ການປ່ຽນແປງມີຜົນບັງຄັບບັນຊາເຕັມໝົດຫຼັງຈາກຮີບເລີ່ມແອັບໃໝ່.";
 /* Rows */
 "settings.row.appLanguage" = "ພາສາແອັບ";
-"settings.row.contentLanguage" = "ພາສາເນື້ອໃນ";
 "settings.row.region" = "ພູມິພາກ";
 /* Picker option following the device language/region */
 "settings.language.system" = "ລະບົບ";

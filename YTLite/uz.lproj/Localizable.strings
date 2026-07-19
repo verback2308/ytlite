@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Til";
-"settings.footer.language" = "Ilova tili interfeysni oʻzgartiradi. Kontent tili sarlavhalarni, qidirishni va lentalarni oʻzgartiradi (YouTube metani server tomonidan tarjima qiladi, rasmiy ilova kabi). Oʻzgarishlar ilovani qayta ishga tushirgandan keyin toʻliq qoʻllaniladi.";
 /* Rows */
 "settings.row.appLanguage" = "Ilova tili";
-"settings.row.contentLanguage" = "Kontent tili";
 "settings.row.region" = "Hudud";
 /* Picker option following the device language/region */
 "settings.language.system" = "Tizim";

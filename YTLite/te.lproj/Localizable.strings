@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "భాష";
-"settings.footer.language" = "యాప్ భాష ఇంటర్‌ఫేస్‌ను మారుస్తుంది. కంటెంట్ భాష శీర్షికలు, శోధన మరియు ఫీడ్‌లను మారుస్తుంది (YouTube అధికారిక యాప్ వలె మెటాడేటాను సర్వర్ వైపు అనువదిస్తుంది). మార్పులు యాప్ మళ్ళీ ప్రారంభించిన తర్వాత పూర్తిగా వర్తిస్తాయి.";
 /* Rows */
 "settings.row.appLanguage" = "యాప్ భాష";
-"settings.row.contentLanguage" = "కంటెంట్ భాష";
 "settings.row.region" = "ప్రాంతం";
 /* Picker option following the device language/region */
 "settings.language.system" = "సిస్టమ్";

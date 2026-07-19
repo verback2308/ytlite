@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "ভাষা";
-"settings.footer.language" = "অ্যাপ ভাষা ইন্টারফেস পরিবর্তন করে। বিষয়বস্তু ভাষা শিরোনাম, অনুসন্ধান এবং ফিড পরিবর্তন করে (YouTube অফিসিয়াল অ্যাপের মতো মেটাডেটা সার্ভার-সাইড অনুবাদ করে)। পরিবর্তন অ্যাপ পুনরায় চালু করার পরে সম্পূর্ণ প্রয়োগ হয়।";
 /* Rows */
 "settings.row.appLanguage" = "অ্যাপ ভাষা";
-"settings.row.contentLanguage" = "বিষয়বস্তু ভাষা";
 "settings.row.region" = "অঞ্চল";
 /* Picker option following the device language/region */
 "settings.language.system" = "সিস্টেম";

@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Kalba";
-"settings.footer.language" = "Programėlės kalba keičia sąsają. Turinio kalba keičia antraštes, paiešką ir srautus (YouTube verčia metaduomenis serverio pusėje, kaip oficiali programa). Pakeitimai visiškai įsigalioja paleidus programėlę iš naujo.";
 /* Rows */
 "settings.row.appLanguage" = "Programėlės kalba";
-"settings.row.contentLanguage" = "Turinio kalba";
 "settings.row.region" = "Regionas";
 /* Picker option following the device language/region */
 "settings.language.system" = "Sistemos";

@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Taalkieslys";
-"settings.footer.language" = "App-taal verander die koppelvlak. Inhoudtaal verander titels, soektogte en voedings (YouTube vertaal metadata bediener-sy, soos die amptelike program). Veranderinge word volledig toegepas na 'n herbegin van die program.";
 /* Rows */
 "settings.row.appLanguage" = "App-taal";
-"settings.row.contentLanguage" = "Inhoudtaal";
 "settings.row.region" = "Streek";
 /* Picker option following the device language/region */
 "settings.language.system" = "Stelsel";

@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Limbă";
-"settings.footer.language" = "Limba aplicației modifică interfața. Limba conținutului modifică titlurile, căutările și fluxurile (YouTube traduce metadatele server-side, ca și aplicația oficială). Modificările se aplică complet după repornirea aplicației.";
 /* Rows */
 "settings.row.appLanguage" = "Limba aplicației";
-"settings.row.contentLanguage" = "Limba conținutului";
 "settings.row.region" = "Regiune";
 /* Picker option following the device language/region */
 "settings.language.system" = "Sistem";

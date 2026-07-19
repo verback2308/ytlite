@@ -270,9 +270,7 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Hizkuntza";
-"settings.footer.language" = "Aplikazioaren hizkuntzak interfazea aldatzen du. Eduki-hizkuntzak tituluak, bilaketa eta elikadurak aldatzen ditu (YouTube-ren zerbitzaritik metadatuak itzultzen ditu, aplikazio ofizialaren antzera). Aldaketak aplikazioa berrabiarazi ondoren aplikatzen dira osorik.";
 "settings.row.appLanguage" = "Aplikazioaren hizkuntza";
-"settings.row.contentLanguage" = "Eduki-hizkuntza";
 "settings.row.region" = "Eskualdea";
 "settings.language.system" = "Sistema";
 "settings.language.restartTitle" = "Berrabiaraztea beharrezkoa";

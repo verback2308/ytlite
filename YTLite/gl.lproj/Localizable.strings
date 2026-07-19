@@ -351,10 +351,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Idioma";
-"settings.footer.language" = "O idioma da aplicación cambia a interface. O idioma do contido cambia os títulos, a busca e os feeds (YouTube traduce os metadatos do lado do servidor, como a aplicación oficial). Os cambios aplícanse completamente despois de reiniciar a aplicación.";
 /* Rows */
 "settings.row.appLanguage" = "Idioma da app";
-"settings.row.contentLanguage" = "Idioma do contido";
 "settings.row.region" = "Rexión";
 /* Picker option following the device language/region */
 "settings.language.system" = "Sistema";

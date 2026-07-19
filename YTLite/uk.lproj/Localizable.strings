@@ -273,9 +273,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Мова";
-"settings.footer.language" = "Мова застосунку змінює інтерфейс. Мова контенту змінює назви відео, пошук і стрічки (YouTube перекладає метадані на сервері, як офіційний застосунок). Зміни повністю набувають чинності після перезапуску.";
+"settings.footer.language" = "Мова застосунку змінює і інтерфейс, і контент: назви відео, пошук та стрічки слідують за нею (YouTube перекладає метадані на сервері, як офіційний застосунок). Зміни повністю набувають чинності після перезапуску.";
 "settings.row.appLanguage" = "Мова застосунку";
-"settings.row.contentLanguage" = "Мова контенту";
 "settings.row.region" = "Регіон";
 "settings.language.system" = "Системна";
 "settings.language.restartTitle" = "Потрібен перезапуск";

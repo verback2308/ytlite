@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "ภาษา";
-"settings.footer.language" = "การเปลี่ยนภาษาแอปจะเปลี่ยนอินเทอร์เฟซ ภาษาเนื้อหาจะเปลี่ยนชื่อ การค้นหา และฟีด (YouTube แปลข้อมูลเมตาฝั่งเซิร์ฟเวอร์ เหมือนแอปอย่างเป็นทางการ) การเปลี่ยนแปลงจะมีผลเต็มหลังจากรีสตาร์ทแอป";
 /* Rows */
 "settings.row.appLanguage" = "ภาษาแอป";
-"settings.row.contentLanguage" = "ภาษาเนื้อหา";
 "settings.row.region" = "ภูมิภาค";
 /* Picker option following the device language/region */
 "settings.language.system" = "ระบบ";

@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Тіл";
-"settings.footer.language" = "Қолданба тілі интерфейсті өзгертеді. Мазмұн тілі тақырыптарды, іздеуді және ленталарды өзгертеді (YouTube метадеректерді сервер жағынан аударады, ресми қолданба секілді). Өзгерістер қолданбаны қайта іске қосқаннан кейін толықтай қолданылады.";
 /* Rows */
 "settings.row.appLanguage" = "Қолданба тілі";
-"settings.row.contentLanguage" = "Мазмұн тілі";
 "settings.row.region" = "Аймақ";
 /* Picker option following the device language/region */
 "settings.language.system" = "Жүйе";

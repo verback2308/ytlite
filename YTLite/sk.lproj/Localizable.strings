@@ -353,10 +353,8 @@
 /* ===== Nastavenia: sekcia jazyka ===== */
 
 "settings.section.language" = "Jazyk";
-"settings.footer.language" = "Jazyk aplikácie mení rozhranie. Jazyk obsahu mení názvy, vyhľadávania a feedy (YouTube prekladá metadata na strane serveru, ako oficiálna aplikácia). Zmeny sa plne prejavia po reštarte aplikácie.";
 /* Riadky */
 "settings.row.appLanguage" = "Jazyk aplikácie";
-"settings.row.contentLanguage" = "Jazyk obsahu";
 "settings.row.region" = "Oblasť";
 /* Voľba výberu nasledujúca jazyk/oblasť zariadenia */
 "settings.language.system" = "Systémový";

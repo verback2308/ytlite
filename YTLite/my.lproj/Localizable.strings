@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "ဘာသာစကား";
-"settings.footer.language" = "App ဘာသာစကားသည် interface ကို ပြောင်းလဲသည်။ ပါဝင်မှုဘာသာစကားသည် ခေါင်းစဉ်များ၊ ရှာဖွေမှုနှင့် feed များကို ပြောင်းလဲသည် (YouTube သည် server side တွင် metadata ကို ဘာသာပြန်သည်၊ တရားဝင် app ကဲ့သို့ပင်)။ ပြောင်းလဲမှုများသည် app ကို ပြန်ဖွင့်ပြီးနောက် အပြည့်အဝ အကျိုးသက်ရောက်သည်။";
 /* Rows */
 "settings.row.appLanguage" = "App ဘာသာစကား";
-"settings.row.contentLanguage" = "ပါဝင်မှုဘာသာစကား";
 "settings.row.region" = "ဒေသ";
 /* Picker option following the device language/region */
 "settings.language.system" = "စနစ်";

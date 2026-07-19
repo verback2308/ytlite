@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "ഭാഷ";
-"settings.footer.language" = "ആപ്പ് ഭാഷ ഇന്റർഫേസ് മാറ്റുന്നു. ഉള്ളടക്ക ഭാഷ തലക്കെട്ടുകൾ, തിരച്ചിൽ, ഫീഡുകൾ മാറ്റുന്നു (YouTube ഔദ്യോഗിക ആപ്പ് പോലെ മെറ്റാഡാറ്റ സെർവർ വശം വിവർത്തനം ചെയ്യുന്നു). മാറ്റങ്ങൾ ആപ്പ് വീണ്ടും ആരംഭിച്ചതിന് ശേഷം പൂർണ്ണമായി പ്രയോഗിക്കുന്നു.";
 /* Rows */
 "settings.row.appLanguage" = "ആപ്പ് ഭാഷ";
-"settings.row.contentLanguage" = "ഉള്ളടക്ക ഭാഷ";
 "settings.row.region" = "മേഖല";
 /* Picker option following the device language/region */
 "settings.language.system" = "സിസ്റ്റം";

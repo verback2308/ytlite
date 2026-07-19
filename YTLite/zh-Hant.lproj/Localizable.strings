@@ -355,10 +355,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "語言";
-"settings.footer.language" = "應用語言更改介面。內容語言更改標題、搜尋和動態（YouTube 與官方應用一樣在伺服器端翻譯中繼資料）。更改在重新啟動應用後完全生效。";
 /* Rows */
 "settings.row.appLanguage" = "應用語言";
-"settings.row.contentLanguage" = "內容語言";
 "settings.row.region" = "地區";
 /* Picker option following the device language/region */
 "settings.language.system" = "系統";

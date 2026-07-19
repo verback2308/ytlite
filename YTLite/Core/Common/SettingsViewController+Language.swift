@@ -9,11 +9,6 @@ import UIKit
 // stale-language pages never resurface.
 
 extension SettingsViewController {
-    /// Curated `hl` options — YouTube accepts many more; extend on request.
-    private static let contentLanguages = [
-        "en", "ru", "uk", "de", "fr", "es", "pt", "it", "pl", "tr",
-        "ja", "ko", "hi", "id", "vi", "ar", "th"
-    ]
     /// Curated `gl` options.
     private static let regions = [
         "US", "RU", "UA", "DE", "FR", "ES", "PT", "BR", "IT", "PL",
@@ -37,17 +32,6 @@ extension SettingsViewController {
         )
     }
 
-    func makeContentLanguageCell() -> UITableViewCell {
-        makeDisclosureCell(
-            "settings.row.contentLanguage".localized,
-            value: storedValueDisplay(
-                key: UserDefaultsKeys.Localization.contentLanguage,
-                systemValue: InnertubeContexts.localePreferences.hl,
-                name: languageName
-            )
-        )
-    }
-
     func makeRegionCell() -> UITableViewCell {
         makeDisclosureCell(
             "settings.row.region".localized,
@@ -65,8 +49,6 @@ extension SettingsViewController {
         switch row {
         case .appLanguage:
             showAppLanguagePicker()
-        case .contentLanguage:
-            showContentLanguagePicker()
         case .region:
             showRegionPicker()
         default:
@@ -107,23 +89,8 @@ extension SettingsViewController {
             selected: AppLanguage.override?.rawValue
         ) { code in
             AppLanguage.override = code.flatMap(AppLanguage.init(rawValue:))
-        }
-    }
-
-    private func showContentLanguagePicker() {
-        let options = [(nil, "settings.language.system".localized)]
-            + Self.contentLanguages.map { ($0 as String?, languageName($0)) }
-        presentCodePicker(
-            title: "settings.row.contentLanguage".localized,
-            options: options,
-            selected: UserDefaults.standard.string(
-                forKey: UserDefaultsKeys.Localization.contentLanguage
-            )
-        ) { code in
-            UserDefaults.standard.set(
-                code, forKey: UserDefaultsKeys.Localization.contentLanguage
-            )
-            // Cached feed pages carry the old language.
+            // Content (`hl`) follows the app language — cached feed pages
+            // carry the old language.
             AppCache.shared.clearAllDiskCache()
         }
     }

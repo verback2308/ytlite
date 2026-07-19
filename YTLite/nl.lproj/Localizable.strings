@@ -351,10 +351,8 @@
 /* ===== Settings: language section ===== */
 
 "settings.section.language" = "Taal";
-"settings.footer.language" = "De app-taal wijzigt de interface. De inhoudstaal wijzigt titels, zoeken en feeds (YouTube vertaalt metadata server-side, zoals de officiële app). Wijzigingen worden volledig toegepast na het herstarten van de app.";
 /* Rows */
 "settings.row.appLanguage" = "App-taal";
-"settings.row.contentLanguage" = "Inhoudstaal";
 "settings.row.region" = "Regio";
 /* Picker option following the device language/region */
 "settings.language.system" = "Systeem";

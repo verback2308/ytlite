@@ -62,9 +62,26 @@ enum ContentKeywords {
         years: ["лет", "год"]
     )
 
+    /// "годин" not "год": the Russian YEAR stem "год" collides with the
+    /// Ukrainian HOUR "година" — the longer stem plus smallest-unit-first
+    /// ordering in [[approximateDate]] keeps both languages correct.
+    static let ukrainian = ContentKeywordTable(
+        viewCount: ["перегляд", "дивл"],
+        published: ["тому", "годин", "хв", "тижн", "тижд", "місяц", "рік", "рок"],
+        subscribers: ["підписник"],
+        videos: ["відео"],
+        seconds: ["сек"],
+        minutes: ["хв"],
+        hours: ["годин"],
+        days: ["дн", "день"],
+        weeks: ["тижн", "тижд"],
+        months: ["місяц"],
+        years: ["рік", "рок"]
+    )
+
     /// Every shipped table — matching is language-agnostic (a Russian UI
     /// still parses cached English strings and vice versa).
-    static let all: [ContentKeywordTable] = [english, russian]
+    static let all: [ContentKeywordTable] = [english, russian, ukrainian]
 
     static func isViewCount(_ text: String) -> Bool {
         all.contains { table in
@@ -97,9 +114,11 @@ enum ContentKeywords {
         let lowered = text.lowercased()
         let num = lowered.components(separatedBy: .whitespaces)
             .compactMap(Int.init).first ?? 1
+        // Weeks BEFORE days: the Ukrainian week "тиждень" contains the
+        // day stem "день" and must win. Otherwise smallest-unit-first.
         let scales: [(KeyPath<ContentKeywordTable, [String]>, Double)] = [
             (\.seconds, 1), (\.minutes, 60), (\.hours, 3_600),
-            (\.days, 86_400), (\.weeks, 604_800),
+            (\.weeks, 604_800), (\.days, 86_400),
             (\.months, 2_592_000), (\.years, 31_536_000)
         ]
         for (unit, secondsPerUnit) in scales {
