@@ -112,7 +112,7 @@ final class HistoryViewController: UIViewController {
     }
 
     private func showSignInRequired() {
-        emptyLabel.text = "Sign in to view your watch history"
+        emptyLabel.text = "登录以查看您的观看历史"
         emptyLabel.isHidden = false
     }
 
@@ -213,7 +213,7 @@ private extension HistoryViewController {
         continuationToken = page.continuation
         emptyLabel.isHidden = !page.videos.isEmpty
         if page.videos.isEmpty {
-            emptyLabel.text = "No watch history found"
+            emptyLabel.text = "未找到观看记录"
         }
         tableView.reloadData()
     }
@@ -221,7 +221,7 @@ private extension HistoryViewController {
     func handleHistoryError(_ error: Error) {
         AppLog.log("History", "error: \(error)")
         if videos.isEmpty {
-            emptyLabel.text = "Could not load history"
+            emptyLabel.text = "无法加载历史记录"
             emptyLabel.isHidden = false
         }
         tableView.reloadData()
