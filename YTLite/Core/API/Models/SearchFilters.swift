@@ -16,7 +16,7 @@ struct SearchFilters: Equatable {
             case .rating:
                 return "评分"
             case .uploadDate:
-                return "Upload date"
+                return "上传日期"
             case .viewCount:
                 return "浏览次数"
             }
@@ -34,17 +34,17 @@ struct SearchFilters: Equatable {
         var displayName: String {
             switch self {
             case .any:
-                return "Any time"
+                return "任何时间"
             case .lastHour:
-                return "Last hour"
+                return "最后一小时"
             case .today:
-                return "Today"
+                return "今天"
             case .thisWeek:
-                return "This week"
+                return "本周"
             case .thisMonth:
-                return "This month"
+                return "本月"
             case .thisYear:
-                return "This year"
+                return "今年"
             }
         }
     }
@@ -78,11 +78,11 @@ struct SearchFilters: Equatable {
         var displayName: String {
             switch self {
             case .any:
-                return "Any duration"
+                return "本年度"
             case .short:
-                return "Under 4 min"
+                return "小于4分钟"
             case .long:
-                return "Over 20 min"
+                return "结束20分钟"
             case .medium:
                 return "4–20 min"
             }
