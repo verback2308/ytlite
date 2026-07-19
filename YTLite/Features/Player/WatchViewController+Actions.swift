@@ -73,7 +73,7 @@ extension WatchViewController {
             )
             isSubscribed = wasSubscribed
             subscribeButton.setTitle(
-                wasSubscribed ? "取消订阅" : "订阅",
+                wasSubscribed ? "已订阅" : "订阅",
                 for: .normal
             )
             applyTheme()
