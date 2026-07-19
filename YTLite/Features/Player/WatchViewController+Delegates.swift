@@ -14,7 +14,7 @@ extension WatchViewController: VideoPlayerViewDelegate {
                     self?.showQualityPicker()
                 },
                 PlayerMenuItem(
-                    title: statsOn ? "✓ Stats for nerds" : "Stats for nerds"
+                    title: statsOn ? "✓ 极客统计" : "极客统计"
                 ) { [weak self] in
                     self?.toggleStatsOverlay()
                 }
