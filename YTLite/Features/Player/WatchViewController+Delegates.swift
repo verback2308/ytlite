@@ -10,11 +10,11 @@ extension WatchViewController: VideoPlayerViewDelegate {
         presentPlayerMenu(
             title: "播放设置",
             items: [
-                PlayerMenuItem(title: "质量") { [weak self] in
+                PlayerMenuItem(title: "画质") { [weak self] in
                     self?.showQualityPicker()
                 },
                 PlayerMenuItem(
-                    title: statsOn ? "✓ 极客统计" : "极客统计"
+                    title: statsOn ? "✓ 数据统计" : "数据统计"
                 ) { [weak self] in
                     self?.toggleStatsOverlay()
                 }
