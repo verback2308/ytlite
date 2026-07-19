@@ -10,7 +10,7 @@ class SearchViewController: UIViewController {
     var results: [Video] = []
     var filters = SearchFilters()
     let filtersButton = UIBarButtonItem(
-        title: "Filters", style: .plain, target: nil, action: nil
+        title: "筛选器", style: .plain, target: nil, action: nil
     )
     var lastQuery: String = ""
     var activeSearchQuery: String?
