@@ -11,19 +11,19 @@ extension SearchViewController {
     }
 
     private func updateFiltersButton() {
-        filtersButton.title = filters.isDefault ? "过滤器" : "过滤器 •"
+        filtersButton.title = filters.isDefault ? "筛选" : "筛选 •"
     }
 
     @objc
     private func filtersTapped() {
         let sheet = UIAlertController(
-            title: "搜索过滤器", message: nil, preferredStyle: .actionSheet
+            title: "搜索筛选", message: nil, preferredStyle: .actionSheet
         )
         addFilterActions(to: sheet)
         if !filters.isDefault {
             sheet.addAction(
                 UIAlertAction(
-                    title: "重置过滤器",
+                    title: "重置筛选",
                     style: .destructive
                 ) { [weak self] _ in
                     self?.apply { $0 = SearchFilters() }
@@ -60,7 +60,7 @@ extension SearchViewController {
         )
         sheet.addAction(
             UIAlertAction(
-                title: "持续时间: \(filters.duration.displayName)",
+                title: "时长: \(filters.duration.displayName)",
                 style: .default
             ) { [weak self] _ in
                 self?.showDurationPicker()
@@ -72,7 +72,7 @@ extension SearchViewController {
 
     private func showSortPicker() {
         presentOptions(
-            title: "排序依据",
+            title: "排序方式",
             names: SearchFilters.Sort.allCases.map { $0.displayName },
             selectedIndex: filters.sort.rawValue
         ) { [weak self] index in
@@ -106,7 +106,7 @@ extension SearchViewController {
 
     private func showDurationPicker() {
         presentOptions(
-            title: "持续时间",
+            title: "持续时长",
             names: SearchFilters.Duration.allCases.map { $0.displayName },
             selectedIndex: filters.duration.rawValue
         ) { [weak self] index in
