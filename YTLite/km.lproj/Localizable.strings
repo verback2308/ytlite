@@ -1,0 +1,367 @@
+/*
+  YTLite — Khmer (ភាសាខ្មែរ).
+
+  Keys are stable API: never rename one casually — it orphans the key in
+  every translation. Comments give translator context. Positional
+  placeholders (%1$@) must be preserved verbatim in translations.
+*/
+
+/* ===== Player: settings menu ===== */
+
+/* Title of the gear menu in the player */
+"player.menu.settings" = "ការកំណត់ការចៀង";
+/* Menu item + picker title: video quality */
+"player.menu.quality" = "គុណភាព";
+/* Menu item + picker title: audio track (dub) selection */
+"player.menu.audioTrack" = "បំពង់សំឡេង";
+/* Menu item: toggles the playback statistics overlay */
+"player.menu.stats" = "ស្ថិតិសម្រាប់អ្នកអភិវឌ្ឍន៍";
+/* Picker title: subtitles */
+"player.menu.subtitles" = "អត្ថបទបកប្រែ";
+
+/* ===== Player: pickers ===== */
+
+/* Subtitle picker: disables subtitles */
+"player.subtitles.off" = "បិទ";
+/* Suffix on auto-generated subtitle tracks, e.g. "English (auto)" */
+"player.subtitles.autoSuffix" = " (ស្វ័យប្រវត្តិ)";
+/* Suffix on AI auto-dubbed audio tracks, e.g. "Russian (AI)" */
+"player.audioTrack.aiSuffix" = " (AI)";
+
+/* ===== Player: status / errors ===== */
+
+/* Status label while switching; %1$@ = quality label or track name */
+"player.status.loading" = "កំពុងផ្ទុក %1$@...";
+/* Status label while the stream URL is being resolved */
+"player.status.resolving" = "កំពុងដោះស្រាយស្ទ្រីម...";
+/* Shown when a video cannot be played at all */
+"player.error.playback" = "ការចៀងបានបរាជ័យ។";
+/* Shown when switching video quality failed (playback continues) */
+"player.error.qualitySwitch" = "ការប្ដូរគុណភាពបានបរាជ័យ។";
+/* Shown when switching the audio track failed (playback continues) */
+"player.error.audioTrackSwitch" = "ការប្ដូរបំពង់សំឡេងបានបរាជ័យ។";
+
+/* ===== Common ===== */
+
+/* Subscribe button, not-subscribed state */
+"common.subscribe" = "ជាវ";
+/* Subscribe button, subscribed state */
+"common.subscribed" = "បានជាវ";
+/* Generic cancel action */
+"common.cancel" = "បោះបង់";
+/* Generic confirmation button */
+"common.ok" = "យល់ព្រម";
+/* Generic save action */
+"common.save" = "រក្សាទុក";
+/* Generic done action */
+"common.done" = "រួចរាល់";
+/* Fallback title/label of a playlist tile */
+"common.playlist" = "បញ្ជីចៀង";
+/* Library tab title */
+"library.title" = "បណ្ណាល័យ";
+
+/* ===== Player: status ===== */
+
+/* Status label while the player prepares the first video */
+"player.status.preparing" = "កំពុងរៀបចំវីដេអូ...";
+/* Status label while an expired stream URL is re-resolved */
+"player.status.refreshing" = "កំពុងធ្វើឱ្យស្ទ្រីមស្រស់...";
+
+/* ===== Player: watch page ===== */
+
+/* Expands the video description */
+"player.description.more" = "បន្ថែមទៀត";
+/* Collapses the video description */
+"player.description.less" = "បន្ថយ";
+/* Action bar: share the video */
+"player.action.share" = "ចែករំលែក";
+/* Action bar: save to playlist */
+"player.action.save" = "រក្សាទុក";
+/* Action bar: download */
+"player.action.download" = "ទាញយក";
+
+/* ===== Player: comments ===== */
+
+/* Comments section header */
+"player.comments.title" = "មតិយោបល់";
+/* Comments header with count; %1$d = number of comments */
+"player.comments.titleCount" = "មតិយោបល់ (%1$d)";
+/* Shown while comments load */
+"player.comments.loading" = "កំពុងផ្ទុកមតិយោបល់...";
+/* Shown when the comments request failed */
+"player.comments.unavailable" = "មតិយោបល់មិនអាចប្រើបាន";
+/* Shown before the watch page has loaded enough to fetch comments */
+"player.comments.unavailableYet" = "មតិយោបល់នៅមិនទាន់អាចប្រើបាន។";
+/* Button loading the next page of comments */
+"player.comments.loadMore" = "ផ្ទុកមតិយោបល់បន្ថែម";
+/* Author line of a pinned comment; %1$@ = author name */
+"player.comments.pinned" = "%1$@ • បានខ្ទាស់";
+/* Comment like count; %1$@ = formatted number */
+"player.comments.likes" = "%1$@ ចូលចិត្ត";
+/* Comment reply count; %1$@ = formatted number */
+"player.comments.replies" = "%1$@ ការឆ្លើយតប";
+
+/* ===== Player: autoplay overlay ===== */
+
+/* Header above the next video suggestion */
+"player.autoplay.upNext" = "បន្ទាប់";
+/* Starts the suggested video immediately, skipping the countdown */
+"player.autoplay.playNow" = "ចៀងឥឡូវ";
+
+/* ===== Player: related section ===== */
+
+/* Header of an unnamed autoplay queue/playlist */
+"player.related.mix" = "Mix";
+/* Header of the related-videos section */
+"player.related.title" = "ទាក់ទង";
+/* Status label on fatal playback failure; %1$@ = error description */
+"player.error.withMessage" = "កំហុសការចៀង: %1$@";
+
+/* ===== Player: speed ===== */
+
+/* The 1x playback speed */
+"player.speed.normal" = "ធម្មតា";
+
+/* ===== SponsorBlock ===== */
+
+/* Skip button; %1$@ = localized category name, e.g. "Skip Sponsor" */
+"sponsorblock.skip" = "រំលង %1$@";
+
+/* Skip-behavior options (per-category setting) */
+"sponsorblock.behavior.autoSkip" = "រំលងស្វ័យប្រវត្តិ";
+"sponsorblock.behavior.showButton" = "បង្ហាញប៊ូតុង";
+"sponsorblock.behavior.disabled" = "បិទ";
+
+/* Footer under the SponsorBlock section (project attribution) */
+"sponsorblock.attribution" = "ដំណើរការដោយ SponsorBlock (sponsor.ajay.app) — គម្រោងសហគមន៍ការចែកចាយរួម។";
+/* Header above the per-category skip settings */
+"sponsorblock.segmentCategories" = "ប្រភេទសមាសភាគ";
+
+/* Category names (SponsorBlock project terms) and their descriptions */
+"sponsorblock.category.sponsor.name" = "អ្នកឧបត្ថម្ភ";
+"sponsorblock.category.sponsor.description" = "ការផ្សព្វផ្សាយបង់ប្រាក់ ការណែនាំបង់ប្រាក់ និងការផ្សព្វផ្សាយផ្ទាល់។ មិនមែនសម្រាប់ការផ្សព្វផ្សាយខ្លួនឯង ឬការគាំទ្រឥតគិតថ្លៃដល់ម៉ាក/អ្នកបង្កើត/វេបសាយ/ផលិតផលដែលពួកគេចូលចិត្ត។";
+"sponsorblock.category.selfpromo.name" = "ការផ្សព្វផ្សាយឥតគិតថ្លៃ/ខ្លួនឯង";
+"sponsorblock.category.selfpromo.description" = "ដូច \"អ្នកឧបត្ថម្ភ\" ដែរ លើកលែងតែការផ្សព្វផ្សាយឥតគិតថ្លៃ ឬខ្លួនឯង។ រួមបញ្ចូលផ្នែកអំពីទំនិញ ការบริจาក ឬព័ត៌មានអំពីអ្នកដែលពួកគេសហការ។";
+"sponsorblock.category.exclusive_access.name" = "ការចូលប្រើប្រាស់ផ្តាច់មុខ";
+"sponsorblock.category.exclusive_access.description" = "សម្រាប់ដាក់ស្លាកវីដេអូទាំងមូលប៉ុណ្ណោះ។ ប្រើនៅពេលវីដេអូបង្ហាញផលិតផល សេវាកម្ម ឬទីតាំងដែលពួកគេទទួលបានការចូលប្រើប្រាស់ឥតគិតថ្លៃ ឬឧបត្ថម្ភ។";
+"sponsorblock.category.interaction.name" = "ការរំលឹកការអន្តរកម្ម (ជាវ)";
+"sponsorblock.category.interaction.description" = "នៅពេលមានការរំលឹកខ្លីៗដើម្បីចូលចិត្ត ជាវ ឬតាមដានក្នុងអំឡុងខ្លឹមសារ។ ប្រសិនបើវែង ឬអំពីអ្វីមួយជាក់លាក់ វាគួរនៅក្រោមការផ្សព្វផ្សាយខ្លួនឯង។";
+"sponsorblock.category.highlight.name" = "ចំណុចសំខាន់";
+"sponsorblock.category.highlight.description" = "ផ្នែកនៃវីដេអូដែលមនុស្សភាគច្រើនកំពុងស្វែងរក។ ដូចមតិយោបល់ \"វីដេអូចាប់ផ្តើមនៅវិនាទី x\"។";
+"sponsorblock.category.intro.name" = "ការឈប់សម្រាក/Animation បើក";
+"sponsorblock.category.intro.description" = "ចន្លោះពេលដែលគ្មានខ្លឹមសារជាក់ស្តែង។ អាចជាការឈប់សម្រាក រូបភាពឋិតិវន្ត ឬ animation ដែលច្រៀកច្រៀក។ វាមិនគួរប្រើសម្រាប់ការផ្លាស់ប្តូរដែលមានព័ត៌មាន។";
+"sponsorblock.category.outro.name" = "កាតបញ្ចប់/Credit";
+"sponsorblock.category.outro.description" = "Credit ឬនៅពេលកាតបញ្ចប់ YouTube បង្ហាញ។ មិនមែនសម្រាប់សេចក្តីសន្និដ្ឋានដែលមានព័ត៌មាន។";
+"sponsorblock.category.preview.name" = "មើលជាមុន/សង្ខេប";
+"sponsorblock.category.preview.description" = "សម្រាំងនៃឈុតដែលបង្ហាញអ្វីដែលនឹងមកដល់ក្នុងវីដេអូនេះ ឬវីដេអូផ្សេងទៀតក្នុងស៊េរីដែលព័ត៌មានទាំងអស់ត្រូវបានធ្វើម្តងទៀតនៅក្នុងវីដេអូ។";
+"sponsorblock.category.filler.name" = "រឿងរ៉ាវបន្ថែម/អត្ថបទកំប្លែក";
+"sponsorblock.category.filler.description" = "ឈុតដែលរំខាន ឬអត្ថបទកំប្លែកដែលមិនចាំបាច់ដើម្បីយល់ខ្លឹមសារចម្បងនៃវីដេអូ។ វាមិនគួររួមបញ្ចូលសមាសភាគដែលផ្តល់បរិបទ ឬព័ត៌មានលម្អិតផ្សំ។";
+"sponsorblock.category.music_offtopic.name" = "ផ្នែកមិនមែនតន្ត្រី";
+"sponsorblock.category.music_offtopic.description" = "សម្រាប់វីដេអូតន្ត្រីប៉ុណ្ណោះ។ ផ្នែកមិនមែនតន្ត្រីនៃវីដេអូតន្ត្រី។";
+"sponsorblock.category.chapter.name" = "ជំពូក";
+"sponsorblock.category.chapter.description" = "ផ្នែកដែលដាក់ឈ្មោះផ្ទាល់ខ្លួននៃវីដេអូ។";
+
+/* ===== Settings ===== */
+
+/* Settings sheet title */
+"settings.title" = "ការកំណត់";
+
+/* Section headers */
+"settings.section.theme" = "រូបរាង";
+"settings.section.playback" = "ការចៀង";
+"settings.section.home" = "ទំព័រដើម";
+"settings.section.cache" = "Cache";
+"settings.section.ryd" = "Return YouTube Dislike";
+"settings.section.sponsorblock" = "SponsorBlock";
+"settings.section.debug" = "Debug";
+
+/* Section footers */
+"settings.footer.themeAutoSystem" = "ស្វ័យប្រវត្តិដើរតាមរូបរាងប្រព័ន្ធ។";
+"settings.footer.themeAutoHours" = "ស្វ័យប្រវត្តិប្ដូរទៅរូបរាងងងឹតក្នុងអំឡុងពេលខាងលើ។";
+"settings.footer.playback" = "Zoom to Fill ស្វ័យប្រវត្តិមានវីដេអូក្នុងអេក្រង់ពេញដើម្បីមិនមានរបារខ្មៅ។ Pinch ក្នុង player ជំនួសវាសម្រាប់វីដេអូនីមួយៗ។";
+"settings.footer.home" = "របៀបបង្ហាញប្រអប់អនុសាសន៍៖ grid តែមួយ ឬរថភ្លើងផ្ដេកបែប TV។";
+"settings.footer.ryd" = "ចំនួនមិនចូលចិត្តដំណើរការដោយ Return YouTube Dislike (returnyutubedislike.com) — គម្រោងសហគមន៍ការចែកចាយរួម។";
+"settings.footer.debug" = "បង្ខំប្រភពការចៀងជាក់លាក់។ ជាធម្មតា Android VR ត្រូវបានប្រើជាមួយ fallback ស្វ័យប្រវត្តិ។ ម៉ាស៊ីនមេ solver ដំណើរការប្រភព Mobile Web + pot (ការបង្កើត pot និង n-solving នៅ iOS 12–13)។";
+
+/* Theme rows; segment labels for dark/light/auto modes */
+"settings.row.theme" = "រូបរាង";
+"settings.theme.dark" = "ងងឹត";
+"settings.theme.light" = "ភ្លឺ";
+"settings.theme.auto" = "ស្វ័យប្រវត្តិ";
+/* Hour pickers bounding the iOS 12 scheduled dark mode */
+"settings.row.darkFrom" = "រូបរាងងងឹតចាប់ពី";
+"settings.row.darkUntil" = "រូបរាងងងឹតរហូតដល់";
+
+/* Playback rows */
+"settings.row.defaultQuality" = "គុណភាពលំនាំដើម";
+/* The "Auto" entry of the default-quality picker (stored value stays English) */
+"settings.quality.auto" = "ស្វ័យប្រវត្តិ";
+"settings.row.backgroundPlayback" = "ការចៀងក្រោយប្រអប់";
+"settings.row.pip" = "Picture-in-Picture";
+"settings.row.hideStatusBar" = "លាក់របារស្ថានភាពក្នុងអេក្រង់ពេញ";
+"settings.row.zoomToFill" = "Zoom to Fill ក្នុងអេក្រង់ពេញ";
+"settings.row.showShorts" = "បង្ហាញ YouTube Shorts ក្នុងការជាវ";
+
+/* Home layout row + option names */
+"settings.row.homeLayout" = "ប្លង់ទំព័រដើម";
+"settings.homeLayout.grid" = "Grid សាមញ្ញ";
+"settings.homeLayout.rails" = "រថភ្លើងប្រអប់";
+
+/* Cache rows */
+"settings.row.feedCache" = "Feed Cache";
+"settings.row.feedCacheDuration" = "រយៈពេល Feed Cache";
+"settings.row.imageCache" = "Image Cache";
+"settings.row.imageCacheDuration" = "រយៈពេល Image Cache";
+"settings.row.clearCache" = "សម្អាត Cache ទាំងអស់";
+/* Alert after clearing all caches */
+"settings.cache.clearedTitle" = "Cache បានសម្អាត";
+"settings.cache.clearedMessage" = "Cache ទាំងអស់បានសម្អាត។";
+
+/* Integration rows */
+"settings.row.ryd" = "Return YouTube Dislike";
+"settings.row.sponsorblock" = "SponsorBlock";
+"settings.row.sponsorblockSettings" = "ការកំណត់ SponsorBlock";
+
+/* Debug rows (values stay technical/English) */
+"settings.row.playbackSource" = "ប្រភពការចៀង";
+"settings.row.solverServer" = "Solver server";
+"settings.row.shareLog" = "ចែករំលែក Log Debug";
+/* Solver-server URL alert */
+"settings.solver.message" = "URL នៃម៉ាស៊ីនមេ solver។";
+"settings.solver.reset" = "កំណត់ឡើងវិញទៅលំនាំដើម";
+/* Suffix shown after the solver URL when it is the built-in default */
+"settings.solver.defaultSuffix" = " (លំនាំដើម)";
+/* Alert when no debug logs exist yet */
+"settings.log.noneTitle" = "គ្មាន Log";
+"settings.log.noneMessage" = "គ្មាន log debug អាចប្រើបាននៅឡើយ។";
+
+/* ===== Profile ===== */
+
+"profile.title" = "ប្រវត្តិរូប";
+"profile.signOut" = "ចេញ";
+"profile.clearImageCache" = "សម្អាត Image Cache";
+"profile.imageCacheCleared" = "Image cache បានសម្អាត។";
+
+/* ===== Search ===== */
+
+"search.title" = "ស្វែងរក";
+/* Search bar placeholder */
+"search.placeholder" = "ស្វែងរក YouTube";
+/* Header above the recent-search list */
+"search.recent" = "ការស្វែងរកថ្មីៗ";
+/* Filters toolbar button; the dotted variant marks active filters */
+"search.filters" = "តម្រង";
+"search.filters.active" = "តម្រង •";
+/* Filters sheet title + reset action */
+"search.filters.title" = "តម្រងស្វែងរក";
+"search.filters.reset" = "កំណត់ឡើងវិញតម្រង";
+/* Filter rows; %1$@ = the current value */
+"search.filters.sort" = "រៀបចំ: %1$@";
+"search.filters.date" = "កាលបរិច្ឆេទ: %1$@";
+"search.filters.type" = "ប្រភេទ: %1$@";
+"search.filters.duration" = "រយៈពេល: %1$@";
+/* Sub-sheet titles */
+"search.filters.sortTitle" = "រៀបចំតាម";
+"search.filters.dateTitle" = "កាលបរិច្ឆេទផ្ទុកឡើង";
+"search.filters.typeTitle" = "ប្រភេទ";
+"search.filters.durationTitle" = "រយៈពេល";
+
+/* Filter option values */
+"search.sort.relevance" = "ទាក់ទង";
+"search.sort.rating" = "ការវាយតម្លៃ";
+"search.sort.uploadDate" = "កាលបរិច្ឆេទផ្ទុកឡើង";
+"search.sort.viewCount" = "ចំនួនមើល";
+"search.date.any" = "ពេលណាក៏បាន";
+"search.date.lastHour" = "ម៉ោងមុន";
+"search.date.today" = "ថ្ងៃនេះ";
+"search.date.thisWeek" = "សប្តាហ៍នេះ";
+"search.date.thisMonth" = "ខែនេះ";
+"search.date.thisYear" = "ឆ្នាំនេះ";
+"search.type.any" = "ប្រភេទណាក៏បាន";
+"search.type.video" = "វីដេអូ";
+"search.type.channel" = "Channel";
+"search.type.playlist" = "បញ្ជីចៀង";
+"search.duration.any" = "រយៈពេលណាក៏បាន";
+"search.duration.short" = "ក្រោម ៤ នាទី";
+"search.duration.medium" = "៤–២០ នាទី";
+"search.duration.long" = "លើស ២០ នាទី";
+
+/* ===== Home ===== */
+
+"home.title" = "ទំព័រដើម";
+/* Chip resetting to the unfiltered feed */
+"home.category.all" = "ទាំងអស់";
+/* Static category chips (server shelf titles arrive already localized) */
+"home.category.live" = "ផ្សាយផ្ទាល់";
+"home.category.news" = "ព័ត៌មាន";
+"home.category.gaming" = "ហ្គេម";
+"home.category.sports" = "កីឡា";
+"home.category.learning" = "ការសិក្សា";
+"home.category.fashion" = "សម្លៀកបំពាក់";
+/* Error empty state (two lines) */
+"home.error.loadFailed" = "មិនអាចផ្ទុក feed បាន\nអូសចុះក្រោមដើម្បីព្យាយាមម្តងទៀត";
+/* Signed-out empty state */
+"home.signIn" = "ចូលដើម្បីមើលអនុសាសន៍របស់អ្នក";
+
+/* ===== Channel ===== */
+
+/* Channel tab bar */
+"channel.tab.videos" = "វីដេអូ";
+"channel.tab.live" = "ផ្សាយផ្ទាល់";
+"channel.tab.playlists" = "បញ្ជីចៀង";
+/* About sheet */
+"channel.about.title" = "អំពី";
+"channel.about.close" = "បិទ";
+"channel.about.subscribers" = "អ្នកជាវ";
+"channel.about.videos" = "វីដេអូ";
+"channel.about.description" = "ការពិពណ៌នា";
+"channel.about.contact" = "ទំនាក់ទំនង";
+
+/* ===== Library ===== */
+
+"library.history" = "ប្រវត្តិ";
+"library.downloads" = "ការទាញយក";
+"library.playlists" = "បញ្ជីចៀង";
+"library.downloads.comingSoon" = "ការទាញយកនឹងមកដល់ឆាប់ៗ";
+"library.history.signIn" = "ចូលដើម្បីមើលប្រវត្តិការមើលរបស់អ្នក";
+"library.history.empty" = "រកមិនឃើញប្រវត្តិការមើល";
+"library.history.loadFailed" = "មិនអាចផ្ទុកប្រវត្តិបាន";
+"library.playlists.signIn" = "ចូលដើម្បីមើលបញ្ជីចៀងរបស់អ្នក";
+"library.playlists.loadFailed" = "មិនអាចផ្ទុកបញ្ជីចៀងបាន";
+"library.playlist.empty" = "គ្មានវីដេអូក្នុងបញ្ជីចៀងនេះ";
+"library.playlist.loadFailed" = "មិនអាចផ្ទុកបញ្ជីចៀងបាន";
+
+/* ===== Subscriptions ===== */
+
+"subscriptions.title" = "ការជាវ";
+"subscriptions.all" = "ការជាវទាំងអស់";
+/* "All" button in the channel avatar bar */
+"subscriptions.allButton" = "ទាំងអស់";
+"subscriptions.signIn" = "ចូលដើម្បីមើលការជាវរបស់អ្នក";
+
+/* ===== Account (toolbar sheet) ===== */
+
+/* Fallback account name when the profile has none */
+"account.fallbackName" = "គណនី";
+"account.signIn" = "ចូល";
+"account.signOut" = "ចេញ";
+"account.notSignedIn" = "មិនទាន់ចូល";
+
+/* Generic error alert title */
+"common.error" = "កំហុស";
+/* Channel screen failed to load */
+"channel.unavailable" = "Channel មិនអាចប្រើបាន";
+
+/* ===== Settings: language section ===== */
+
+"settings.section.language" = "ភាសា";
+"settings.footer.language" = "ភាសាកម្មវិធីផ្លាស់ប្តូរចំណុចប្រទាក់។ ភាសាខ្លឹមសារផ្លាស់ប្តូរចំណងជើង ការស្វែងរក និង feed (YouTube បកប្រែ metadata នៅฝั�ម៉ាស៊ីនមេ ដូចកម្មវិធីផ្លូវការ)។ ការផ្លាស់ប្តូរមានប្រសិទ្ធភាពពេញលេញបន្ទាប់ពីចាប់ផ្តើមកម្មវិធីឡើងវិញ។";
+/* Rows */
+"settings.row.appLanguage" = "ភាសាកម្មវិធី";
+"settings.row.contentLanguage" = "ភាសាខ្លឹមសារ";
+"settings.row.region" = "តំបន់";
+/* Picker option following the device language/region */
+"settings.language.system" = "ប្រព័ន្ធ";
+/* Alert after changing a language setting */
+"settings.language.restartTitle" = "ត្រូវការចាប់ផ្តើមឡើងវិញ";
+"settings.language.restartMessage" = "ការផ្លាស់ប្តូរមានប្រសិទ្ធភាពពេញលេញបន្ទាប់ពីចាប់ផ្តើមកម្មវិធីឡើងវិញ។";
