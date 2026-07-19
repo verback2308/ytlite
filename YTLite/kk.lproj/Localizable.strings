@@ -1,0 +1,367 @@
+/*
+  YTLite — Kazakh (Қазақша).
+
+  Keys are stable API: never rename one casually — it orphans the key in
+  every translation. Comments give translator context. Positional
+  placeholders (%1$@) must be preserved verbatim in translations.
+*/
+
+/* ===== Player: settings menu ===== */
+
+/* Title of the gear menu in the player */
+"player.menu.settings" = "Ойнату параметрлері";
+/* Menu item + picker title: video quality */
+"player.menu.quality" = "Сапа";
+/* Menu item + picker title: audio track (dub) selection */
+"player.menu.audioTrack" = "Дыбыс жолы";
+/* Menu item: toggles the playback statistics overlay */
+"player.menu.stats" = "Статистика әуесқойларға";
+/* Picker title: subtitles */
+"player.menu.subtitles" = "Субтитрлер";
+
+/* ===== Player: pickers ===== */
+
+/* Subtitle picker: disables subtitles */
+"player.subtitles.off" = "Өшіру";
+/* Suffix on auto-generated subtitle tracks, e.g. "English (auto)" */
+"player.subtitles.autoSuffix" = " (авто)";
+/* Suffix on AI auto-dubbed audio tracks, e.g. "Russian (AI)" */
+"player.audioTrack.aiSuffix" = " (AI)";
+
+/* ===== Player: status / errors ===== */
+
+/* Status label while switching; %1$@ = quality label or track name */
+"player.status.loading" = "Жүктелуде %1$@...";
+/* Status label while the stream URL is being resolved */
+"player.status.resolving" = "Ағын шешілуде...";
+/* Shown when a video cannot be played at all */
+"player.error.playback" = "Ойнату сәтсіз аяқталды.";
+/* Shown when switching video quality failed (playback continues) */
+"player.error.qualitySwitch" = "Сапаны ауыстыру сәтсіз.";
+/* Shown when switching the audio track failed (playback continues) */
+"player.error.audioTrackSwitch" = "Дыбыс жолын ауыстыру сәтсіз.";
+
+/* ===== Common ===== */
+
+/* Subscribe button, not-subscribed state */
+"common.subscribe" = "Жазылу";
+/* Subscribe button, subscribed state */
+"common.subscribed" = "Жазылды";
+/* Generic cancel action */
+"common.cancel" = "Бас тарту";
+/* Generic confirmation button */
+"common.ok" = "ОК";
+/* Generic save action */
+"common.save" = "Сақтау";
+/* Generic done action */
+"common.done" = "Дайын";
+/* Fallback title/label of a playlist tile */
+"common.playlist" = "Ойнату тізімі";
+/* Library tab title */
+"library.title" = "Кітапхана";
+
+/* ===== Player: status ===== */
+
+/* Status label while the player prepares the first video */
+"player.status.preparing" = "Бейне дайындалуда...";
+/* Status label while an expired stream URL is re-resolved */
+"player.status.refreshing" = "Ағын жаңартылуда...";
+
+/* ===== Player: watch page ===== */
+
+/* Expands the video description */
+"player.description.more" = "Көбірек";
+/* Collapses the video description */
+"player.description.less" = "Азырақ";
+/* Action bar: share the video */
+"player.action.share" = "Бөлісу";
+/* Action bar: save to playlist */
+"player.action.save" = "Сақтау";
+/* Action bar: download */
+"player.action.download" = "Жүктеу";
+
+/* ===== Player: comments ===== */
+
+/* Comments section header */
+"player.comments.title" = "Түсініктемелер";
+/* Comments header with count; %1$d = number of comments */
+"player.comments.titleCount" = "Түсініктемелер (%1$d)";
+/* Shown while comments load */
+"player.comments.loading" = "Түсініктемелер жүктелуде...";
+/* Shown when the comments request failed */
+"player.comments.unavailable" = "Түсініктемелер қол жетімсіз";
+/* Shown before the watch page has loaded enough to fetch comments */
+"player.comments.unavailableYet" = "Түсініктемелер әлі қол жетімсіз.";
+/* Button loading the next page of comments */
+"player.comments.loadMore" = "Көбірек түсініктеме жүктеу";
+/* Author line of a pinned comment; %1$@ = author name */
+"player.comments.pinned" = "%1$@ • Бекітілген";
+/* Comment like count; %1$@ = formatted number */
+"player.comments.likes" = "%1$@ ұнату";
+/* Comment reply count; %1$@ = formatted number */
+"player.comments.replies" = "%1$@ жауап";
+
+/* ===== Player: autoplay overlay ===== */
+
+/* Header above the next video suggestion */
+"player.autoplay.upNext" = "Келесі";
+/* Starts the suggested video immediately, skipping the countdown */
+"player.autoplay.playNow" = "Қазір ойнату";
+
+/* ===== Player: related section ===== */
+
+/* Header of an unnamed autoplay queue/playlist */
+"player.related.mix" = "Араластыру";
+/* Header of the related-videos section */
+"player.related.title" = "Ұқсас";
+/* Status label on fatal playback failure; %1$@ = error description */
+"player.error.withMessage" = "Ойнату қатесі: %1$@";
+
+/* ===== Player: speed ===== */
+
+/* The 1x playback speed */
+"player.speed.normal" = "Қалыпты";
+
+/* ===== SponsorBlock ===== */
+
+/* Skip button; %1$@ = localized category name, e.g. "Skip Sponsor" */
+"sponsorblock.skip" = "Өткізу %1$@";
+
+/* Skip-behavior options (per-category setting) */
+"sponsorblock.behavior.autoSkip" = "Автоматты өткізу";
+"sponsorblock.behavior.showButton" = "Батырманы көрсету";
+"sponsorblock.behavior.disabled" = "Өшіру";
+
+/* Footer under the SponsorBlock section (project attribution) */
+"sponsorblock.attribution" = "SponsorBlock (sponsor.ajay.app) негізінде — ашық қоғамдастық жобасы.";
+/* Header above the per-category skip settings */
+"sponsorblock.segmentCategories" = "Сегменттер санаттары";
+
+/* Category names (SponsorBlock project terms) and their descriptions */
+"sponsorblock.category.sponsor.name" = "Спонсор";
+"sponsorblock.category.sponsor.description" = "Ақылы жарнама, ақылы рефералдар және тікелей жарнамалар. Өзін-өзі жарнамалау немесе бос сөздер емес.";
+"sponsorblock.category.selfpromo.name" = "Ақысыз/Өзін-өзі жарнамалау";
+"sponsorblock.category.selfpromo.description" = "«Спонсор» секілді, бірақ ақысыз немесе өзін-өзі жарнамалау. Бұған тауарлар, демеушілік немесе серіктестер туралы ақпарат кіреді.";
+"sponsorblock.category.exclusive_access.name" = "Эксклюзивті қол жеткізу";
+"sponsorblock.category.exclusive_access.description" = "Тек бүкіл бейнелерді белгілеу үшін. Тегін немесе жеңілдікпен алынған өнімді, қызметті немесе орынды көрсететін бейнелерде қолданылады.";
+"sponsorblock.category.interaction.name" = "Әрекет еске салу (Жазылу)";
+"sponsorblock.category.interaction.description" = "Мазмұнның ортасында лайк, жазылу немесе еру туралы қысқа еске салу болғанда. Егер ұзақ болса немесе нақты нәрсе туралы болса, ол өзін-өзі жарнамалауға жатады.";
+"sponsorblock.category.highlight.name" = "Маңызды бөлік";
+"sponsorblock.category.highlight.description" = "Көпшілік іздеген бейне бөлігі. «Бейне x-те басталады» түсініктемелері секілді.";
+"sponsorblock.category.intro.name" = "Үзіліс/Кіріспе анимациясы";
+"sponsorblock.category.intro.description" = "Нақты мазмұнсыз аралық. Үзіліс, статикалық кадр немесе қайталанатын анимация болуы мүмкін. Ақпараттық өтпелерге қолданбау керек.";
+"sponsorblock.category.outro.name" = "Соңғы кадрлар/Роликтер";
+"sponsorblock.category.outro.description" = "Роликтер немесе YouTube соңғы кадрлары пайда болғанда. Ақпараттық қорытындыларға қолданбау керек.";
+"sponsorblock.category.preview.name" = "Алдын ала/Қайталау";
+"sponsorblock.category.preview.description" = "Осы бейнедегі немесе сериядағы басқа бейнелердегі не болатынын көрсететін клиптер жинағы.";
+"sponsorblock.category.filler.name" = "Қосымша мәтін/Күлкі";
+"sponsorblock.category.filler.description" = "Бейненің негізгі мазмұнын түсіну үшін қажет емес қосымша көріністер немесе күлкі. Бастапқы ақпарат беретін сегменттерді қамтиды.";
+"sponsorblock.category.music_offtopic.name" = "Музыкалық емес бөлім";
+"sponsorblock.category.music_offtopic.description" = "Тек музыкалық бейнелерге. Музыкалық бейненің музыкалық емес бөлігі.";
+"sponsorblock.category.chapter.name" = "Тарау";
+"sponsorblock.category.chapter.description" = "Бейненің реттелмелі бөлімдері.";
+
+/* ===== Settings ===== */
+
+/* Settings sheet title */
+"settings.title" = "Параметрлер";
+
+/* Section headers */
+"settings.section.theme" = "Тақырып";
+"settings.section.playback" = "Ойнату";
+"settings.section.home" = "Басты бет";
+"settings.section.cache" = "Кэш";
+"settings.section.ryd" = "YouTube жақтырмауды қайтару";
+"settings.section.sponsorblock" = "SponsorBlock";
+"settings.section.debug" = "Жөндеу";
+
+/* Section footers */
+"settings.footer.themeAutoSystem" = "Жүйе көрінімін автоматты түрде қадағалайды.";
+"settings.footer.themeAutoHours" = "Жоғарыдағы сағаттар аралығында қараңғы тақырыпқа автоматты түрде ауысады.";
+"settings.footer.playback" = "Толық экрандағы бейнені автоматты түрде масштабтайды, қараңғы жолақтар қалмайды. Ойнатқыштағы саусақпен ашу оны әр бейне үшін өзгертеді.";
+"settings.footer.home" = "Ұсыныс сөрелері қалай көрсетіледі: бір үздіксіз тор немесе ТВ стильдегі көлденең жолақтар.";
+"settings.footer.ryd" = "Жақтырмау саны Return YouTube Dislike (returnyoutubedislike.com) негізінде жұмыс істейді — ашық қоғамдастық жобасы.";
+"settings.footer.debug" = "Нақты ойнату көзін мәжбүрлеу. Әдетте Android VR автоматты қайта бағыттаумен қолданылады. Шешім сервері Mobile Web + pot көзін қамтамасыз етеді (pot жасау және iOS 12–13-те n-шешу).";
+
+/* Theme rows; segment labels for dark/light/auto modes */
+"settings.row.theme" = "Тақырып";
+"settings.theme.dark" = "Қараңғы";
+"settings.theme.light" = "Жарық";
+"settings.theme.auto" = "Автоматты";
+/* Hour pickers bounding the iOS 12 scheduled dark mode */
+"settings.row.darkFrom" = "Қараңғы тақырып басталуы";
+"settings.row.darkUntil" = "Қараңғы тақырып аяқталуы";
+
+/* Playback rows */
+"settings.row.defaultQuality" = "Әдепкі сапа";
+/* The "Auto" entry of the default-quality picker (stored value stays English) */
+"settings.quality.auto" = "Автоматты";
+"settings.row.backgroundPlayback" = "Фондық ойнату";
+"settings.row.pip" = "Сурет ішіндегі сурет";
+"settings.row.hideStatusBar" = "Толық экранда мәртебе жолағын жасыру";
+"settings.row.zoomToFill" = "Толық экрандағы масштабтау";
+"settings.row.showShorts" = "Жазылымдарда YouTube Shorts көрсету";
+
+/* Home layout row + option names */
+"settings.row.homeLayout" = "Басты бет жаймаңы";
+"settings.homeLayout.grid" = "Жай тор";
+"settings.homeLayout.rails" = "Сөре жолақтары";
+
+/* Cache rows */
+"settings.row.feedCache" = "Лента кэші";
+"settings.row.feedCacheDuration" = "Лента кэшінің мерзімі";
+"settings.row.imageCache" = "Сурет кэші";
+"settings.row.imageCacheDuration" = "Сурет кэшінің мерзімі";
+"settings.row.clearCache" = "Барлық кэшті тазалау";
+/* Alert after clearing all caches */
+"settings.cache.clearedTitle" = "Кэш тазаланды";
+"settings.cache.clearedMessage" = "Барлық кэш тазаланды.";
+
+/* Integration rows */
+"settings.row.ryd" = "YouTube жақтырмауды қайтару";
+"settings.row.sponsorblock" = "SponsorBlock";
+"settings.row.sponsorblockSettings" = "SponsorBlock параметрлері";
+
+/* Debug rows (values stay technical/English) */
+"settings.row.playbackSource" = "Ойнату көзі";
+"settings.row.solverServer" = "Solver server";
+"settings.row.shareLog" = "Жөндеу журналын бөлісу";
+/* Solver-server URL alert */
+"settings.solver.message" = "Шешім серверінің URL мекенжайы.";
+"settings.solver.reset" = "Әдепкі мәнге орнату";
+/* Suffix shown after the solver URL when it is the built-in default */
+"settings.solver.defaultSuffix" = " (әдепкі)";
+/* Alert when no debug logs exist yet */
+"settings.log.noneTitle" = "Журналдар жоқ";
+"settings.log.noneMessage" = "Әлі жөндеу журналдары жоқ.";
+
+/* ===== Profile ===== */
+
+"profile.title" = "Профиль";
+"profile.signOut" = "Шығу";
+"profile.clearImageCache" = "Сурет кэшін тазалау";
+"profile.imageCacheCleared" = "Сурет кэші тазаланды.";
+
+/* ===== Search ===== */
+
+"search.title" = "Іздеу";
+/* Search bar placeholder */
+"search.placeholder" = "YouTube іздеу";
+/* Header above the recent-search list */
+"search.recent" = "Соңғы іздеулер";
+/* Filters toolbar button; the dotted variant marks active filters */
+"search.filters" = "Сүзгілер";
+"search.filters.active" = "Сүзгілер •";
+/* Filters sheet title + reset action */
+"search.filters.title" = "Іздеу сүзгілері";
+"search.filters.reset" = "Сүзгілерді қалпына келтіру";
+/* Filter rows; %1$@ = the current value */
+"search.filters.sort" = "Сұрыптау: %1$@";
+"search.filters.date" = "Күні: %1$@";
+"search.filters.type" = "Түрі: %1$@";
+"search.filters.duration" = "Ұзақтығы: %1$@";
+/* Sub-sheet titles */
+"search.filters.sortTitle" = "Сұрыптау тәсілі";
+"search.filters.dateTitle" = "Жүктеу күні";
+"search.filters.typeTitle" = "Түрі";
+"search.filters.durationTitle" = "Ұзақтығы";
+
+/* Filter option values */
+"search.sort.relevance" = "Сәйкестік";
+"search.sort.rating" = "Баға";
+"search.sort.uploadDate" = "Жүктеу күні";
+"search.sort.viewCount" = "Көру саны";
+"search.date.any" = "Кез келген уақыт";
+"search.date.lastHour" = "Соңғы сағат";
+"search.date.today" = "Бүгін";
+"search.date.thisWeek" = "Осы апта";
+"search.date.thisMonth" = "Осы ай";
+"search.date.thisYear" = "Осы жыл";
+"search.type.any" = "Кез келген түр";
+"search.type.video" = "Бейне";
+"search.type.channel" = "Арна";
+"search.type.playlist" = "Ойнату тізімі";
+"search.duration.any" = "Кез келген ұзақтық";
+"search.duration.short" = "4 мин дейін";
+"search.duration.medium" = "4–20 мин";
+"search.duration.long" = "20 мин жоғары";
+
+/* ===== Home ===== */
+
+"home.title" = "Басты бет";
+/* Chip resetting to the unfiltered feed */
+"home.category.all" = "Барлығы";
+/* Static category chips (server shelf titles arrive already localized) */
+"home.category.live" = "Тікелей эфир";
+"home.category.news" = "Жаңалықтар";
+"home.category.gaming" = "Ойындар";
+"home.category.sports" = "Спорт";
+"home.category.learning" = "Білім";
+"home.category.fashion" = "Мода";
+/* Error empty state (two lines) */
+"home.error.loadFailed" = "Лентаны жүктеу мүмкін болмады\nТөмен тартып қайталау";
+/* Signed-out empty state */
+"home.signIn" = "Ұсыныстарыңызды көру үшін кіріңіз";
+
+/* ===== Channel ===== */
+
+/* Channel tab bar */
+"channel.tab.videos" = "Бейнелер";
+"channel.tab.live" = "Тікелей эфир";
+"channel.tab.playlists" = "Ойнату тізімдері";
+/* About sheet */
+"channel.about.title" = "Туралы";
+"channel.about.close" = "Жабу";
+"channel.about.subscribers" = "Жазылушылар";
+"channel.about.videos" = "Бейнелер";
+"channel.about.description" = "Сипаттама";
+"channel.about.contact" = "Байланыс";
+
+/* ===== Library ===== */
+
+"library.history" = "Тарих";
+"library.downloads" = "Жүктелімдер";
+"library.playlists" = "Ойнату тізімдері";
+"library.downloads.comingSoon" = "Жүктелімдер жақын арада";
+"library.history.signIn" = "Көру тарихыңызды көру үшін кіріңіз";
+"library.history.empty" = "Көру тарихы табылмады";
+"library.history.loadFailed" = "Тарихты жүктеу мүмкін болмады";
+"library.playlists.signIn" = "Ойнату тізімдеріңізді көру үшін кіріңіз";
+"library.playlists.loadFailed" = "Ойнату тізімдерін жүктеу мүмкін болмады";
+"library.playlist.empty" = "Бұл ойнату тізімінде бейне жоқ";
+"library.playlist.loadFailed" = "Ойнату тізімін жүктеу мүмкін болмады";
+
+/* ===== Subscriptions ===== */
+
+"subscriptions.title" = "Жазылымдар";
+"subscriptions.all" = "Барлық жазылымдар";
+/* "All" button in the channel avatar bar */
+"subscriptions.allButton" = "Барлығы";
+"subscriptions.signIn" = "Жазылымдарыңызды көру үшін кіріңіз";
+
+/* ===== Account (toolbar sheet) ===== */
+
+/* Fallback account name when the profile has none */
+"account.fallbackName" = "Тіркелгі";
+"account.signIn" = "Кіру";
+"account.signOut" = "Шығу";
+"account.notSignedIn" = "Кірілмеген";
+
+/* Generic error alert title */
+"common.error" = "Қате";
+/* Channel screen failed to load */
+"channel.unavailable" = "Арна қол жетімсіз";
+
+/* ===== Settings: language section ===== */
+
+"settings.section.language" = "Тіл";
+"settings.footer.language" = "Қолданба тілі интерфейсті өзгертеді. Мазмұн тілі тақырыптарды, іздеуді және ленталарды өзгертеді (YouTube метадеректерді сервер жағынан аударады, ресми қолданба секілді). Өзгерістер қолданбаны қайта іске қосқаннан кейін толықтай қолданылады.";
+/* Rows */
+"settings.row.appLanguage" = "Қолданба тілі";
+"settings.row.contentLanguage" = "Мазмұн тілі";
+"settings.row.region" = "Аймақ";
+/* Picker option following the device language/region */
+"settings.language.system" = "Жүйе";
+/* Alert after changing a language setting */
+"settings.language.restartTitle" = "Қайта іске қосу қажет";
+"settings.language.restartMessage" = "Өзгерістер қолданбаны қайта іске қосқаннан кейін толықтай қолданылады.";
