@@ -221,7 +221,7 @@ final class AutoplayOverlayView: UIView {
 // MARK: - Countdown & Ring
 extension AutoplayOverlayView {
     func startCountdown() {
-        countdownLabel.text = "\(剩余秒数)"
+        countdownLabel.text = "\(secondsRemaining)"
         animateRing()
         countdownTimer = Timer.scheduledTimer(
             withTimeInterval: 1.0,
@@ -233,7 +233,7 @@ extension AutoplayOverlayView {
 
     private func handleCountdownTick() {
         secondsRemaining -= 1
-        countdownLabel.text = "\(剩余秒数)"
+        countdownLabel.text = "\(secondsRemaining)"
         if secondsRemaining <= 0 {
             countdownTimer?.invalidate()
             countdownTimer = nil
