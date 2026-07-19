@@ -12,13 +12,13 @@ struct SearchFilters: Equatable {
         var displayName: String {
             switch self {
             case .relevance:
-                return "相关"
+                return "相关度"
             case .rating:
                 return "评分"
             case .uploadDate:
                 return "上传日期"
             case .viewCount:
-                return "浏览次数"
+                return "播放次数"
             }
         }
     }
@@ -34,9 +34,9 @@ struct SearchFilters: Equatable {
         var displayName: String {
             switch self {
             case .any:
-                return "任何时间"
+                return "任意时间"
             case .lastHour:
-                return "最后一小时"
+                return "最近一小时"
             case .today:
                 return "今天"
             case .thisWeek:
@@ -58,13 +58,13 @@ struct SearchFilters: Equatable {
         var displayName: String {
             switch self {
             case .any:
-                return "任何类型"
+                return "任意类型"
             case .video:
                 return "视频"
             case .channel:
-                return "沟渠"
+                return "频道"
             case .playlist:
-                return "播放曲目"
+                return "播放列表"
             }
         }
     }
@@ -78,11 +78,11 @@ struct SearchFilters: Equatable {
         var displayName: String {
             switch self {
             case .any:
-                return "本年度"
+                return "今年"
             case .short:
-                return "小于4分钟"
+                return "4分钟以下"
             case .long:
-                return "结束20分钟"
+                return "20分钟以上"
             case .medium:
                 return "4–20分钟"
             }
