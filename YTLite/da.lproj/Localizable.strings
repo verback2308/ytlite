@@ -1,0 +1,279 @@
+/*
+  YTLite — Dansk (Danish).
+
+  Keys are stable API: never rename one casually — it orphans the key in
+  every translation. Comments give translator context. Positional
+  placeholders (%1$@) must be preserved verbatim in translations.
+*/
+
+/* ===== Player: settings menu ===== */
+
+/* Title of the gear menu in the player */
+"player.menu.settings" = "Afspilningsindstillinger";
+/* Menu item + picker title: video quality */
+"player.menu.quality" = "Kvalitet";
+/* Menu item + picker title: audio track (dub) selection */
+"player.menu.audioTrack" = "Lydspor";
+/* Menu item: toggles the playback statistics overlay */
+"player.menu.stats" = "Statistik for nørder";
+/* Picker title: subtitles */
+"player.menu.subtitles" = "Undertekster";
+
+/* ===== Player: pickers ===== */
+
+/* Subtitle picker: disables subtitles */
+"player.subtitles.off" = "Fra";
+/* Suffix on auto-generated subtitle tracks */
+"player.subtitles.autoSuffix" = " (auto)";
+/* Suffix on AI auto-dubbed audio tracks */
+"player.audioTrack.aiSuffix" = " (AI)";
+
+/* ===== Player: status / errors ===== */
+
+"player.status.loading" = "Indlæser %1$@...";
+"player.status.resolving" = "Løser stream...";
+"player.error.playback" = "Afspilning mislykkedes.";
+"player.error.qualitySwitch" = "Kvalitetsskift mislykkedes.";
+"player.error.audioTrackSwitch" = "Lydsporskift mislykkedes.";
+
+/* ===== Common ===== */
+
+"common.subscribe" = "Abonner";
+"common.subscribed" = "Abonneret";
+"common.cancel" = "Annuller";
+"common.ok" = "OK";
+"common.save" = "Gem";
+"common.done" = "Udført";
+"common.playlist" = "Playlist";
+"library.title" = "Bibliotek";
+
+/* ===== Player: status ===== */
+
+"player.status.preparing" = "Forbereder video...";
+"player.status.refreshing" = "Opdaterer stream...";
+
+/* ===== Player: watch page ===== */
+
+"player.description.more" = "Mere";
+"player.description.less" = "Mindre";
+"player.action.share" = "Del";
+"player.action.save" = "Gem";
+"player.action.download" = "Download";
+
+/* ===== Player: comments ===== */
+
+"player.comments.title" = "Kommentarer";
+"player.comments.titleCount" = "Kommentarer (%1$d)";
+"player.comments.loading" = "Indlæser kommentarer...";
+"player.comments.unavailable" = "Kommentarer ikke tilgængelige";
+"player.comments.unavailableYet" = "Kommentarer er endnu ikke tilgængelige.";
+"player.comments.loadMore" = "Indlæs flere kommentarer";
+"player.comments.pinned" = "%1$@ \u2022 Fastgjort";
+"player.comments.likes" = "%1$@ likes";
+"player.comments.replies" = "%1$@ svar";
+
+/* ===== Player: autoplay overlay ===== */
+
+"player.autoplay.upNext" = "Næste";
+"player.autoplay.playNow" = "Afspil nu";
+
+/* ===== Player: related section ===== */
+
+"player.related.mix" = "Mix";
+"player.related.title" = "Relaterede";
+"player.error.withMessage" = "Afspilningsfejl: %1$@";
+
+/* ===== Player: speed ===== */
+
+"player.speed.normal" = "Normal";
+
+/* ===== SponsorBlock ===== */
+
+"sponsorblock.skip" = "Spring %1$@ over";
+"sponsorblock.behavior.autoSkip" = "Automatisk spring over";
+"sponsorblock.behavior.showButton" = "Vis knap";
+"sponsorblock.behavior.disabled" = "Deaktiver";
+"sponsorblock.attribution" = "Drevet af SponsorBlock (sponsor.ajay.app) \u2014 et åbent fællesskabsprojekt.";
+"sponsorblock.segmentCategories" = "Segmentkategorier";
+"sponsorblock.category.sponsor.name" = "Sponsor";
+"sponsorblock.category.sponsor.description" = "Betalt promotion, betalt henvisning og direkte annoncering. Ikke til selvpromovering eller gratis omtale af årsager/oprindere/websites/produkter de kan lide.";
+"sponsorblock.category.selfpromo.name" = "Ubetalt/Selvpromovering";
+"sponsorblock.category.selfpromo.description" = "Ligesom \"sponsor\" men ubetalt eller selvpromovering. Dette inkluderer sektioner om merchandise, donationer eller information om, hvem de har samarbejdet med.";
+"sponsorblock.category.exclusive_access.name" = "Eksklusiv adgang";
+"sponsorblock.category.exclusive_access.description" = "Kun til mærkning af hele videoer. Bruges når en video viser et produkt, en tjeneste eller et sted, de har modtaget gratis eller subsidieret adgang til.";
+"sponsorblock.category.interaction.name" = "Interaktionspåmindelse (Abonner)";
+"sponsorblock.category.interaction.description" = "Når der er en kort påmindelse om at like, abonnere eller følge midt i indholdet. Hvis den er lang eller omhandler noget specifikt, bør den i stedet være under selvpromovering.";
+"sponsorblock.category.highlight.name" = "Højdepunkt";
+"sponsorblock.category.highlight.description" = "Den del af videoen, som de fleste leder efter. Lignende \"Video starter ved x\" kommentarer.";
+"sponsorblock.category.intro.name" = "Pause/Introanimation";
+"sponsorblock.category.intro.description" = "Et interval uden egentligt indhold. Kan være en pause, stille billede eller gentagende animation. Bør ikke bruges til overgange med information.";
+"sponsorblock.category.outro.name" = "Slutskærm/Kreditering";
+"sponsorblock.category.outro.description" = "Kreditering eller når YouTube-slutskærme vises. Ikke til konklusioner med information.";
+"sponsorblock.category.preview.name" = "Forhåndsvisning/Sammenfatning";
+"sponsorblock.category.preview.description" = "Samling af klip, der viser hvad der kommer i denne video eller andre videoer i en serie, hvor al information gentages senere i videoen.";
+"sponsorblock.category.filler.name" = "Sidebemærkninger/Vitser";
+"sponsorblock.category.filler.description" = "Tangentielle scener eller vitser, der ikke er nødvendige for at forstå videoens hovedindhold. Bør ikke inkludere segmenter, der giver kontekst eller baggrundsdetaljer.";
+"sponsorblock.category.music_offtopic.name" = "Ikke-musik-sektion";
+"sponsorblock.category.music_offtopic.description" = "Kun til musikvideoer. Ikke-musik-delen af en musikvideo.";
+"sponsorblock.category.chapter.name" = "Kapitel";
+"sponsorblock.category.chapter.description" = "Brugerdefinerede sektioner i videoen.";
+
+/* ===== Settings ===== */
+
+"settings.title" = "Indstillinger";
+"settings.section.theme" = "Tema";
+"settings.section.playback" = "Afspilning";
+"settings.section.home" = "Startside";
+"settings.section.cache" = "Cache";
+"settings.section.ryd" = "Return YouTube Dislike";
+"settings.section.sponsorblock" = "SponsorBlock";
+"settings.section.debug" = "Debug";
+"settings.footer.themeAutoSystem" = "Følger automatisk systemudseendet.";
+"settings.footer.themeAutoHours" = "Skifter automatisk til mørkt tema i ovenstående tidsrum.";
+"settings.footer.playback" = "Zoom to Fill skalerer automatisk videoen i fuldskærm, så der ikke er sorte bjælker. Knib i afspilleren overskriver det for den enkelte video.";
+"settings.footer.home" = "Anbefalingshylder vises som: et sammenhængende gitter eller TV-stil horizontale skinner.";
+"settings.footer.ryd" = "Antal dislikes drives af Return YouTube Dislike (returnyoutubedislike.com) \u2014 et åbent fællesskabsprojekt.";
+"settings.footer.debug" = "Tving en bestemt afspilningskilde. Normalt bruges Android VR med automatisk fallback. Solver-serveren driver Mobile Web + pot-kilden (pot-minting og n-løsning på iOS 12\u201313).";
+"settings.row.theme" = "Tema";
+"settings.theme.dark" = "Mørk";
+"settings.theme.light" = "Lys";
+"settings.theme.auto" = "Auto";
+"settings.row.darkFrom" = "Mørkt tema fra";
+"settings.row.darkUntil" = "Mørkt tema til";
+"settings.row.defaultQuality" = "Standardkvalitet";
+"settings.quality.auto" = "Auto";
+"settings.row.backgroundPlayback" = "Baggrundsafspilning";
+"settings.row.pip" = "Billede-i-billede";
+"settings.row.hideStatusBar" = "Skjul statuslinje i fuldskærm";
+"settings.row.zoomToFill" = "Zoom to Fill i fuldskærm";
+"settings.row.showShorts" = "Vis YouTube Shorts i abonnementer";
+"settings.row.homeLayout" = "Startside layout";
+"settings.homeLayout.grid" = "Almindeligt gitter";
+"settings.homeLayout.rails" = "Hyldeskinner";
+"settings.row.feedCache" = "Feed-cache";
+"settings.row.feedCacheDuration" = "Feed-cache varighed";
+"settings.row.imageCache" = "Billede-cache";
+"settings.row.imageCacheDuration" = "Billede-cache varighed";
+"settings.row.clearCache" = "Ryd al cache";
+"settings.cache.clearedTitle" = "Cache ryddet";
+"settings.cache.clearedMessage" = "Al cache er blevet ryddet.";
+"settings.row.ryd" = "Return YouTube Dislike";
+"settings.row.sponsorblock" = "SponsorBlock";
+"settings.row.sponsorblockSettings" = "SponsorBlock-indstillinger";
+"settings.row.playbackSource" = "Afspilningskilde";
+"settings.row.solverServer" = "Solver server";
+"settings.row.shareLog" = "Del debug-log";
+"settings.solver.message" = "URL for solver-serveren.";
+"settings.solver.reset" = "Nulstil til standard";
+"settings.solver.defaultSuffix" = " (standard)";
+"settings.log.noneTitle" = "Ingen logs";
+"settings.log.noneMessage" = "Ingen debuglogs tilgængelige endnu.";
+
+/* ===== Profile ===== */
+
+"profile.title" = "Profil";
+"profile.signOut" = "Log ud";
+"profile.clearImageCache" = "Ryd billedcache";
+"profile.imageCacheCleared" = "Billedcache ryddet.";
+
+/* ===== Search ===== */
+
+"search.title" = "Søg";
+"search.placeholder" = "Søg på YouTube";
+"search.recent" = "Seneste søgninger";
+"search.filters" = "Filtre";
+"search.filters.active" = "Filtre \u2022";
+"search.filters.title" = "Søgefiltre";
+"search.filters.reset" = "Nulstil filtre";
+"search.filters.sort" = "Sorter: %1$@";
+"search.filters.date" = "Dato: %1$@";
+"search.filters.type" = "Type: %1$@";
+"search.filters.duration" = "Varighed: %1$@";
+"search.filters.sortTitle" = "Sorter efter";
+"search.filters.dateTitle" = "Upload dato";
+"search.filters.typeTitle" = "Type";
+"search.filters.durationTitle" = "Varighed";
+"search.sort.relevance" = "Relevans";
+"search.sort.rating" = "Bedømmelse";
+"search.sort.uploadDate" = "Upload dato";
+"search.sort.viewCount" = "Visningstal";
+"search.date.any" = "Når som helst";
+"search.date.lastHour" = "Seneste time";
+"search.date.today" = "I dag";
+"search.date.thisWeek" = "Denne uge";
+"search.date.thisMonth" = "Denne måned";
+"search.date.thisYear" = "I år";
+"search.type.any" = "Alle typer";
+"search.type.video" = "Video";
+"search.type.channel" = "Kanal";
+"search.type.playlist" = "Playlist";
+"search.duration.any" = "Alle varigheder";
+"search.duration.short" = "Under 4 min";
+"search.duration.medium" = "4\u201320 min";
+"search.duration.long" = "Over 20 min";
+
+/* ===== Home ===== */
+
+"home.title" = "Startside";
+"home.category.all" = "Alle";
+"home.category.live" = "Live";
+"home.category.news" = "Nyheder";
+"home.category.gaming" = "Gaming";
+"home.category.sports" = "Sport";
+"home.category.learning" = "Læring";
+"home.category.fashion" = "Mode";
+"home.error.loadFailed" = "Kunne ikke indlæse feed\nTræk ned for at prøve igen";
+"home.signIn" = "Log ind for at se dine anbefalinger";
+
+/* ===== Channel ===== */
+
+"channel.tab.videos" = "Videoer";
+"channel.tab.live" = "Live";
+"channel.tab.playlists" = "Playlister";
+"channel.about.title" = "Om";
+"channel.about.close" = "Luk";
+"channel.about.subscribers" = "Abonnenter";
+"channel.about.videos" = "Videoer";
+"channel.about.description" = "Beskrivelse";
+"channel.about.contact" = "Kontakt";
+
+/* ===== Library ===== */
+
+"library.history" = "Historik";
+"library.downloads" = "Downloads";
+"library.playlists" = "Playlister";
+"library.downloads.comingSoon" = "Downloads kommer snart";
+"library.history.signIn" = "Log ind for at se din afspilningshistorik";
+"library.history.empty" = "Ingen afspilningshistorik fundet";
+"library.history.loadFailed" = "Kunne ikke indlæse historik";
+"library.playlists.signIn" = "Log ind for at se dine playlister";
+"library.playlists.loadFailed" = "Kunne ikke indlæse playlister";
+"library.playlist.empty" = "Ingen videoer i denne playliste";
+"library.playlist.loadFailed" = "Kunne ikke indlæse playliste";
+
+/* ===== Subscriptions ===== */
+
+"subscriptions.title" = "Abonnementer";
+"subscriptions.all" = "Alle abonnementer";
+"subscriptions.allButton" = "Alle";
+"subscriptions.signIn" = "Log ind for at se dine abonnementer";
+
+/* ===== Account (toolbar sheet) ===== */
+
+"account.fallbackName" = "Konto";
+"account.signIn" = "Log ind";
+"account.signOut" = "Log ud";
+"account.notSignedIn" = "Ikke logget ind";
+"common.error" = "Fejl";
+"channel.unavailable" = "Kanal ikke tilgængelig";
+
+/* ===== Settings: language section ===== */
+
+"settings.section.language" = "Sprog";
+"settings.footer.language" = "Appsprog ændrer brugerfladen. Indholdssprog ændrer titler, søgning og feeds (YouTube oversætter metadata på serversiden som den officielle app). Ændringer træder fuldt i kraft efter genstart af appen.";
+"settings.row.appLanguage" = "Appsprog";
+"settings.row.contentLanguage" = "Indholdssprog";
+"settings.row.region" = "Område";
+"settings.language.system" = "System";
+"settings.language.restartTitle" = "Genstart påkrævet";
+"settings.language.restartMessage" = "Ændringer træder fuldt i kraft efter genstart af appen.";
