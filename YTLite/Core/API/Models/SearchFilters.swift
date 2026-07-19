@@ -38,7 +38,7 @@ struct SearchFilters: Equatable {
             case .lastHour:
                 return "最近一小时"
             case .today:
-                return "任意时长"
+                return "今天"
             case .thisWeek:
                 return "本周"
             case .thisMonth:
