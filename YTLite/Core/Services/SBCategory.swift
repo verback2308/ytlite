@@ -54,79 +54,80 @@ enum SBCategory: String, CaseIterable {
         typealias Def = SBCategoryDefinition
         return [
             .sponsor: Def(
-                "Sponsor",
-                "Paid promotion, paid referrals and direct advertisements."
-                    + " Not for self-promotion or free shoutouts to"
-                    + " causes/creators/websites/products they like.",
+                "赞助",
+                "付费推广、付费引流和直接广告."
+                    + " 不包括自我推广"
+                    + " 或对他们喜欢的公益\/创作者\/网站\/产品的免费宣传.",
                 "#00d400",
                 behavior: .autoSkip
             ),
             .selfpromo: Def(
-                "Unpaid/Self Promotion",
-                "Similar to \"sponsor\" except for unpaid or self promotion."
-                    + " This includes sections about merchandise, donations,"
-                    + " or information about who they collaborated with.",
+                "无偿\/自我推广",
+                "类似「赞助」，但是针对无偿或自我推广的内容."
+                    + " 包括周边商品、捐款,"
+                    + " 或与他们合作对象相关的信息.",
                 "#ffff00"
             ),
             .exclusiveAccess: Def(
-                "Exclusive Access",
-                "Only for labeling entire videos. Used when a video"
-                    + " showcases a product, service or location that"
-                    + " they've received free or subsidized access to.",
+                "独家访问",
+                "仅用于标记整段视频"
+                    + " 当视频展示他们免费"
+                    + " 或受补贴获得的产品、服务或地点时使用.",
                 "#008000",
                 canAutoSkip: false,
                 canShowButton: false
             ),
             .interaction: Def(
-                "Interaction Reminder (Subscribe)",
-                "When there is a short reminder to like, subscribe or follow"
-                    + " in the middle of content. If it is long or about"
-                    + " something specific, it should be under self promotion"
-                    + " instead.",
+                "互动提醒（订阅)",
+                "内容中间出现的简短点赞、订阅或关注提醒"
+                    + " 如果提醒较长或针对特定内容"
+                    + " 应归入自我"
+                    + " 推广.",
                 "#cc00ff"
             ),
             .highlight: Def(
-                "Highlight",
-                "The part of the video that most people are looking for."
-                    + " Similar to \"Video starts at x\" comments.",
+                "重点",
+                "视频中大多数人在寻找的部分."
+                    + " 类似于「视频从 x 处开始」的评论.",
                 "#ff1684"
             ),
             .intro: Def(
-                "Intermission/Intro Animation",
-                "An interval without actual content. Could be a pause,"
-                    + " static frame, or repeating animation. This should"
-                    + " not be used for transitions containing information.",
+                "间隔\/开场动画",
+                "没有实际内容的间隔,"
+                    + " 可能是暂停、静态画面或循环动画"
+                    + " 不应用于包含信息的过渡.",
                 "#00ffff"
             ),
             .outro: Def(
-                "Endcards/Credits",
-                "Credits or when the YouTube endcards appear."
-                    + " Not for conclusions with information.",
+                "片尾\/致谢",
+                "致谢或 YouTube 片尾画面出现的部分"
+                    + " 不应包括提供上下文"
+                    + " 不包括带信息的总结.",
                 "#0202ed"
             ),
             .preview: Def(
-                "Preview/Recap",
-                "Collection of clips that show what is coming up in this"
-                    + " video or other videos in a series where all"
-                    + " information is repeated later in the video.",
+                "预告\/回顾",
+                "展示本视频或系列其他视频即将内容的片段合集"
+                    + " 所有信息都会在"
+                    + " 视频后文重复.",
                 "#008fd6"
             ),
             .filler: Def(
-                "Tangents/Jokes",
-                "Tangential scenes or jokes that are not required to"
-                    + " understand the main content of the video. This should"
-                    + " not include segments providing context or background"
-                    + " details.",
+                "题外话\/笑话",
+                "理解视频主要内容所不需要的离题场景或笑话"
+                    + " 不应包括提供上下文"
+                    + " 或背景信息的"
+                    + " 片段.",
                 "#7300ab"
             ),
             .musicOfftopic: Def(
-                "Non-Music Section",
-                "Only for music videos. Non-music part of a music video.",
+                "非音乐部分",
+                "仅用于音乐视频。音乐视频中的非音乐部分.",
                 "#ff9900"
             ),
             .chapter: Def(
-                "Chapter",
-                "Custom named sections of the video.",
+                "章节",
+                "视频中自定义命名的部分.",
                 "#feff01",
                 canAutoSkip: false,
                 canShowButton: false
@@ -162,11 +163,11 @@ enum SBSkipBehavior: String {
     var displayName: String {
         switch self {
         case .autoSkip:
-            return "Auto skip"
+            return "自动跳过"
         case .showButton:
-            return "Show button"
+            return "显示按钮"
         case .disabled:
-            return "Disable"
+            return "禁用"
         }
     }
 
