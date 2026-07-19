@@ -38,14 +38,14 @@ extension SearchViewController {
     private func addFilterActions(to sheet: UIAlertController) {
         sheet.addAction(
             UIAlertAction(
-                title: "Sort: \(filters.sort.displayName)", style: .default
+                title: "排序: \(filters.sort.displayName)", style: .default
             ) { [weak self] _ in
                 self?.showSortPicker()
             }
         )
         sheet.addAction(
             UIAlertAction(
-                title: "Date: \(filters.uploadDate.displayName)",
+                title: "日期: \(filters.uploadDate.displayName)",
                 style: .default
             ) { [weak self] _ in
                 self?.showDatePicker()
@@ -53,14 +53,14 @@ extension SearchViewController {
         )
         sheet.addAction(
             UIAlertAction(
-                title: "Type: \(filters.type.displayName)", style: .default
+                title: "类型: \(filters.type.displayName)", style: .default
             ) { [weak self] _ in
                 self?.showTypePicker()
             }
         )
         sheet.addAction(
             UIAlertAction(
-                title: "Duration: \(filters.duration.displayName)",
+                title: "持续时间: \(filters.duration.displayName)",
                 style: .default
             ) { [weak self] _ in
                 self?.showDurationPicker()
@@ -72,7 +72,7 @@ extension SearchViewController {
 
     private func showSortPicker() {
         presentOptions(
-            title: "Sort by",
+            title: "排序依据",
             names: SearchFilters.Sort.allCases.map { $0.displayName },
             selectedIndex: filters.sort.rawValue
         ) { [weak self] index in
@@ -82,7 +82,7 @@ extension SearchViewController {
 
     private func showDatePicker() {
         presentOptions(
-            title: "Upload date",
+            title: "上传日期",
             names: SearchFilters.UploadDate.allCases.map { $0.displayName },
             selectedIndex: filters.uploadDate.rawValue
         ) { [weak self] index in
@@ -94,7 +94,7 @@ extension SearchViewController {
 
     private func showTypePicker() {
         presentOptions(
-            title: "Type",
+            title: "类型",
             names: SearchFilters.ContentType.allCases.map { $0.displayName },
             selectedIndex: filters.type.rawValue
         ) { [weak self] index in
@@ -106,7 +106,7 @@ extension SearchViewController {
 
     private func showDurationPicker() {
         presentOptions(
-            title: "Duration",
+            title: "持续时间",
             names: SearchFilters.Duration.allCases.map { $0.displayName },
             selectedIndex: filters.duration.rawValue
         ) { [weak self] index in
