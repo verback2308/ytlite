@@ -118,7 +118,7 @@ final class PlaylistsViewController: UIViewController {
 
     private func showSignInRequired() {
         tableView.isHidden = true
-        emptyLabel.text = "Sign in to view your playlists"
+        emptyLabel.text = "登录以查看您的播放列表"
         emptyLabel.isHidden = false
     }
 
@@ -144,7 +144,7 @@ final class PlaylistsViewController: UIViewController {
                         self?.emptyLabel.isHidden = true
                     }
                 case .failure:
-                    self?.emptyLabel.text = "Could not load playlists"
+                    self?.emptyLabel.text = "无法加载播放列表"
                     self?.emptyLabel.isHidden = false
                 }
             }
