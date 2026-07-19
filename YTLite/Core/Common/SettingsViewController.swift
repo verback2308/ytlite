@@ -54,10 +54,10 @@ final class SettingsViewController: UIViewController {
         return [
             Section(header: "主题", footer: themeFooter, rows: themeRows),
             Section(
-                header: "回放",
+                header: "缩放",
                 footer: "缩放到填充自动缩放视频"
-                    + " 在全屏中，因此没有黑条残留."
-                    + " 捏合播放器覆盖每个视频.",
+                    + " 全屏时自动缩放视频以消除黑边."
+                    + " 播放器中的捏合手势可针对单个视频覆盖此设置.",
                 rows: [
                     .quality, .backgroundPlayback, .pipEnabled,
                     .hideStatusBar, .autoZoomToFill, .showShorts
@@ -65,9 +65,9 @@ final class SettingsViewController: UIViewController {
             ),
             Section(
                 header: "首页",
-                footer: "如何显示排列标题:"
-                    + " 一个连续的网格，一个分组的网格"
-                    + " 排列标题，或电视风格的水平导轨.",
+                footer: "推荐内容的展示方式:"
+                    + " 连续网格，按分区标题分组的网格"
+                    + " 或电视风格的横向轮播.",
                 rows: [.homeLayout]
             ),
             Section(header: "缓存", footer: nil, rows: cacheRows),
@@ -79,7 +79,7 @@ final class SettingsViewController: UIViewController {
                     + " 通常使用安卓虚拟现实系统"
                     + " 自动回退."
                     + " 求解器服务器为移动网络+锅源提供动力"
-                    + " (在iOS 12–13系统上挖矿和n-solving).",
+                    + " (以及在iOS 12–13上的系统求解).",
                 rows: [.playbackSource, .solverEndpoint, .shareLog]
             ),
             Section(header: nil, footer: appVersionFooter, rows: [])
@@ -235,7 +235,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
         case .autoZoomToFill:
             let key = UserDefaultsKeys.Player.autoZoomToFill
             let isOn = UserDefaults.standard.bool(forKey: key)
-            return makeToggleCell("放大以全屏显示", isOn: isOn) {
+            return makeToggleCell("全屏自动填充", isOn: isOn) {
                 UserDefaults.standard.set($0, forKey: key)
             }
         case .showShorts:
