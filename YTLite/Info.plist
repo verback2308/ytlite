@@ -26,6 +26,7 @@
 		<string>fi</string>
 		<string>fr</string>
 		<string>ga</string>
+		<string>gl</string>
 	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
