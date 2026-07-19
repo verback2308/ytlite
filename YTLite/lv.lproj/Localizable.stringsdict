@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Cache duration; used as "N day(s)" in Settings cells and pickers -->
+	<key>settings.daysCount</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@days@</string>
+		<key>days</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>zero</key>
+			<string>%d dienu</string>
+			<key>one</key>
+			<string>%d diena</string>
+			<key>other</key>
+			<string>%d dienas</string>
+		</dict>
+	</dict>
+	<!-- Playlist tile metadata; "N video(s)" -->
+	<key>common.videosCount</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@videos@</string>
+		<key>videos</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>zero</key>
+			<string>%d video</string>
+			<key>one</key>
+			<string>%d video</string>
+			<key>other</key>
+			<string>%d video</string>
+		</dict>
+	</dict>
+</dict>
+</plist>

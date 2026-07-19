@@ -1,0 +1,367 @@
+/*
+  YTLite — Latviešu (latvian).
+
+  Keys are stable API: never rename one casually — it orphans the key in
+  every translation. Comments give translator context. Positional
+  placeholders (%1$@) must be preserved verbatim in translations.
+*/
+
+/* ===== Player: settings menu ===== */
+
+/* Title of the gear menu in the player */
+"player.menu.settings" = "Atskaņošanas iestatījumi";
+/* Menu item + picker title: video quality */
+"player.menu.quality" = "Kvalitāte";
+/* Menu item + picker title: audio track (dub) selection */
+"player.menu.audioTrack" = "Audio celiņš";
+/* Menu item: toggles the playback statistics overlay */
+"player.menu.stats" = "Statistika";
+/* Picker title: subtitles */
+"player.menu.subtitles" = "Subtitri";
+
+/* ===== Player: pickers ===== */
+
+/* Subtitle picker: disables subtitles */
+"player.subtitles.off" = "Izslēgts";
+/* Suffix on auto-generated subtitle tracks, e.g. "English (auto)" */
+"player.subtitles.autoSuffix" = " (automātiski)";
+/* Suffix on AI auto-dubbed audio tracks, e.g. "Russian (AI)" */
+"player.audioTrack.aiSuffix" = " (MI)";
+
+/* ===== Player: status / errors ===== */
+
+/* Status label while switching; %1$@ = quality label or track name */
+"player.status.loading" = "Ielāde %1$@...";
+/* Status label while the stream URL is being resolved */
+"player.status.resolving" = "Izšķir straumi...";
+/* Shown when a video cannot be played at all */
+"player.error.playback" = "Atskaņošana neizdevās.";
+/* Shown when switching video quality failed (playback continues) */
+"player.error.qualitySwitch" = "Kvalitātes pārslēgšana neizdevās.";
+/* Shown when switching the audio track failed (playback continues) */
+"player.error.audioTrackSwitch" = "Audio celiņa pārslēgšana neizdevās.";
+
+/* ===== Common ===== */
+
+/* Subscribe button, not-subscribed state */
+"common.subscribe" = "Abonēt";
+/* Subscribe button, subscribed state */
+"common.subscribed" = "Abonēts";
+/* Generic cancel action */
+"common.cancel" = "Atcelt";
+/* Generic confirmation button */
+"common.ok" = "Labi";
+/* Generic save action */
+"common.save" = "Saglabāt";
+/* Generic done action */
+"common.done" = "Gatavs";
+/* Fallback title/label of a playlist tile */
+"common.playlist" = "Atskaņošanas saraksts";
+/* Library tab title */
+"library.title" = "Bibliotēka";
+
+/* ===== Player: status ===== */
+
+/* Status label while the player prepares the first video */
+"player.status.preparing" = "Sagatavo video...";
+/* Status label while an expired stream URL is re-resolved */
+"player.status.refreshing" = "Atjaunina straumi...";
+
+/* ===== Player: watch page ===== */
+
+/* Expands the video description */
+"player.description.more" = "Vairāk";
+/* Collapses the video description */
+"player.description.less" = "Mazāk";
+/* Action bar: share the video */
+"player.action.share" = "Kopīgot";
+/* Action bar: save to playlist */
+"player.action.save" = "Saglabāt";
+/* Action bar: download */
+"player.action.download" = "Lejupielādēt";
+
+/* ===== Player: comments ===== */
+
+/* Comments section header */
+"player.comments.title" = "Komentāri";
+/* Comments header with count; %1$d = number of comments */
+"player.comments.titleCount" = "Komentāri (%1$d)";
+/* Shown while comments load */
+"player.comments.loading" = "Ielādē komentārus...";
+/* Shown when the comments request failed */
+"player.comments.unavailable" = "Komentāri nav pieejami";
+/* Shown before the watch page has loaded enough to fetch comments */
+"player.comments.unavailableYet" = "Komentāri vēl nav pieejami.";
+/* Button loading the next page of comments */
+"player.comments.loadMore" = "Ielādēt vairāk komentāru";
+/* Author line of a pinned comment; %1$@ = author name */
+"player.comments.pinned" = "%1$@ • Piesprausts";
+/* Comment like count; %1$@ = formatted number */
+"player.comments.likes" = "%1$@ patīk";
+/* Comment reply count; %1$@ = formatted number */
+"player.comments.replies" = "%1$@ atbildes";
+
+/* ===== Player: autoplay overlay ===== */
+
+/* Header above the next video suggestion */
+"player.autoplay.upNext" = "Tālāk";
+/* Starts the suggested video immediately, skipping the countdown */
+"player.autoplay.playNow" = "Atskaņot tagad";
+
+/* ===== Player: related section ===== */
+
+/* Header of an unnamed autoplay queue/playlist */
+"player.related.mix" = "Sajaukums";
+/* Header of the related-videos section */
+"player.related.title" = "Saistīts";
+/* Status label on fatal playback failure; %1$@ = error description */
+"player.error.withMessage" = "Atskaņošanas kļūda: %1$@";
+
+/* ===== Player: speed ===== */
+
+/* The 1x playback speed */
+"player.speed.normal" = "Normāls";
+
+/* ===== SponsorBlock ===== */
+
+/* Skip button; %1$@ = localized category name, e.g. "Skip Sponsor" */
+"sponsorblock.skip" = "Izlaist %1$@";
+
+/* Skip-behavior options (per-category setting) */
+"sponsorblock.behavior.autoSkip" = "Automātiski izlaist";
+"sponsorblock.behavior.showButton" = "Rādīt pogu";
+"sponsorblock.behavior.disabled" = "Atspējot";
+
+/* Footer under the SponsorBlock section (project attribution) */
+"sponsorblock.attribution" = "Darbojas ar SponsorBlock (sponsor.ajay.app) — atvērts kopienas projekts.";
+/* Header above the per-category skip settings */
+"sponsorblock.segmentCategories" = "Segmentu kategorijas";
+
+/* Category names (SponsorBlock project terms) and their descriptions */
+"sponsorblock.category.sponsor.name" = "Sponsors";
+"sponsorblock.category.sponsor.description" = "Apmaksāta reklāma, apmaksāti ieteikumi un tiešā reklāma. Ne paredzēta pašreklāmai vai bezmaksas popularizēšanai iecienītiem mērķiem/veidotājiem/tīmekļa vietnēm/produktiem.";
+"sponsorblock.category.selfpromo.name" = "Neapmaksāta/Pašreklāma";
+"sponsorblock.category.selfpromo.description" = "Līdzīgi \"sponsoram\", bet neapmaksātai vai pašreklāmai. Tas ietver sadaļas par precēm, ziedojumiem vai informāciju par sadarbības partneriem.";
+"sponsorblock.category.exclusive_access.name" = "Ekskluzīva piekļuve";
+"sponsorblock.category.exclusive_access.description" = "Tikai visu video marķēšanai. Izmanto, kad video demonstrē produktu, pakalpojumu vai atrašanās vietu, pie kuras tika saņemta bezmaksas vai subsidēta piekļuve.";
+"sponsorblock.category.interaction.name" = "Saskarsmes atgādinājums (Abonēt)";
+"sponsorblock.category.interaction.description" = "Kad satura vidū ir īss atgādinājums par patikšanu, abonēšanu vai sekošanu. Ja tas ir garš vai par kaut ko konkrētu, tam jābūt pašreklāmas sadaļā.";
+"sponsorblock.category.highlight.name" = "Izcelšana";
+"sponsorblock.category.highlight.description" = "Video daļa, ko lielākā daļa cilvēku meklē. Līdzīgi komentāriem \"Video sākas no x\".";
+"sponsorblock.category.intro.name" = "Pārtraukums/Ievada animācija";
+"sponsorblock.category.intro.description" = "Intervāls bez satura. Tas var būt pauze, statisks kadrs vai atkārtota animācija. Tas nav jāizmanto pārejām ar informāciju.";
+"sponsorblock.category.outro.name" = "Nobeiguma kartītes/Godraksti";
+"sponsorblock.category.outro.description" = "Godraksti vai YouTube nobeiguma kartīšu parādīšanās. Ne paredzēts informācijas secinājumiem.";
+"sponsorblock.category.preview.name" = "Priekšskatījums/Kopsavilkums";
+"sponsorblock.category.preview.description" = "Kadru kopums, kas parāda, kas gaida šajā video vai citos sērijas video, kur visa informācija vēlāk tiek atkārtota video.";
+"sponsorblock.category.filler.name" = "Novirzieni/Joki";
+"sponsorblock.category.filler.description" = "Novirzieni vai joki, kas nav nepieciešami, lai saprastu video galveno saturu. Tas neietver segmentus ar kontekstu vai fona informāciju.";
+"sponsorblock.category.music_offtopic.name" = "Nemūzikas daļa";
+"sponsorblock.category.music_offtopic.description" = "Tikai mūzikas video. Nemūzikas daļa no mūzikas video.";
+"sponsorblock.category.chapter.name" = "Nodaļa";
+"sponsorblock.category.chapter.description" = "Pēc pasūtījuma nosauktas video sadaļas.";
+
+/* ===== Settings ===== */
+
+/* Settings sheet title */
+"settings.title" = "Iestatījumi";
+
+/* Section headers */
+"settings.section.theme" = "Tēma";
+"settings.section.playback" = "Atskaņošana";
+"settings.section.home" = "Sākums";
+"settings.section.cache" = "Kešatmiņa";
+"settings.section.ryd" = "Return YouTube Dislike";
+"settings.section.sponsorblock" = "SponsorBlock";
+"settings.section.debug" = "Atkļūdošana";
+
+/* Section footers */
+"settings.footer.themeAutoSystem" = "Automātiski seko sistēmas izskatam.";
+"settings.footer.themeAutoHours" = "Automātiski pārslēdzas uz tumšo tēmu norādītajās stundās.";
+"settings.footer.playback" = "Pietuvināšana aizpildīšanai automātiski mērogē video pilnekrāna režīmā, lai nebūtu melnu joslu. Spiešana atskaņotājā to pārraksta katrai video.";
+"settings.footer.home" = "Kā tiek rādītas ieteikumu plaukti: vienots režģis vai horizontālas sliedes televīzijas stilā.";
+"settings.footer.ryd" = "Nicinājumu skaitu nodrošina Return YouTube Dislike (returnyoutubedislike.com) — atvērts kopienas projekts.";
+"settings.footer.debug" = "Piespiest konkrētu atskaņošanas avotu. Parasti tiek izmantots Android VR ar automātisko pārslēgšanos. Risinātāja serveris nodrošina Mobile Web + pot avotu (pot minting un n-solving iOS 12–13).";
+
+/* Theme rows; segment labels for dark/light/auto modes */
+"settings.row.theme" = "Tēma";
+"settings.theme.dark" = "Tumšs";
+"settings.theme.light" = "Gaišs";
+"settings.theme.auto" = "Automātiski";
+/* Hour pickers bounding the iOS 12 scheduled dark mode */
+"settings.row.darkFrom" = "Tumšā tēma no";
+"settings.row.darkUntil" = "Tumšā tēma līdz";
+
+/* Playback rows */
+"settings.row.defaultQuality" = "Noklusējuma kvalitāte";
+/* The "Auto" entry of the default-quality picker (stored value stays English) */
+"settings.quality.auto" = "Automātiski";
+"settings.row.backgroundPlayback" = "Fona atskaņošana";
+"settings.row.pip" = "Picture-in-Picture";
+"settings.row.hideStatusBar" = "Slēpt statusa joslu pilnekrāna režīmā";
+"settings.row.zoomToFill" = "Pietuvināšana aizpildīšanai pilnekrāna režīmā";
+"settings.row.showShorts" = "Rādīt YouTube Shorts abonementos";
+
+/* Home layout row + option names */
+"settings.row.homeLayout" = "Sākuma izkārtojums";
+"settings.homeLayout.grid" = "Vienkāršs režģis";
+"settings.homeLayout.rails" = "Plauktu sliedes";
+
+/* Cache rows */
+"settings.row.feedCache" = "Barības kešatmiņa";
+"settings.row.feedCacheDuration" = "Barības kešatmiņas ilgums";
+"settings.row.imageCache" = "Attēlu kešatmiņa";
+"settings.row.imageCacheDuration" = "Attēlu kešatmiņas ilgums";
+"settings.row.clearCache" = "Notīrīt visu kešatmiņu";
+/* Alert after clearing all caches */
+"settings.cache.clearedTitle" = "Kešatmiņa notīrīta";
+"settings.cache.clearedMessage" = "Visa kešatmiņa ir notīrīta.";
+
+/* Integration rows */
+"settings.row.ryd" = "Return YouTube Dislike";
+"settings.row.sponsorblock" = "SponsorBlock";
+"settings.row.sponsorblockSettings" = "SponsorBlock iestatījumi";
+
+/* Debug rows (values stay technical/English) */
+"settings.row.playbackSource" = "Atskaņošanas avots";
+"settings.row.solverServer" = "Solver server";
+"settings.row.shareLog" = "Kopīgot atkļūdošanas žurnālu";
+/* Solver-server URL alert */
+"settings.solver.message" = "Risinātāja servera URL.";
+"settings.solver.reset" = "Atiestatīt noklusējuma";
+/* Suffix shown after the solver URL when it is the built-in default */
+"settings.solver.defaultSuffix" = " (noklusējuma)";
+/* Alert when no debug logs exist yet */
+"settings.log.noneTitle" = "Nav žurnālu";
+"settings.log.noneMessage" = "Atkļūdošanas žurnāli vēl nav pieejami.";
+
+/* ===== Profile ===== */
+
+"profile.title" = "Profils";
+"profile.signOut" = "Iziet";
+"profile.clearImageCache" = "Notīrīt attēlu kešatmiņu";
+"profile.imageCacheCleared" = "Attēlu kešatmiņa notīrīta.";
+
+/* ===== Search ===== */
+
+"search.title" = "Meklēšana";
+/* Search bar placeholder */
+"search.placeholder" = "Meklēt YouTube";
+/* Header above the recent-search list */
+"search.recent" = "Nesenie meklējumi";
+/* Filters toolbar button; the dotted variant marks active filters */
+"search.filters" = "Filtri";
+"search.filters.active" = "Filtri •";
+/* Filters sheet title + reset action */
+"search.filters.title" = "Meklēšanas filtri";
+"search.filters.reset" = "Atiestatīt filtrus";
+/* Filter rows; %1$@ = the current value */
+"search.filters.sort" = "Kārtot: %1$@";
+"search.filters.date" = "Datums: %1$@";
+"search.filters.type" = "Veids: %1$@";
+"search.filters.duration" = "Ilgums: %1$@";
+/* Sub-sheet titles */
+"search.filters.sortTitle" = "Kārtot pēc";
+"search.filters.dateTitle" = "Augšupielādes datums";
+"search.filters.typeTitle" = "Veids";
+"search.filters.durationTitle" = "Ilgums";
+
+/* Filter option values */
+"search.sort.relevance" = "Relevence";
+"search.sort.rating" = "Vērtējums";
+"search.sort.uploadDate" = "Augšupielādes datums";
+"search.sort.viewCount" = "Skatījumu skaits";
+"search.date.any" = "Jebkurā laikā";
+"search.date.lastHour" = "Pēdējā stunda";
+"search.date.today" = "Šodien";
+"search.date.thisWeek" = "Šo nedēļu";
+"search.date.thisMonth" = "Šo mēnesi";
+"search.date.thisYear" = "Šo gadu";
+"search.type.any" = "Jebkurš veids";
+"search.type.video" = "Video";
+"search.type.channel" = "Kanāls";
+"search.type.playlist" = "Atskaņošanas saraksts";
+"search.duration.any" = "Jebkurš ilgums";
+"search.duration.short" = "Līdz 4 min";
+"search.duration.medium" = "4–20 min";
+"search.duration.long" = "Vairāk nekā 20 min";
+
+/* ===== Home ===== */
+
+"home.title" = "Sākums";
+/* Chip resetting to the unfiltered feed */
+"home.category.all" = "Visi";
+/* Static category chips (server shelf titles arrive already localized) */
+"home.category.live" = "Tiešraidē";
+"home.category.news" = "Ziņas";
+"home.category.gaming" = "Spēles";
+"home.category.sports" = "Sports";
+"home.category.learning" = "Mācīšanās";
+"home.category.fashion" = "Mode";
+/* Error empty state (two lines) */
+"home.error.loadFailed" = "Nevarēja ielādēt barību\nVelciet lejup, lai mēģinātu vēlreiz";
+/* Signed-out empty state */
+"home.signIn" = "Pierakstieties, lai redzētu ieteikumus";
+
+/* ===== Channel ===== */
+
+/* Channel tab bar */
+"channel.tab.videos" = "Video";
+"channel.tab.live" = "Tiešraidē";
+"channel.tab.playlists" = "Atskaņošanas saraksti";
+/* About sheet */
+"channel.about.title" = "Par";
+"channel.about.close" = "Aizvērt";
+"channel.about.subscribers" = "Abonenti";
+"channel.about.videos" = "Video";
+"channel.about.description" = "Apraksts";
+"channel.about.contact" = "Kontakti";
+
+/* ===== Library ===== */
+
+"library.history" = "Vēsture";
+"library.downloads" = "Lejupielādes";
+"library.playlists" = "Atskaņošanas saraksti";
+"library.downloads.comingSoon" = "Lejupielādes drīzumā";
+"library.history.signIn" = "Pierakstieties, lai redzētu skatīšanās vēsturi";
+"library.history.empty" = "Skatīšanās vēsture nav atrasta";
+"library.history.loadFailed" = "Nevarēja ielādēt vēsturi";
+"library.playlists.signIn" = "Pierakstieties, lai redzētu savus atskaņošanas sarakstus";
+"library.playlists.loadFailed" = "Nevarēja ielādēt atskaņošanas sarakstus";
+"library.playlist.empty" = "Šajā atskaņošanas sarakstā nav video";
+"library.playlist.loadFailed" = "Nevarēja ielādēt atskaņošanas sarakstu";
+
+/* ===== Subscriptions ===== */
+
+"subscriptions.title" = "Abonementi";
+"subscriptions.all" = "Visi abonementi";
+/* "All" button in the channel avatar bar */
+"subscriptions.allButton" = "Visi";
+"subscriptions.signIn" = "Pierakstieties, lai redzētu savus abonementus";
+
+/* ===== Account (toolbar sheet) ===== */
+
+/* Fallback account name when the profile has none */
+"account.fallbackName" = "Konts";
+"account.signIn" = "Pierakstīties";
+"account.signOut" = "Iziet";
+"account.notSignedIn" = "Nav pierakstīts";
+
+/* Generic error alert title */
+"common.error" = "Kļūda";
+/* Channel screen failed to load */
+"channel.unavailable" = "Kanāls nav pieejams";
+
+/* ===== Settings: language section ===== */
+
+"settings.section.language" = "Valoda";
+"settings.footer.language" = "Lietotnes valoda maina saskarni. Satura valoda maina virsrakstus, meklēšanu un barības (YouTube tulkos metadatus servera pusē, tāpat kā oficiālā lietotne). Izmaiņas stājas spēkā pilnībā pēc lietotnes restartēšanas.";
+/* Rows */
+"settings.row.appLanguage" = "Lietotnes valoda";
+"settings.row.contentLanguage" = "Satura valoda";
+"settings.row.region" = "Reģions";
+/* Picker option following the device language/region */
+"settings.language.system" = "Sistēmas";
+/* Alert after changing a language setting */
+"settings.language.restartTitle" = "Nepieciešama restartēšana";
+"settings.language.restartMessage" = "Izmaiņas stājas spēkā pilnībā pēc lietotnes restartēšanas.";
