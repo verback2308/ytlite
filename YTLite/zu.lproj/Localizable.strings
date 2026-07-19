@@ -1,0 +1,367 @@
+/*
+  YTLite — Zulu (zu).
+
+  Keys are stable API: never rename one casually — it orphans the key in
+  every translation. Comments give translator context. Positional
+  placeholders (%1$@) must be preserved verbatim in translations.
+*/
+
+/* ===== Player: settings menu ===== */
+
+/* Title of the gear menu in the player */
+"player.menu.settings" = "Izilungiselelo zokudlala";
+/* Menu item + picker title: video quality */
+"player.menu.quality" = "Ikhwalithi";
+/* Menu item + picker title: audio track (dub) selection */
+"player.menu.audioTrack" = "Ithrekhi yomsindo";
+/* Menu item: toggles the playback statistics overlay */
+"player.menu.stats" = "Izibalo zabahlengikazi";
+/* Picker title: subtitles */
+"player.menu.subtitles" = "Amagama angaphansi";
+
+/* ===== Player: pickers ===== */
+
+/* Subtitle picker: disables subtitles */
+"player.subtitles.off" = "Kucishiwe";
+/* Suffix on auto-generated subtitle tracks, e.g. "English (auto)" */
+"player.subtitles.autoSuffix" = " (ngokuzenzakalela)";
+/* Suffix on AI auto-dubbed audio tracks, e.g. "Russian (AI)" */
+"player.audioTrack.aiSuffix" = " (AI)";
+
+/* ===== Player: status / errors ===== */
+
+/* Status label while switching; %1$@ = quality label or track name */
+"player.status.loading" = "Iyalayisha %1$@...";
+/* Status label while the stream URL is being resolved */
+"player.status.resolving" = "Iyalungisa umgudu...";
+/* Shown when a video cannot be played at all */
+"player.error.playback" = "Ukudlala kuhlulekile.";
+/* Shown when switching video quality failed (playback continues) */
+"player.error.qualitySwitch" = "Ukuguqula ikhwalithi kuhlulekile.";
+/* Shown when switching the audio track failed (playback continues) */
+"player.error.audioTrackSwitch" = "Ukuguqula ithrekhi yomsindo kuhlulekile.";
+
+/* ===== Common ===== */
+
+/* Subscribe button, not-subscribed state */
+"common.subscribe" = "Bhalisa";
+/* Subscribe button, subscribed state */
+"common.subscribed" = "Ubhalisiwe";
+/* Generic cancel action */
+"common.cancel" = "Khansela";
+/* Generic confirmation button */
+"common.ok" = "Kulungile";
+/* Generic save action */
+"common.save" = "Gcina";
+/* Generic done action */
+"common.done" = "Kuphelile";
+/* Fallback title/label of a playlist tile */
+"common.playlist" = "Uhlu lokudlala";
+/* Library tab title */
+"library.title" = "Ikhabhuluthi";
+
+/* ===== Player: status ===== */
+
+/* Status label while the player prepares the first video */
+"player.status.preparing" = "Ilungisa ividiyo...";
+/* Status label while an expired stream URL is re-resolved */
+"player.status.refreshing" = "Iyalungisa umgudu futhi...";
+
+/* ===== Player: watch page ===== */
+
+/* Expands the video description */
+"player.description.more" = "Kuningi";
+/* Collapses the video description */
+"player.description.less" = "Kuncane";
+/* Action bar: share the video */
+"player.action.share" = "Yabelana";
+/* Action bar: save to playlist */
+"player.action.save" = "Gcina";
+/* Action bar: download */
+"player.action.download" = "Landa";
+
+/* ===== Player: comments ===== */
+
+/* Comments section header */
+"player.comments.title" = "Amazwi";
+/* Comments header with count; %1$d = number of comments */
+"player.comments.titleCount" = "Amazwi (%1$d)";
+/* Shown while comments load */
+"player.comments.loading" = "Iyalayisha amazwi...";
+/* Shown when the comments request failed */
+"player.comments.unavailable" = "Amazwi awatholakali";
+/* Shown before the watch page has loaded enough to fetch comments */
+"player.comments.unavailableYet" = "Amazwi awatholakali okwesikhashana.";
+/* Button loading the next page of comments */
+"player.comments.loadMore" = "Layisha amazwi amaningi";
+/* Author line of a pinned comment; %1$@ = author name */
+"player.comments.pinned" = "%1$@ • Kujolisiwe";
+/* Comment like count; %1$@ = formatted number */
+"player.comments.likes" = "Izintanda %1$@";
+/* Comment reply count; %1$@ = formatted number */
+"player.comments.replies" = "Izimpendulo %1$@";
+
+/* ===== Player: autoplay overlay ===== */
+
+/* Header above the next video suggestion */
+"player.autoplay.upNext" = "Okulandelayo";
+/* Starts the suggested video immediately, skipping the countdown */
+"player.autoplay.playNow" = "Dlala manje";
+
+/* ===== Player: related section ===== */
+
+/* Header of an unnamed autoplay queue/playlist */
+"player.related.mix" = "Uhlanganiso";
+/* Header of the related-videos section */
+"player.related.title" = "Okuhlobisana";
+/* Status label on fatal playback failure; %1$@ = error description */
+"player.error.withMessage" = "Iphutha lokudlala: %1$@";
+
+/* ===== Player: speed ===== */
+
+/* The 1x playback speed */
+"player.speed.normal" = "Okujwayelekile";
+
+/* ===== SponsorBlock ===== */
+
+/* Skip button; %1$@ = localized category name, e.g. "Skip Sponsor" */
+"sponsorblock.skip" = "Yeka %1$@";
+
+/* Skip-behavior options (per-category setting) */
+"sponsorblock.behavior.autoSkip" = "Yeka ngokuzenzakalela";
+"sponsorblock.behavior.showButton" = "Bonisa inkinobho";
+"sponsorblock.behavior.disabled" = "Cisha";
+
+/* Footer under the SponsorBlock section (project attribution) */
+"sponsorblock.attribution" = "Isebenzisa iSponsorBlock (sponsor.ajay.app) — uhlelo lwehhovisi elivulekile.";
+/* Header above the per-category skip settings */
+"sponsorblock.segmentCategories" = "Izigaba Zokwephula";
+
+/* Category names (SponsorBlock project terms) and their descriptions */
+"sponsorblock.category.sponsor.name" = "Isihloko";
+"sponsorblock.category.sponsor.description" = "Ukukhangisa okukhokhelwe, ukubolekisa okukhokhelwe nokukhangisa okuqondile. Akucabangelwa ukukhangisa kwamahhala noma izikhwama zamahhala ezithandwa yi-imeyili/abhreyithi/izixhumanisi/izinto abazithandayo.";
+"sponsorblock.category.selfpromo.name" = "Ukukhangisa Kwamahhala/Wena Uqobo";
+"sponsorblock.category.selfpromo.description" = "Efana ne \"sponsor\" ngaphandle kokukhangisa okukhokhelwe noma okuwena uqobo. Lokhu kuhlanganisa izingxenye ezimayelana nezinto ezithengiswayo, izinhlawulo, noma ulwazi olumayelana nababambisene nabo.";
+"sponsorblock.category.exclusive_access.name" = "Ukufinyelela Okukodwa";
+"sponsorblock.category.exclusive_access.description" = "Ngokwesithangama sevidiyo kuphela. Isetshenziswa lapho ividiyo ikhombisa into, insizakalo noma indawo abathole ukufinyelela kuyo mahhala noma ngentengo ephansi.";
+"sponsorblock.category.interaction.name" = "Isikhumbuzo Semiphumela (Bhalisa)";
+"sponsorblock.category.interaction.description" = "Lapho kunesikhumbuzi esifushane sokuthanda, ukubhalisa noma ukulandela phakathi kwokokuqukethwe. Uma kukude noma kukhona okuthile ekhethekile, kufanele kube ngaphansi kokukhangisa okuwena uqobo.";
+"sponsorblock.category.highlight.name" = "Okubalulekile";
+"sponsorblock.category.highlight.description" = "Ingxenye yevidiyo abantu abaningi abayifunayo. Efana namazwi okuthi \"Ividiyo iqala ngo-x\".";
+"sponsorblock.category.intro.name" = "Isikhashana/Isingeniso";
+"sponsorblock.category.intro.description" = "Isikhathi esingenalo okokuqukethwe ngempela. Singaba ukuma, ifremu eqinile, noma ukuphindaphinda okungafanele kusetshenziselwe ukudlulisa ulwazi.";
+"sponsorblock.category.outro.name" = "Amakhadi Okugcina/Imibhalo";
+"sponsorblock.category.outro.description" = "Imibhalo noma lapho amakhadi okugcina e-YouTube evele khona. Akucabangelwa iziphetho ezinolwazi.";
+"sponsorblock.category.preview.name" = "Ukubuka kwangaphambili/Ukubuyekeza";
+"sponsorblock.category.preview.description" = "Ukuhlanganisa kwamakliphu abonisa okuzayo kule vidiyo noma amanye amavidiyo kuluhlu lapho lonke ulwazi liphindwa kamuva kule vidiyo.";
+"sponsorblock.category.filler.name" = "Ukudlulisa/Amahumusha";
+"sponsorblock.category.filler.description" = "Izingxenye zokudlulisa noma amahumusha awayadingekile ukuze uqonde okokuqukethwe okuyinhloko yevidiyo. Lokhu akufanele kuhlanganise izingxenye ezinhlinzisa ngezimo noma ulwazi lwangemuva.";
+"sponsorblock.category.music_offtopic.name" = "Ingxenye Engesiyo Yomculo";
+"sponsorblock.category.music_offtopic.description" = "Kumavidiyo emculo kuphela. Ingxenye engesiyo yevidiyo yomculo.";
+"sponsorblock.category.chapter.name" = "Isahluko";
+"sponsorblock.category.chapter.description" = "Izingxenye ezinamaqembu anamaqembu ahlukene evidiyo.";
+
+/* ===== Settings ===== */
+
+/* Settings sheet title */
+"settings.title" = "Izilungiselelo";
+
+/* Section headers */
+"settings.section.theme" = "Itayi";
+"settings.section.playback" = "Ukudlala";
+"settings.section.home" = "Ikhaya";
+"settings.section.cache" = "Ukulondoloza";
+"settings.section.ryd" = "Return YouTube Dislike";
+"settings.section.sponsorblock" = "SponsorBlock";
+"settings.section.debug" = "Lungisa Iphutha";
+
+/* Section footers */
+"settings.footer.themeAutoSystem" = "Iyalandela itayi yesistimu ngokuzenzakalela.";
+"settings.footer.themeAutoHours" = "Iyiguqula itayi emnyama ngesikhathi esingaphakathi kwamahora angaphezulu.";
+"settings.footer.playback" = "Ukukhulisa ngokugcwele kunikeza ividiyo ukuze ingabi namabha amnyama. Ukunyathelisa emgodini kuyiguqula ngokwevidiyo ngayinye.";
+"settings.footer.home" = "Indlela izihloko zokuncoma ezikhonjiswe ngayo: i-grid eyodwa eqhubekayo noma amarili omugqa weTV.";
+"settings.footer.ryd" = "Izinombolo zokungayithandi ngisebenza yiReturn YouTube Dislike (returnyoutubedislike.com) — uhlelo lwehhovisi elivulekile.";
+"settings.footer.debug" = "Phoqa umthombo owodwa wokudlala. Ngokujwayelekile i-Android VR isetshenziswa nokuwa ngokuzenzakalela. Isiphakeli senkombizokucacisa siphathisa umthombo we-Mobile Web + pot (ukuthola i-pot, kanye ne-n-solving ku-iOS 12–13).";
+
+/* Theme rows; segment labels for dark/light/auto modes */
+"settings.row.theme" = "Itayi";
+"settings.theme.dark" = "Mnyama";
+"settings.theme.light" = "Khanya";
+"settings.theme.auto" = "Ngokuzenzakalela";
+/* Hour pickers bounding the iOS 12 scheduled dark mode */
+"settings.row.darkFrom" = "Itayi Emnyama Kusuka Ku";
+"settings.row.darkUntil" = "Itayi Emnyama Kuya Ku";
+
+/* Playback rows */
+"settings.row.defaultQuality" = "Ikhwalithi Ezenzakalelayo";
+/* The "Auto" entry of the default-quality picker (stored value stays English) */
+"settings.quality.auto" = "Ngokuzenzakalela";
+"settings.row.backgroundPlayback" = "Ukudlala Ngemuva";
+"settings.row.pip" = "Isithombe Ngaphakathi KweSithombe";
+"settings.row.hideStatusBar" = "Fihla Isibalo Sokuthula Esikrinini Esigcwele";
+"settings.row.zoomToFill" = "Khulisa Ukuze Ugcwalise Esikrinini Esigcwele";
+"settings.row.showShorts" = "Bonisa i-YouTube Shorts KuBhaliso";
+
+/* Home layout row + option names */
+"settings.row.homeLayout" = "Uhlelo Lwekhaya";
+"settings.homeLayout.grid" = "I-Grid Eqondile";
+"settings.homeLayout.rails" = "Amarili Wokubhampa";
+
+/* Cache rows */
+"settings.row.feedCache" = "Ukulondoloza Okudlayo";
+"settings.row.feedCacheDuration" = "Isikhathi Sokulondoloza Okudlayo";
+"settings.row.imageCache" = "Ukulondoloza Isithombe";
+"settings.row.imageCacheDuration" = "Isikhathi Sokulondoloza Isithombe";
+"settings.row.clearCache" = "Susa Okulondolozwe Konke";
+/* Alert after clearing all caches */
+"settings.cache.clearedTitle" = "Okulondolozwe Kususiwe";
+"settings.cache.clearedMessage" = "Okulondolozwe konke kususiwe.";
+
+/* Integration rows */
+"settings.row.ryd" = "Return YouTube Dislike";
+"settings.row.sponsorblock" = "SponsorBlock";
+"settings.row.sponsorblockSettings" = "Izilungiselelo ze-SponsorBlock";
+
+/* Debug rows (values stay technical/English) */
+"settings.row.playbackSource" = "Umthombo Wokudlala";
+"settings.row.solverServer" = "Solver server";
+"settings.row.shareLog" = "Yabelana Nge-Debug Log";
+/* Solver-server URL alert */
+"settings.solver.message" = "I-URL yesiphakeli senkombizokucacisa.";
+"settings.solver.reset" = "Buyisela endlebeni";
+/* Suffix shown after the solver URL when it is the built-in default */
+"settings.solver.defaultSuffix" = " (okwakhona)";
+/* Alert when no debug logs exist yet */
+"settings.log.noneTitle" = "Akunamabhulogi";
+"settings.log.noneMessage" = "Akunamabhulogi okuxazulula iphutha okutholakalayo okwesikhashana.";
+
+/* ===== Profile ===== */
+
+"profile.title" = "Iphrofayili";
+"profile.signOut" = "Phuma";
+"profile.clearImageCache" = "Susa Ukulondoloza Isithombe";
+"profile.imageCacheCleared" = "Ukulondoloza isithombe kususiwe.";
+
+/* ===== Search ===== */
+
+"search.title" = "Sesha";
+/* Search bar placeholder */
+"search.placeholder" = "Sesha i-YouTube";
+/* Header above the recent-search list */
+"search.recent" = "Ukusesha kwamuva";
+/* Filters toolbar button; the dotted variant marks active filters */
+"search.filters" = "Iziguci";
+"search.filters.active" = "Iziguci •";
+/* Filters sheet title + reset action */
+"search.filters.title" = "Iziguci Zokusesha";
+"search.filters.reset" = "Buyisela iziguci";
+/* Filter rows; %1$@ = the current value */
+"search.filters.sort" = "Hlela: %1$@";
+"search.filters.date" = "Usuku: %1$@";
+"search.filters.type" = "Uhlobo: %1$@";
+"search.filters.duration" = "Isikhathi: %1$@";
+/* Sub-sheet titles */
+"search.filters.sortTitle" = "Hlela nge";
+"search.filters.dateTitle" = "Usuku lokulayisha";
+"search.filters.typeTitle" = "Uhlobo";
+"search.filters.durationTitle" = "Isikhathi";
+
+/* Filter option values */
+"search.sort.relevance" = "Ukuhlangana";
+"search.sort.rating" = "Isilinganiso";
+"search.sort.uploadDate" = "Usuku lokulayisha";
+"search.sort.viewCount" = "Inani lokubuka";
+"search.date.any" = "Noma yisiphi isikhathi";
+"search.date.lastHour" = "Ihora elidlule";
+"search.date.today" = "Namuhla";
+"search.date.thisWeek" = "Le veki";
+"search.date.thisMonth" = "Le nyanga";
+"search.date.thisYear" = "Lonyaka";
+"search.type.any" = "Noma yiluphi uhlobo";
+"search.type.video" = "Ividiyo";
+"search.type.channel" = "Ikhaneli";
+"search.type.playlist" = "Uhlu lokudlala";
+"search.duration.any" = "Noma yisiphi isikhathi";
+"search.duration.short" = "Ngaphansi kwemizuzu 4";
+"search.duration.medium" = "Imizuzu 4–20";
+"search.duration.long" = "Ngaphezu kwemizuzu 20";
+
+/* ===== Home ===== */
+
+"home.title" = "Ikhaya";
+/* Chip resetting to the unfiltered feed */
+"home.category.all" = "Konke";
+/* Static category chips (server shelf titles arrive already localized) */
+"home.category.live" = "Ngokuqhubekayo";
+"home.category.news" = "Izindaba";
+"home.category.gaming" = "Ukudlala";
+"home.category.sports" = "Ezemmidiya";
+"home.category.learning" = "Ukufunda";
+"home.category.fashion" = "Imfashini";
+/* Error empty state (two lines) */
+"home.error.loadFailed" = "Ayikwazanga ukulayisha ukondla\nDonsela phansi ukuze uzame futhi";
+/* Signed-out empty state */
+"home.signIn" = "Ngena ukuze ubone izincomo zakho";
+
+/* ===== Channel ===== */
+
+/* Channel tab bar */
+"channel.tab.videos" = "Amavidiyo";
+"channel.tab.live" = "Ngokuqhubekayo";
+"channel.tab.playlists" = "Amahlubo Okudlala";
+/* About sheet */
+"channel.about.title" = "Mayelana";
+"channel.about.close" = "Vala";
+"channel.about.subscribers" = "Abalandeli";
+"channel.about.videos" = "Amavidiyo";
+"channel.about.description" = "Incazelo";
+"channel.about.contact" = "Xhumana";
+
+/* ===== Library ===== */
+
+"library.history" = "Umlando";
+"library.downloads" = "Ukulandwa";
+"library.playlists" = "Amahlubo Okudlala";
+"library.downloads.comingSoon" = "Ukulandwa kuzokufika maduze";
+"library.history.signIn" = "Ngena ukuze ubone umlando wakho wokubuka";
+"library.history.empty" = "Akunandulo yokubuka etholiwe";
+"library.history.loadFailed" = "Ayikwazanga ukulayisha umlando";
+"library.playlists.signIn" = "Ngena ukuze ubone amahlubo akho okudlala";
+"library.playlists.loadFailed" = "Ayikwazanga ukulayisha amahlubo okudlala";
+"library.playlist.empty" = "Akunamavidiyo kuleli hlubo lokudlala";
+"library.playlist.loadFailed" = "Ayikwazanga ukulayisha ihloko lokudlala";
+
+/* ===== Subscriptions ===== */
+
+"subscriptions.title" = "Ukubhalisa";
+"subscriptions.all" = "Zonke izibhaliso";
+/* "All" button in the channel avatar bar */
+"subscriptions.allButton" = "Konke";
+"subscriptions.signIn" = "Ngena ukuze ubone izibhaliso zakho";
+
+/* ===== Account (toolbar sheet) ===== */
+
+/* Fallback account name when the profile has none */
+"account.fallbackName" = "I-akhawunti";
+"account.signIn" = "Ngena";
+"account.signOut" = "Phuma";
+"account.notSignedIn" = "Awubhalisanga";
+
+/* Generic error alert title */
+"common.error" = "Iphutha";
+/* Channel screen failed to load */
+"channel.unavailable" = "Ikhaneli ayitholakali";
+
+/* ===== Settings: language section ===== */
+
+"settings.section.language" = "Ulimi";
+"settings.footer.language" = "Ulimi we-app buyiguqula int face. Ulimi wokokuqukethwe buyiguqula izihloko, ukusesha nokondla (i-YouTube ithumbulula imethadatha ngaphandle kwendawo, njengohlelo olusemthethweni). Izintshintsho ziyasebenza ngokugcwele ngemuva kokuphinda uqale i-app.";
+/* Rows */
+"settings.row.appLanguage" = "Ulimi We-app";
+"settings.row.contentLanguage" = "Ulimi Wokokuqukethwe";
+"settings.row.region" = "Isifunda";
+/* Picker option following the device language/region */
+"settings.language.system" = "Isistimu";
+/* Alert after changing a language setting */
+"settings.language.restartTitle" = "Kudingeka Ukuqala Kabusha";
+"settings.language.restartMessage" = "Izintshintsho ziyasebenza ngokugcwele ngemuva kokuphinda uqale i-app.";
