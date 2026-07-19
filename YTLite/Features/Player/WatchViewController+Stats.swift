@@ -54,19 +54,19 @@ extension WatchViewController {
         let item = videoPlayerView?.player?.currentItem
         var rows = [
             row(
-                "Video ID / Source",
+                "视频ID/来源",
                 "\(playbackFacade.currentVideoId ?? "?")"
                     + " / \(kindName(source?.kind))"
             ),
-            row("Viewport / Frames", viewportValue(dropped: item)),
-            row("Current / Selected", resolutionValue(item, source: source))
+            row("视口/丢帧", viewportValue(dropped: item)),
+            row("当前/已选", resolutionValue(item, source: source))
         ]
         if let codecs = source?.currentCodecs {
-            rows.append(row("Codecs", codecs))
+            rows.append(row("编码", codecs))
         }
-        rows.append(row("Connection Speed", speedValue(item)))
-        rows.append(row("Network Activity", transferredValue(item)))
-        rows.append(row("Buffer Health", bufferValue(item)))
+        rows.append(row("连接速度", speedValue(item)))
+        rows.append(row("网络活动", transferredValue(item)))
+        rows.append(row("缓冲健康", bufferValue(item)))
         return rows.joined(separator: "\n")
     }
 
