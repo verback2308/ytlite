@@ -1,0 +1,367 @@
+/*
+  YTLite — Finnish (fi).
+
+  Keys are stable API: never rename one casually — it orphans the key in
+  every translation. Comments give translator context. Positional
+  placeholders (%1$@) must be preserved verbatim in translations.
+*/
+
+/* ===== Player: settings menu ===== */
+
+/* Title of the gear menu in the player */
+"player.menu.settings" = "Toiston asetukset";
+/* Menu item + picker title: video quality */
+"player.menu.quality" = "Laatu";
+/* Menu item + picker title: audio track (dub) selection */
+"player.menu.audioTrack" = "Ääniraita";
+/* Menu item: toggles the playback statistics overlay */
+"player.menu.stats" = "Tilastot nörteille";
+/* Picker title: subtitles */
+"player.menu.subtitles" = "Tekstitys";
+
+/* ===== Player: pickers ===== */
+
+/* Subtitle picker: disables subtitles */
+"player.subtitles.off" = "Pois";
+/* Suffix on auto-generated subtitle tracks, e.g. "English (auto)" */
+"player.subtitles.autoSuffix" = " (automaattinen)";
+/* Suffix on AI auto-dubbed audio tracks, e.g. "Russian (AI)" */
+"player.audioTrack.aiSuffix" = " (AI)";
+
+/* ===== Player: status / errors ===== */
+
+/* Status label while switching; %1$@ = quality label or track name */
+"player.status.loading" = "Ladataan %1$@...";
+/* Status label while the stream URL is being resolved */
+"player.status.resolving" = "Ratkaistaan virtaa...";
+/* Shown when a video cannot be played at all */
+"player.error.playback" = "Toisto epäonnistui.";
+/* Shown when switching video quality failed (playback continues) */
+"player.error.qualitySwitch" = "Laadun vaihto epäonnistui.";
+/* Shown when switching the audio track failed (playback continues) */
+"player.error.audioTrackSwitch" = "Ääniraidan vaihto epäonnistui.";
+
+/* ===== Common ===== */
+
+/* Subscribe button, not-subscribed state */
+"common.subscribe" = "Tilaa";
+/* Subscribe button, subscribed state */
+"common.subscribed" = "Tilaaja";
+/* Generic cancel action */
+"common.cancel" = "Peruuta";
+/* Generic confirmation button */
+"common.ok" = "OK";
+/* Generic save action */
+"common.save" = "Tallenna";
+/* Generic done action */
+"common.done" = "Valmis";
+/* Fallback title/label of a playlist tile */
+"common.playlist" = "Soittolista";
+/* Library tab title */
+"library.title" = "Kirjasto";
+
+/* ===== Player: status ===== */
+
+/* Status label while the player prepares the first video */
+"player.status.preparing" = "Valmistellaan videota...";
+/* Status label while an expired stream URL is re-resolved */
+"player.status.refreshing" = "Päivitetään virtaa...";
+
+/* ===== Player: watch page ===== */
+
+/* Expands the video description */
+"player.description.more" = "Lisää";
+/* Collapses the video description */
+"player.description.less" = "Vähemmän";
+/* Action bar: share the video */
+"player.action.share" = "Jaa";
+/* Action bar: save to playlist */
+"player.action.save" = "Tallenna";
+/* Action bar: download */
+"player.action.download" = "Lataa";
+
+/* ===== Player: comments ===== */
+
+/* Comments section header */
+"player.comments.title" = "Kommentit";
+/* Comments header with count; %1$d = number of comments */
+"player.comments.titleCount" = "Kommentit (%1$d)";
+/* Shown while comments load */
+"player.comments.loading" = "Ladataan kommentteja...";
+/* Shown when the comments request failed */
+"player.comments.unavailable" = "Kommentit eivät ole käytettävissä";
+/* Shown before the watch page has loaded enough to fetch comments */
+"player.comments.unavailableYet" = "Kommentteja ei vielä ole käytettävissä.";
+/* Button loading the next page of comments */
+"player.comments.loadMore" = "Lataa lisää kommentteja";
+/* Author line of a pinned comment; %1$@ = author name */
+"player.comments.pinned" = "%1$@ \u2022 Kiinnitetty";
+/* Comment like count; %1$@ = formatted number */
+"player.comments.likes" = "%1$@ tykkäystä";
+/* Comment reply count; %1$@ = formatted number */
+"player.comments.replies" = "%1$@ vastausta";
+
+/* ===== Player: autoplay overlay ===== */
+
+/* Header above the next video suggestion */
+"player.autoplay.upNext" = "Seuraavana";
+/* Starts the suggested video immediately, skipping the countdown */
+"player.autoplay.playNow" = "Toista nyt";
+
+/* ===== Player: related section ===== */
+
+/* Header of an unnamed autoplay queue/playlist */
+"player.related.mix" = "Mix";
+/* Header of the related-videos section */
+"player.related.title" = "Liittyvät";
+/* Status label on fatal playback failure; %1$@ = error description */
+"player.error.withMessage" = "Toistovirhe: %1$@";
+
+/* ===== Player: speed ===== */
+
+/* The 1x playback speed */
+"player.speed.normal" = "Normaali";
+
+/* ===== SponsorBlock ===== */
+
+/* Skip button; %1$@ = localized category name, e.g. "Skip Sponsor" */
+"sponsorblock.skip" = "Ohita %1$@";
+
+/* Skip-behavior options (per-category setting) */
+"sponsorblock.behavior.autoSkip" = "Automaattinen ohitus";
+"sponsorblock.behavior.showButton" = "Näytä painike";
+"sponsorblock.behavior.disabled" = "Poista käytöstä";
+
+/* Footer under the SponsorBlock section (project attribution) */
+"sponsorblock.attribution" = "Toimii SponsorBlockin avulla (sponsor.ajay.app) \u2014 avoimen yhteisön projekti.";
+/* Header above the per-category skip settings */
+"sponsorblock.segmentCategories" = "Segmenttikategoriat";
+
+/* Category names (SponsorBlock project terms) and their descriptions */
+"sponsorblock.category.sponsor.name" = "Sponsori";
+"sponsorblock.category.sponsor.description" = "Maksettu mainos, maksetut suositukset ja suorat mainokset. Ei omassa mainonnassa tai ilmaisissa mainoksissa suosituille syille/luojille/sivustoille/tuotteille.";
+"sponsorblock.category.selfpromo.name" = "Maksettomat/omat mainokset";
+"sponsorblock.category.selfpromo.description" = "Samankaltainen kuin \"sponsori\" paitsi maksettomat tai omat mainokset. Sisältää osioita tuotteista, lahjoituksista tai tiedoista yhteistyökumppaneista.";
+"sponsorblock.category.exclusive_access.name" = "Yksinoikeus";
+"sponsorblock.category.exclusive_access.description" = "Vain kokonaisten videoiden merkitsemiseen. Käytetään kun video esittelee tuotetta, palvelua tai paikkaa johon on saatu ilmainen tai tuettu pääsy.";
+"sponsorblock.category.interaction.name" = "Vuorovaikutusmuistutus (Tilaa)";
+"sponsorblock.category.interaction.description" = "Kun on lyhyt muistutus tykätä, tilata tai seurata sisällön keskellä. Jos se on pitkä tai koskee jotain tiettyä, sen pitäisi olla omissa mainoksissa.";
+"sponsorblock.category.highlight.name" = "Kohokohta";
+"sponsorblock.category.highlight.description" = "Videon osio jota useimmat etsivät. Samankaltainen kuin \"Video alkaa x\" -kommentit.";
+"sponsorblock.category.intro.name" = "Tauko/Alkuanimaatio";
+"sponsorblock.category.intro.description" = "Tauko ilman varsinaista sisältöä. Voi olla tauko, staattinen ruutu tai toistuva animaatio. Tätä ei pitäisi käyttää siirtymissä jotka sisältävät tietoa.";
+"sponsorblock.category.outro.name" = "Lopputekstit";
+"sponsorblock.category.outro.description" = "Lopputekstit tai kun YouTube-lopputekstit ilmestyvät. Ei johtopäätöksiä tiedon kanssa.";
+"sponsorblock.category.preview.name" = "Esikatselu/Yhteenveto";
+"sponsorblock.category.preview.description" = "Leikkeiden kokoelma jotka näyttävät mitä tulossa on tässä videossa tai muissa videoissa sarjassa jossa kaikki tiedot toistetaan myöhemmin videossa.";
+"sponsorblock.category.filler.name" = "Sivuraiteen/Huumori";
+"sponsorblock.category.filler.description" = "Sivuraiteisia kohtauksia tai huumoria jotka eivät ole välttämättömiä videon pääsisällön ymmärtämiseen. Tämän ei pitäisi sisältää osioita jotka antavat kontekstia tai taustatietoja.";
+"sponsorblock.category.music_offtopic.name" = "Musiikin ulkopuolinen osio";
+"sponsorblock.category.music_offtopic.description" = "Vain musiikkivideoille. Musiikin ulkopuolinen osio musiikkivideosta.";
+"sponsorblock.category.chapter.name" = "Luku";
+"sponsorblock.category.chapter.description" = "Mukautetut videot";
+
+/* ===== Settings ===== */
+
+/* Settings sheet title */
+"settings.title" = "Asetukset";
+
+/* Section headers */
+"settings.section.theme" = "Teema";
+"settings.section.playback" = "Toisto";
+"settings.section.home" = "Koti";
+"settings.section.cache" = "Välimuisti";
+"settings.section.ryd" = "Return YouTube Dislike";
+"settings.section.sponsorblock" = "SponsorBlock";
+"settings.section.debug" = "Vianjäljitys";
+
+/* Section footers */
+"settings.footer.themeAutoSystem" = "Seuraa automaattisesti järjestelmän ulkoasua.";
+"settings.footer.themeAutoHours" = "Vaihtaa automaattisesti tummaan teemaan yllä olevien tuntien välillä.";
+"settings.footer.playback" = "Zoomaa täyttö skaalaa videota koko näytöllä automaattisesti jotta mustia palkkoja ei jää. Purrista pelaajassa ohittaa sen videokohtaisesti.";
+"settings.footer.home" = "Suositushyllyt näytetään: yhtenäinen ruudukko tai tv-tyylinen vaakanailit.";
+"settings.footer.ryd" = "Epätykkäysten määrät toimivat Return YouTube Disliken (returnyoutubedislike.com) avulla \u2014 avoimen yhteisön projekti.";
+"settings.footer.debug" = "Pakota tietty toistolähde. Yleensä Android VR:ä käytetään automaattisella varallahtamisella. Ratkaisinpalvelin toimii Mobile Web + pot -lähteelle (pot-mienerointi ja n-ratkaisu iOS 12\u201313).";
+
+/* Theme rows; segment labels for dark/light/auto modes */
+"settings.row.theme" = "Teema";
+"settings.theme.dark" = "Tumma";
+"settings.theme.light" = "Vaalea";
+"settings.theme.auto" = "Automaattinen";
+/* Hour pickers bounding the iOS 12 scheduled dark mode */
+"settings.row.darkFrom" = "Tumma teema alkaen";
+"settings.row.darkUntil" = "Tumma teema asti";
+
+/* Playback rows */
+"settings.row.defaultQuality" = "Oletuslaatu";
+/* The "Auto" entry of the default-quality picker (stored value stays English) */
+"settings.quality.auto" = "Automaattinen";
+"settings.row.backgroundPlayback" = "Taustatoisto";
+"settings.row.pip" = "Kuva kuvassa";
+"settings.row.hideStatusBar" = "Piilota tilapalkki koko näytöllä";
+"settings.row.zoomToFill" = "Zoomaa täyttö koko näytöllä";
+"settings.row.showShorts" = "Näytä YouTube Shorts -tilauksissa";
+
+/* Home layout row + option names */
+"settings.row.homeLayout" = "Kotisivun asettelu";
+"settings.homeLayout.grid" = "Tavallinen ruudukko";
+"settings.homeLayout.rails" = "Hyllynait";
+
+/* Cache rows */
+"settings.row.feedCache" = "Syötteen välimuisti";
+"settings.row.feedCacheDuration" = "Syötteen välimuistin kesto";
+"settings.row.imageCache" = "Kuvien välimuisti";
+"settings.row.imageCacheDuration" = "Kuvien välimuistin kesto";
+"settings.row.clearCache" = "Tyhjennä koko välimuisti";
+/* Alert after clearing all caches */
+"settings.cache.clearedTitle" = "Välimuisti tyhjennetty";
+"settings.cache.clearedMessage" = "Koko välimuisti on tyhjennetty.";
+
+/* Integration rows */
+"settings.row.ryd" = "Return YouTube Dislike";
+"settings.row.sponsorblock" = "SponsorBlock";
+"settings.row.sponsorblockSettings" = "SponsorBlock-asetukset";
+
+/* Debug rows (values stay technical/English) */
+"settings.row.playbackSource" = "Toistolähde";
+"settings.row.solverServer" = "Solver server";
+"settings.row.shareLog" = "Jaa vianjäljitysloki";
+/* Solver-server URL alert */
+"settings.solver.message" = "Ratkaisinpalvelin URL.";
+"settings.solver.reset" = "Palauta oletus";
+/* Suffix shown after the solver URL when it is the built-in default */
+"settings.solver.defaultSuffix" = " (oletus)";
+/* Alert when no debug logs exist yet */
+"settings.log.noneTitle" = "Ei lokeja";
+"settings.log.noneMessage" = "Vianjäljityslokeja ei vielä ole käytettävissä.";
+
+/* ===== Profile ===== */
+
+"profile.title" = "Profiili";
+"profile.signOut" = "Kirjaudu ulos";
+"profile.clearImageCache" = "Tyhjennä kuvien välimuisti";
+"profile.imageCacheCleared" = "Kuvien välimuisti tyhjennetty.";
+
+/* ===== Search ===== */
+
+"search.title" = "Haku";
+/* Search bar placeholder */
+"search.placeholder" = "Hae YouTubesta";
+/* Header above the recent-search list */
+"search.recent" = "Viimeaikaiset haut";
+/* Filters toolbar button; the dotted variant marks active filters */
+"search.filters" = "Suodattimet";
+"search.filters.active" = "Suodattimet \u2022";
+/* Filters sheet title + reset action */
+"search.filters.title" = "Hakusuodattimet";
+"search.filters.reset" = "Nollaa suodattimet";
+/* Filter rows; %1$@ = the current value */
+"search.filters.sort" = "Järjestä: %1$@";
+"search.filters.date" = "Päivämäärä: %1$@";
+"search.filters.type" = "Tyyppi: %1$@";
+"search.filters.duration" = "Kesto: %1$@";
+/* Sub-sheet titles */
+"search.filters.sortTitle" = "Järjestä";
+"search.filters.dateTitle" = "Latauspäivä";
+"search.filters.typeTitle" = "Tyyppi";
+"search.filters.durationTitle" = "Kesto";
+
+/* Filter option values */
+"search.sort.relevance" = "Relevanssi";
+"search.sort.rating" = "Arvostelu";
+"search.sort.uploadDate" = "Latauspäivä";
+"search.sort.viewCount" = "Katselukerrat";
+"search.date.any" = "Milloin tahansa";
+"search.date.lastHour" = "Viime tunti";
+"search.date.today" = "Tänään";
+"search.date.thisWeek" = "Tällä viikolla";
+"search.date.thisMonth" = "Tässä kuussa";
+"search.date.thisYear" = "Tänä vuonna";
+"search.type.any" = "Mikä tyyppi tahansa";
+"search.type.video" = "Video";
+"search.type.channel" = "Kanava";
+"search.type.playlist" = "Soittolista";
+"search.duration.any" = "Mikä kesto tahansa";
+"search.duration.short" = "Alle 4 min";
+"search.duration.medium" = "4\u201320 min";
+"search.duration.long" = "Yli 20 min";
+
+/* ===== Home ===== */
+
+"home.title" = "Koti";
+/* Chip resetting to the unfiltered feed */
+"home.category.all" = "Kaikki";
+/* Static category chips (server shelf titles arrive already localized) */
+"home.category.live" = "Live";
+"home.category.news" = "Uutiset";
+"home.category.gaming" = "Pelaaminen";
+"home.category.sports" = "Urheilu";
+"home.category.learning" = "Oppiminen";
+"home.category.fashion" = "Muoti";
+/* Error empty state (two lines) */
+"home.error.loadFailed" = "Syötettä ei voitu ladata\nVedä alas ja yritä uudelleen";
+/* Signed-out empty state */
+"home.signIn" = "Kirjaudu sisään nähdäksesi suositukset";
+
+/* ===== Channel ===== */
+
+/* Channel tab bar */
+"channel.tab.videos" = "Videot";
+"channel.tab.live" = "Live";
+"channel.tab.playlists" = "Soittolistat";
+/* About sheet */
+"channel.about.title" = "Tietoja";
+"channel.about.close" = "Sulje";
+"channel.about.subscribers" = "Tilaajat";
+"channel.about.videos" = "Videot";
+"channel.about.description" = "Kuvaus";
+"channel.about.contact" = "Yhteystiedot";
+
+/* ===== Library ===== */
+
+"library.history" = "Historia";
+"library.downloads" = "Lataukset";
+"library.playlists" = "Soittolistat";
+"library.downloads.comingSoon" = "Lataukset tulossa pian";
+"library.history.signIn" = "Kirjaudu sisään nähdäksesi katseluhistoriasi";
+"library.history.empty" = "Katseluhistoriaa ei löytynyt";
+"library.history.loadFailed" = "Historiaa ei voitu ladata";
+"library.playlists.signIn" = "Kirjaudu sisään nähdäksesi soittolistasi";
+"library.playlists.loadFailed" = "Soittolistoja ei voitu ladata";
+"library.playlist.empty" = "Ei videoita tässä soittolistassa";
+"library.playlist.loadFailed" = "Soittolistaa ei voitu ladata";
+
+/* ===== Subscriptions ===== */
+
+"subscriptions.title" = "Tilaukset";
+"subscriptions.all" = "Kaikki tilaukset";
+/* "All" button in the channel avatar bar */
+"subscriptions.allButton" = "Kaikki";
+"subscriptions.signIn" = "Kirjaudu sisään nähdäksesi tilauksesi";
+
+/* ===== Account (toolbar sheet) ===== */
+
+/* Fallback account name when the profile has none */
+"account.fallbackName" = "Tili";
+"account.signIn" = "Kirjaudu sisään";
+"account.signOut" = "Kirjaudu ulos";
+"account.notSignedIn" = "Ei kirjauduttu sisään";
+
+/* Generic error alert title */
+"common.error" = "Virhe";
+/* Channel screen failed to load */
+"channel.unavailable" = "Kanava ei ole käytettävissä";
+
+/* ===== Settings: language section ===== */
+
+"settings.section.language" = "Kieli";
+"settings.footer.language" = "Sovelluksen kieli vaihtaa käyttöliittymän. Sisällön kieli vaihtaa otsikot, haut ja syötteet (YouTube kääntää metatiedot palvelinpuolella, kuten virallinen sovellus). Muutokset tulevat täysin voimaan sovelluksen käynnistämisen jälkeen.";
+/* Rows */
+"settings.row.appLanguage" = "Sovelluksen kieli";
+"settings.row.contentLanguage" = "Sisällön kieli";
+"settings.row.region" = "Alue";
+/* Picker option following the device language/region */
+"settings.language.system" = "Järjestelmän kieli";
+/* Alert after changing a language setting */
+"settings.language.restartTitle" = "Uudelleenkäynnistys vaaditaan";
+"settings.language.restartMessage" = "Muutokset tulevat täysin voimaan sovelluksen käynnistämisen jälkeen.";

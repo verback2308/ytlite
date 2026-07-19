@@ -23,6 +23,7 @@
 		<string>es</string>
 		<string>et</string>
 		<string>eu</string>
+		<string>fi</string>
 	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
