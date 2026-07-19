@@ -35,7 +35,7 @@ extension WatchViewController {
                 self?.selectSourceQuality(quality, source: source)
             }
         }
-        presentPlayerMenu(title: "质量", items: items)
+        presentPlayerMenu(title: "画质", items: items)
     }
 
     private func selectSourceQuality(
@@ -54,7 +54,7 @@ extension WatchViewController {
                 case .success(let prepared):
                     self?.attachPrepared(prepared, resumeAt: resumeTime)
                 case .failure:
-                    self?.showPlaybackError("质量切换失败.")
+                    self?.showPlaybackError("画质切换失败.")
                 }
             }
         }
