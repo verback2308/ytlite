@@ -63,6 +63,7 @@
 		<string>sv</string>
 		<string>sw</string>
 		<string>ta</string>
+		<string>te</string>
 	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>

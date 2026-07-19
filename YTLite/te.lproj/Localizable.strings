@@ -1,0 +1,367 @@
+/*
+  YTLite — Telugu (te).
+
+  Keys are stable API: never rename one casually — it orphans the key in
+  every translation. Comments give translator context. Positional
+  placeholders (%1$@) must be preserved verbatim in translations.
+*/
+
+/* ===== Player: settings menu ===== */
+
+/* Title of the gear menu in the player */
+"player.menu.settings" = "ప్లేబ్యాక్ సెట్టింగ్‌లు";
+/* Menu item + picker title: video quality */
+"player.menu.quality" = "నాణ్యత";
+/* Menu item + picker title: audio track (dub) selection */
+"player.menu.audioTrack" = "ఆడియో ట్రాక్";
+/* Menu item: toggles the playback statistics overlay */
+"player.menu.stats" = "Stats for nerds";
+/* Picker title: subtitles */
+"player.menu.subtitles" = "ఉపశీర్షికలు";
+
+/* ===== Player: pickers ===== */
+
+/* Subtitle picker: disables subtitles */
+"player.subtitles.off" = "ఆఫ్";
+/* Suffix on auto-generated subtitle tracks, e.g. "English (auto)" */
+"player.subtitles.autoSuffix" = " (auto)";
+/* Suffix on AI auto-dubbed audio tracks, e.g. "Russian (AI)" */
+"player.audioTrack.aiSuffix" = " (AI)";
+
+/* ===== Player: status / errors ===== */
+
+/* Status label while switching; %1$@ = quality label or track name */
+"player.status.loading" = "లోడ్ అవుతోంది %1$@...";
+/* Status label while the stream URL is being resolved */
+"player.status.resolving" = "స్ట్రీమ్ పరిష్కరిస్తోంది...";
+/* Shown when a video cannot be played at all */
+"player.error.playback" = "ప్లేబ్యాక్ విఫలమైంది.";
+/* Shown when switching video quality failed (playback continues) */
+"player.error.qualitySwitch" = "నాణ్యత మార్పు విఫలమైంది.";
+/* Shown when switching the audio track failed (playback continues) */
+"player.error.audioTrackSwitch" = "ఆడియో ట్రాక్ మార్పు విఫలమైంది.";
+
+/* ===== Common ===== */
+
+/* Subscribe button, not-subscribed state */
+"common.subscribe" = "సబ్‌స్క్రైబ్ చేయండి";
+/* Subscribe button, subscribed state */
+"common.subscribed" = "సబ్‌స్క్రైబ్ చేయబడింది";
+/* Generic cancel action */
+"common.cancel" = "రద్దు";
+/* Generic confirmation button */
+"common.ok" = "సరే";
+/* Generic save action */
+"common.save" = "సేవ్ చేయండి";
+/* Generic done action */
+"common.done" = "పూర్తయింది";
+/* Fallback title/label of a playlist tile */
+"common.playlist" = "ప్లేలిస్ట్";
+/* Library tab title */
+"library.title" = "లైబ్రరీ";
+
+/* ===== Player: status ===== */
+
+/* Status label while the player prepares the first video */
+"player.status.preparing" = "వీడియో సిద్ధమవుతోంది...";
+/* Status label while an expired stream URL is re-resolved */
+"player.status.refreshing" = "స్ట్రీమ్ రిఫ్రెష్ అవుతోంది...";
+
+/* ===== Player: watch page ===== */
+
+/* Expands the video description */
+"player.description.more" = "మరింత";
+/* Collapses the video description */
+"player.description.less" = "తక్కువ";
+/* Action bar: share the video */
+"player.action.share" = "షేర్";
+/* Action bar: save to playlist */
+"player.action.save" = "సేవ్";
+/* Action bar: download */
+"player.action.download" = "డౌన్‌లోడ్";
+
+/* ===== Player: comments ===== */
+
+/* Comments section header */
+"player.comments.title" = "వ్యాఖ్యలు";
+/* Comments header with count; %1$d = number of comments */
+"player.comments.titleCount" = "వ్యాఖ్యలు (%1$d)";
+/* Shown while comments load */
+"player.comments.loading" = "వ్యాఖ్యలు లోడ్ అవుతున్నాయి...";
+/* Shown when the comments request failed */
+"player.comments.unavailable" = "వ్యాఖ్యలు అందుబాటులో లేవు";
+/* Shown before the watch page has loaded enough to fetch comments */
+"player.comments.unavailableYet" = "వ్యాఖ్యలు ఇంకా అందుబాటులో లేవు.";
+/* Button loading the next page of comments */
+"player.comments.loadMore" = "మరిన్ని వ్యాఖ్యలు లోడ్ చేయండి";
+/* Author line of a pinned comment; %1$@ = author name */
+"player.comments.pinned" = "%1$@ • పిన్ చేయబడింది";
+/* Comment like count; %1$@ = formatted number */
+"player.comments.likes" = "%1$@ ఇష్టాలు";
+/* Comment reply count; %1$@ = formatted number */
+"player.comments.replies" = "%1$@ ప్రత్యుత్తరాలు";
+
+/* ===== Player: autoplay overlay ===== */
+
+/* Header above the next video suggestion */
+"player.autoplay.upNext" = "తదుపరి";
+/* Starts the suggested video immediately, skipping the countdown */
+"player.autoplay.playNow" = "ఇప్పుడు ప్లే చేయండి";
+
+/* ===== Player: related section ===== */
+
+/* Header of an unnamed autoplay queue/playlist */
+"player.related.mix" = "మిక్స్";
+/* Header of the related-videos section */
+"player.related.title" = "సంబంధిత";
+/* Status label on fatal playback failure; %1$@ = error description */
+"player.error.withMessage" = "ప్లేబ్యాక్ లోపం: %1$@";
+
+/* ===== Player: speed ===== */
+
+/* The 1x playback speed */
+"player.speed.normal" = "సాధారణ";
+
+/* ===== SponsorBlock ===== */
+
+/* Skip button; %1$@ = localized category name, e.g. "Skip Sponsor" */
+"sponsorblock.skip" = "దాటవేయండి %1$@";
+
+/* Skip-behavior options (per-category setting) */
+"sponsorblock.behavior.autoSkip" = "స్వయంచాలకంగా దాటవేయండి";
+"sponsorblock.behavior.showButton" = "బటన్ చూపించండి";
+"sponsorblock.behavior.disabled" = "నిలిపివేయండి";
+
+/* Footer under the SponsorBlock section (project attribution) */
+"sponsorblock.attribution" = "SponsorBlock (sponsor.ajay.app) ద్వారా నడుస్తోంది — ఒక ఓపెన్ కమ్యూనిటీ ప్రాజెక్ట్.";
+/* Header above the per-category skip settings */
+"sponsorblock.segmentCategories" = "విభాగ వర్గాలు";
+
+/* Category names (SponsorBlock project terms) and their descriptions */
+"sponsorblock.category.sponsor.name" = "Sponsor";
+"sponsorblock.category.sponsor.description" = "పైడ్ ప్రమోషన్, పైడ్ రిఫరల్స్ మరియు ప్రత్యక్ష ప్రకటనలు. స్వీయ-ప్రమోషన్ లేదా ఉచితంగా కారణాలు/సృష్టికర్తలు/వెబ్‌సైట్లు/ఉత్పత్తులను సమర్థించడం కాదు.";
+"sponsorblock.category.selfpromo.name" = "పైడ్‌కాని/స్వీయ-ప్రమోషన్";
+"sponsorblock.category.selfpromo.description" = "\"sponsor\" లాంటిది కానీ పైడ్‌కాని లేదా స్వీయ-ప్రమోషన్. ఇందులో మర్చండైజ్, డొనేషన్లు లేదా ఎవరితో సహకరించారో సమాచారం ఉంటుంది.";
+"sponsorblock.category.exclusive_access.name" = "ఎక్స్‌క్లూసివ్ యాక్సెస్";
+"sponsorblock.category.exclusive_access.description" = "మొత్తం వీడియోలకు మాత్రమే లేబుల్ చేయడానికి. ఉచితంగా లేదా సబ్సిడీ ధరలో పొందిన ఉత్పత్తి, సేవ లేదా ప్రదేశాన్ని ప్రదర్శించే వీడియోలో ఉపయోగిస్తారు.";
+"sponsorblock.category.interaction.name" = "ఇంటరాక్షన్ రైండర్ (సబ్‌స్క్రైబ్)";
+"sponsorblock.category.interaction.description" = "కంటెంట్ మధ్యలో లైక్, సబ్‌స్క్రైబ్ లేదా ఫాలో చేయమని చిన్న రెమైండర్ ఉన్నప్పుడు. అది పొడవుగా ఉంటే లేదా నిర్దిష్ట విషయం గురించి ఉంటే, అది స్వీయ-ప్రమోషన్ కింద ఉండాలి.";
+"sponsorblock.category.highlight.name" = "హైలైట్";
+"sponsorblock.category.highlight.description" = "చాలా మంది వెతుకుతున్న వీడియో భాగం. \"వీడియో x వద్ద ప్రారంభమవుతుంది\" వ్యాఖ్యల వంటిది.";
+"sponsorblock.category.intro.name" = "ఇంటర్‌మిషన్/ఇంట్రో యానిమేషన్";
+"sponsorblock.category.intro.description" = "నిజమైన కంటెంట్ లేని విరామం. ఒక విరామం, స్టాటిక్ ఫ్రేమ్ లేదా పునరావృత యానిమేషన్ కావచ్చు. సమాచారం కలిగిన మార్పులకు దీన్ని ఉపయోగించకూడదు.";
+"sponsorblock.category.outro.name" = "ఎండ్‌కార్డ్‌లు/క్రెడిట్స్";
+"sponsorblock.category.outro.description" = "క్రెడిట్స్ లేదా YouTube ఎండ్‌కార్డ్‌లు కనిపించినప్పుడు. సమాచారంతో కూడిన ముగింపులకు కాదు.";
+"sponsorblock.category.preview.name" = "ప్రివ్యూ/రీక్యాప్";
+"sponsorblock.category.preview.description" = "ఈ వీడియోలో లేదా శ్రేణిలోని ఇతర వీడియోలలో ఏమి రాబోతుందో చూపించే క్లిప్‌ల సంకలనం. అన్ని సమాచారం తర్వాత వీడియోలో పునరావృతమవుతుంది.";
+"sponsorblock.category.filler.name" = "టాంజెంట్లు/జోకులు";
+"sponsorblock.category.filler.description" = "వీడియో ప్రధాన కంటెంట్ అర్థం చేసుకోవడానికి అవసరం లేని టాంజెంట్ దృశ్యాలు లేదా జోకులు. సందర్భం లేదా నేపథ్య వివరాలు అందించే విభాగాలు ఇందులో ఉండకూడదు.";
+"sponsorblock.category.music_offtopic.name" = "సంగీతేతర విభాగం";
+"sponsorblock.category.music_offtopic.description" = "సంగీత వీడియోలకు మాత్రమే. సంగీత వీడియోలోని సంగీతేతర భాగం.";
+"sponsorblock.category.chapter.name" = "అధ్యాయం";
+"sponsorblock.category.chapter.description" = "వీడియో యొక్క అనుకూలించిన పేరు పెట్టిన విభాగాలు.";
+
+/* ===== Settings ===== */
+
+/* Settings sheet title */
+"settings.title" = "సెట్టింగ్‌లు";
+
+/* Section headers */
+"settings.section.theme" = "థీమ్";
+"settings.section.playback" = "ప్లేబ్యాక్";
+"settings.section.home" = "హోమ్";
+"settings.section.cache" = "కాష్";
+"settings.section.ryd" = "Return YouTube Dislike";
+"settings.section.sponsorblock" = "SponsorBlock";
+"settings.section.debug" = "డీబగ్";
+
+/* Section footers */
+"settings.footer.themeAutoSystem" = "సిస్టమ్ రూపాన్ని స్వయంచాలకంగా అనుసరిస్తుంది.";
+"settings.footer.themeAutoHours" = "పైన ఉన్న గంటల మధ్య డార్క్ థీమ్‌కు స్వయంచాలకంగా మారుతుంది.";
+"settings.footer.playback" = "జూమ్ టు ఫిల్ ఫుల్‌స్క్రీన్‌లో వీడియోను స్వయంచాలకంగా స్కేల్ చేస్తుంది, బ్లాక్ బార్లు లేకుండా. ప్లేయర్‌లో పించ్ చేయడం ప్రతి వీడియోకు దాన్ని ఓవర్‌రైడ్ చేస్తుంది.";
+"settings.footer.home" = "సిఫార్సు షెల్ఫ్‌లు ఎలా చూపించబడతాయి: ఒక నిరంతర గ్రిడ్ లేదా టివి-శైలి క్షితిజ సమాంతర రైల్స్.";
+"settings.footer.ryd" = "డిస్‌లైక్ కౌంట్‌లు Return YouTube Dislike (returnyoutubedislike.com) ద్వారా నడుస్తాయి — ఒక ఓపెన్ కమ్యూనిటీ ప్రాజెక్ట్.";
+"settings.footer.debug" = "ఒక నిర్దిష్ట ప్లేబ్యాక్ మూలాన్ని బలవంతంగా సెట్ చేస్తుంది. సాధారణంగా Android VR స్వయంచాలక ఫాల్‌బ్యాక్‌తో ఉపయోగిస్తారు. సాల్వర్ సర్వర్ Mobile Web + pot మూలాన్ని నడుపుతుంది (pot minting, మరియు iOS 12–13 లో n-solving).";
+
+/* Theme rows; segment labels for dark/light/auto modes */
+"settings.row.theme" = "థీమ్";
+"settings.theme.dark" = "డార్క్";
+"settings.theme.light" = "లైట్";
+"settings.theme.auto" = "స్వయంచాలకం";
+/* Hour pickers bounding the iOS 12 scheduled dark mode */
+"settings.row.darkFrom" = "డార్క్ థీమ్ ప్రారంభం";
+"settings.row.darkUntil" = "డార్క్ థీమ్ ముగింపు";
+
+/* Playback rows */
+"settings.row.defaultQuality" = "డిఫాల్ట్ నాణ్యత";
+/* The "Auto" entry of the default-quality picker (stored value stays English) */
+"settings.quality.auto" = "Auto";
+"settings.row.backgroundPlayback" = "బ్యాక్‌గ్రౌండ్ ప్లేబ్యాక్";
+"settings.row.pip" = "Picture-in-Picture";
+"settings.row.hideStatusBar" = "ఫుల్‌స్క్రీన్‌లో స్టేటస్ బార్ దాచండి";
+"settings.row.zoomToFill" = "ఫుల్‌స్క్రీన్‌లో నింపడానికి జూమ్ చేయండి";
+"settings.row.showShorts" = "సబ్‌స్క్రిప్షన్‌లలో YouTube Shorts చూపించండి";
+
+/* Home layout row + option names */
+"settings.row.homeLayout" = "హోమ్ లేఅవుట్";
+"settings.homeLayout.grid" = "ప్లెయిన్ గ్రిడ్";
+"settings.homeLayout.rails" = "షెల్ఫ్ రైల్స్";
+
+/* Cache rows */
+"settings.row.feedCache" = "ఫీడ్ కాష్";
+"settings.row.feedCacheDuration" = "ఫీడ్ కాష్ వ్యవధి";
+"settings.row.imageCache" = "ఇమేజ్ కాష్";
+"settings.row.imageCacheDuration" = "ఇమేజ్ కాష్ వ్యవధి";
+"settings.row.clearCache" = "అన్ని కాష్ క్లియర్ చేయండి";
+/* Alert after clearing all caches */
+"settings.cache.clearedTitle" = "కాష్ క్లియర్ చేయబడింది";
+"settings.cache.clearedMessage" = "అన్ని కాష్ క్లియర్ చేయబడింది.";
+
+/* Integration rows */
+"settings.row.ryd" = "Return YouTube Dislike";
+"settings.row.sponsorblock" = "SponsorBlock";
+"settings.row.sponsorblockSettings" = "SponsorBlock సెట్టింగ్‌లు";
+
+/* Debug rows (values stay technical/English) */
+"settings.row.playbackSource" = "ప్లేబ్యాక్ మూలం";
+"settings.row.solverServer" = "Solver server";
+"settings.row.shareLog" = "డీబగ్ లాగ్ షేర్ చేయండి";
+/* Solver-server URL alert */
+"settings.solver.message" = "సాల్వర్ సర్వర్ URL.";
+"settings.solver.reset" = "డిఫాల్ట్‌కు రీసెట్ చేయండి";
+/* Suffix shown after the solver URL when it is the built-in default */
+"settings.solver.defaultSuffix" = " (default)";
+/* Alert when no debug logs exist yet */
+"settings.log.noneTitle" = "లాగ్‌లు లేవు";
+"settings.log.noneMessage" = "డీబగ్ లాగ్‌లు ఇంకా అందుబాటులో లేవు.";
+
+/* ===== Profile ===== */
+
+"profile.title" = "ప్రొఫైల్";
+"profile.signOut" = "సైన్ అవుట్";
+"profile.clearImageCache" = "ఇమేజ్ కాష్ క్లియర్ చేయండి";
+"profile.imageCacheCleared" = "ఇమేజ్ కాష్ క్లియర్ చేయబడింది.";
+
+/* ===== Search ===== */
+
+"search.title" = "శోధన";
+/* Search bar placeholder */
+"search.placeholder" = "YouTube శోధించండి";
+/* Header above the recent-search list */
+"search.recent" = "ఇటీవలి శోధనలు";
+/* Filters toolbar button; the dotted variant marks active filters */
+"search.filters" = "ఫిల్టర్‌లు";
+"search.filters.active" = "ఫిల్టర్‌లు •";
+/* Filters sheet title + reset action */
+"search.filters.title" = "శోధన ఫిల్టర్‌లు";
+"search.filters.reset" = "ఫిల్టర్‌లు రీసెట్ చేయండి";
+/* Filter rows; %1$@ = the current value */
+"search.filters.sort" = "క్రమం: %1$@";
+"search.filters.date" = "తేదీ: %1$@";
+"search.filters.type" = "రకం: %1$@";
+"search.filters.duration" = "వ్యవధి: %1$@";
+/* Sub-sheet titles */
+"search.filters.sortTitle" = "క్రమంలో";
+"search.filters.dateTitle" = "అప్‌లోడ్ తేదీ";
+"search.filters.typeTitle" = "రకం";
+"search.filters.durationTitle" = "వ్యవధి";
+
+/* Filter option values */
+"search.sort.relevance" = "సంబంధం";
+"search.sort.rating" = "రేటింగ్";
+"search.sort.uploadDate" = "అప్‌లోడ్ తేదీ";
+"search.sort.viewCount" = "వీక్షణ కౌంట్";
+"search.date.any" = "ఏ సమయంలోనైనా";
+"search.date.lastHour" = "గత గంట";
+"search.date.today" = "ఈ రోజు";
+"search.date.thisWeek" = "ఈ వారం";
+"search.date.thisMonth" = "ఈ నెల";
+"search.date.thisYear" = "ఈ సంవత్సరం";
+"search.type.any" = "ఏ రకమైనా";
+"search.type.video" = "వీడియో";
+"search.type.channel" = "ఛానెల్";
+"search.type.playlist" = "ప్లేలిస్ట్";
+"search.duration.any" = "ఏ వ్యవధైనా";
+"search.duration.short" = "4 నిమిషాల కంటే తక్కువ";
+"search.duration.medium" = "4–20 నిమిషాలు";
+"search.duration.long" = "20 నిమిషాల కంటే ఎక్కువ";
+
+/* ===== Home ===== */
+
+"home.title" = "హోమ్";
+/* Chip resetting to the unfiltered feed */
+"home.category.all" = "అన్నీ";
+/* Static category chips (server shelf titles arrive already localized) */
+"home.category.live" = "లైవ్";
+"home.category.news" = "వార్తలు";
+"home.category.gaming" = "గేమింగ్";
+"home.category.sports" = "క్రీడలు";
+"home.category.learning" = "లెర్నింగ్";
+"home.category.fashion" = "ఫ్యాషన్";
+/* Error empty state (two lines) */
+"home.error.loadFailed" = "ఫీడ్ లోడ్ చేయలేకపోయింది\nమళ్ళీ ప్రయత్నించడానికి క్రిందికి లాగండి";
+/* Signed-out empty state */
+"home.signIn" = "మీ సిఫార్సులు చూడటానికి సైన్ ఇన్ చేయండి";
+
+/* ===== Channel ===== */
+
+/* Channel tab bar */
+"channel.tab.videos" = "వీడియోలు";
+"channel.tab.live" = "లైవ్";
+"channel.tab.playlists" = "ప్లేలిస్ట్‌లు";
+/* About sheet */
+"channel.about.title" = "గురించి";
+"channel.about.close" = "మూసివేయండి";
+"channel.about.subscribers" = "సబ్‌స్క్రైబర్లు";
+"channel.about.videos" = "వీడియోలు";
+"channel.about.description" = "వివరణ";
+"channel.about.contact" = "సంప్రదించండి";
+
+/* ===== Library ===== */
+
+"library.history" = "చరిత్ర";
+"library.downloads" = "డౌన్‌లోడ్‌లు";
+"library.playlists" = "ప్లేలిస్ట్‌లు";
+"library.downloads.comingSoon" = "డౌన్‌లోడ్‌లు త్వరలో రాబోతున్నాయి";
+"library.history.signIn" = "మీ వాచ్ హిస్టరీ చూడటానికి సైన్ ఇన్ చేయండి";
+"library.history.empty" = "వాచ్ హిస్టరీ కనుగొనబడలేదు";
+"library.history.loadFailed" = "హిస్టరీ లోడ్ చేయలేకపోయింది";
+"library.playlists.signIn" = "మీ ప్లేలిస్ట్‌లు చూడటానికి సైన్ ఇన్ చేయండి";
+"library.playlists.loadFailed" = "ప్లేలిస్ట్‌లు లోడ్ చేయలేకపోయినాయి";
+"library.playlist.empty" = "ఈ ప్లేలిస్ట్‌లో వీడియోలు లేవు";
+"library.playlist.loadFailed" = "ప్లేలిస్ట్ లోడ్ చేయలేకపోయింది";
+
+/* ===== Subscriptions ===== */
+
+"subscriptions.title" = "సబ్‌స్క్రిప్షన్‌లు";
+"subscriptions.all" = "అన్ని సబ్‌స్క్రిప్షన్‌లు";
+/* "All" button in the channel avatar bar */
+"subscriptions.allButton" = "అన్నీ";
+"subscriptions.signIn" = "మీ సబ్‌స్క్రిప్షన్‌లు చూడటానికి సైన్ ఇన్ చేయండి";
+
+/* ===== Account (toolbar sheet) ===== */
+
+/* Fallback account name when the profile has none */
+"account.fallbackName" = "ఖాతా";
+"account.signIn" = "సైన్ ఇన్";
+"account.signOut" = "సైన్ అవుట్";
+"account.notSignedIn" = "సైన్ ఇన్ చేయలేదు";
+
+/* Generic error alert title */
+"common.error" = "లోపం";
+/* Channel screen failed to load */
+"channel.unavailable" = "ఛానెల్ అందుబాటులో లేదు";
+
+/* ===== Settings: language section ===== */
+
+"settings.section.language" = "భాష";
+"settings.footer.language" = "యాప్ భాష ఇంటర్‌ఫేస్‌ను మారుస్తుంది. కంటెంట్ భాష శీర్షికలు, శోధన మరియు ఫీడ్‌లను మారుస్తుంది (YouTube అధికారిక యాప్ వలె మెటాడేటాను సర్వర్ వైపు అనువదిస్తుంది). మార్పులు యాప్ మళ్ళీ ప్రారంభించిన తర్వాత పూర్తిగా వర్తిస్తాయి.";
+/* Rows */
+"settings.row.appLanguage" = "యాప్ భాష";
+"settings.row.contentLanguage" = "కంటెంట్ భాష";
+"settings.row.region" = "ప్రాంతం";
+/* Picker option following the device language/region */
+"settings.language.system" = "సిస్టమ్";
+/* Alert after changing a language setting */
+"settings.language.restartTitle" = "మళ్ళీ ప్రారంభించాలి";
+"settings.language.restartMessage" = "మార్పులు యాప్‌ను మళ్ళీ ప్రారంభించిన తర్వాత పూర్తిగా వర్తిస్తాయి.";
