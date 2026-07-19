@@ -138,7 +138,7 @@ extension SearchViewController {
             }
             sheet.addAction(action)
         }
-        sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        sheet.addAction(UIAlertAction(title: "取消", style: .cancel))
         sheet.popoverPresentationController?.barButtonItem = filtersButton
         present(sheet, animated: true)
     }
