@@ -71,7 +71,7 @@ final class SettingsViewController: UIViewController {
                 rows: [.homeLayout]
             ),
             Section(header: "缓存", footer: nil, rows: cacheRows),
-            Section(header: "Return YouTube Dislike", footer: rydFooter, rows: [.rydEnabled]),
+            Section(header: "返回YouTube不喜欢", footer: rydFooter, rows: [.rydEnabled]),
             Section(header: "SponsorBlock", footer: sbFooter, rows: sponsorBlockRows),
             Section(
                 header: "调试",
@@ -235,14 +235,14 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
         case .autoZoomToFill:
             let key = UserDefaultsKeys.Player.autoZoomToFill
             let isOn = UserDefaults.standard.bool(forKey: key)
-            return makeToggleCell("放大以全屏填充", isOn: isOn) {
+            return makeToggleCell("放大以全屏显示", isOn: isOn) {
                 UserDefaults.standard.set($0, forKey: key)
             }
         case .showShorts:
             return makeShowShortsCell()
         case .homeLayout:
             return makeDisclosureCell(
-                "家庭布局",
+                "首页布局",
                 value: HomeLayout.selected.displayName
             )
         case .persistCache:
@@ -256,11 +256,11 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             ) as? Int ?? 1
             let suffix = days == 1 ? "" : "s"
             return makeDisclosureCell(
-                "Feed Cache Duration", value: "\(days) day\(suffix)"
+                "视频缓存时长", value: "\(天) day\(suffix)"
             )
         case .imageCacheEnabled:
             return makeToggleCell(
-                "Image Cache",
+                "图像缓存",
                 isOn: ThumbnailImageView.cachingEnabled
             ) {
                 UserDefaults.standard.set(
@@ -274,7 +274,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             ) as? Int ?? 7
             let suffix = days == 1 ? "" : "s"
             return makeDisclosureCell(
-                "Image Cache Duration", value: "\(days) day\(suffix)"
+                "图像缓存时长", value: "\(days) day\(suffix)"
             )
         case .clearCache:
             return makeDestructiveCell("清除所有缓存")
@@ -286,7 +286,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
         case .sponsorBlockEnabled:
             return makeSponsorBlockToggle()
         case .sponsorBlockSettings:
-            return makeDisclosureCell("SponsorBlock Settings")
+            return makeDisclosureCell("SponsorBlock设置")
         case .shareLog:
             return makeDisclosureCell("分享调试日志")
         case .playbackSource:
@@ -500,7 +500,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
 
     private func showHomeLayoutPicker() {
         let sheet = UIAlertController(
-            title: "家庭布局",
+            title: "首页布局",
             message: nil,
             preferredStyle: .actionSheet
         )
@@ -528,13 +528,13 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             forKey: UserDefaultsKeys.Cache.feedCacheDays
         ) as? Int ?? 1
         let sheet = UIAlertController(
-            title: "视频缓存持续时间",
+            title: "视频缓存时长",
             message: nil,
             preferredStyle: .actionSheet
         )
         for days in options {
             let action = UIAlertAction(
-                title: "\(days) day\(days == 1 ? "" : "s")",
+                title: "\(天) day\(days == 1 ? "" : "s")",
                 style: .default
             ) { _ in
                 UserDefaults.standard.set(
@@ -632,13 +632,13 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             forKey: UserDefaultsKeys.Cache.imageCacheDays
         ) as? Int ?? 7
         let sheet = UIAlertController(
-            title: "图像缓存持续时间",
+            title: "图像缓存时长",
             message: nil,
             preferredStyle: .actionSheet
         )
         for days in options {
             let action = UIAlertAction(
-                title: "\(days) day\(days == 1 ? "" : "s")",
+                title: "\(天) day\(days == 1 ? "" : "s")",
                 style: .default
             ) { _ in
                 UserDefaults.standard.set(
