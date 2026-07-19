@@ -347,3 +347,17 @@
 "common.error" = "Error";
 /* Channel screen failed to load */
 "channel.unavailable" = "Channel unavailable";
+
+/* ===== Settings: language section ===== */
+
+"settings.section.language" = "Language";
+"settings.footer.language" = "App language changes the interface. Content language changes titles, search and feeds (YouTube translates metadata server-side, like the official app). Changes apply fully after an app restart.";
+/* Rows */
+"settings.row.appLanguage" = "App Language";
+"settings.row.contentLanguage" = "Content Language";
+"settings.row.region" = "Region";
+/* Picker option following the device language/region */
+"settings.language.system" = "System";
+/* Alert after changing a language setting */
+"settings.language.restartTitle" = "Restart Required";
+"settings.language.restartMessage" = "Changes apply fully after restarting the app.";

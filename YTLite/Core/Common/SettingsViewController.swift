@@ -3,8 +3,9 @@ import UIKit
 
 /// Settings popup presented as a sheet from the toolbar.
 final class SettingsViewController: UIViewController {
-    private enum Row {
+    enum Row {
         case theme, autoDarkStart, autoDarkEnd
+        case appLanguage, contentLanguage, region
         case quality, backgroundPlayback, pipEnabled, hideStatusBar, showShorts
         case autoZoomToFill
         case homeLayout
@@ -55,6 +56,11 @@ final class SettingsViewController: UIViewController {
                 header: "settings.section.theme".localized,
                 footer: themeFooter,
                 rows: themeRows
+            ),
+            Section(
+                header: "settings.section.language".localized,
+                footer: "settings.footer.language".localized,
+                rows: [.appLanguage, .contentLanguage, .region]
             ),
             Section(
                 header: "settings.section.playback".localized,
@@ -173,6 +179,10 @@ final class SettingsViewController: UIViewController {
 
     @objc
     private func dismiss(_ sender: Any) { dismiss(animated: true) }
+
+    /// Full reload for extensions living in other files (tableView is
+    /// private to this one).
+    func reloadAllSettings() { tableView.reloadData() }
 }
 
 // MARK: - Data source / delegate
@@ -210,6 +220,12 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
         switch sections[indexPath.section].rows[indexPath.row] {
         case .theme:
             return makeThemeCell()
+        case .appLanguage:
+            return makeAppLanguageCell()
+        case .contentLanguage:
+            return makeContentLanguageCell()
+        case .region:
+            return makeRegionCell()
         case .autoDarkStart:
             return makeDisclosureCell(
                 "settings.row.darkFrom".localized,
@@ -329,12 +345,14 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         let row = sections[indexPath.section].rows[indexPath.row]
-        if handleDebugSelection(row) {
-            return
-        }
-        if handleThemeSelection(row) {
-            return
-        }
+        let handlers = [
+            handleDebugSelection, handleThemeSelection,
+            handleLanguageSelection, handleGeneralSelection
+        ]
+        _ = handlers.first { $0(row) }
+    }
+
+    private func handleGeneralSelection(_ row: Row) -> Bool {
         switch row {
         case .quality:
             showQualityPicker()
@@ -347,8 +365,9 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
         case .sponsorBlockSettings:
             showSponsorBlockSettings()
         default:
-            break
+            return false
         }
+        return true
     }
 
     private func handleDebugSelection(_ row: Row) -> Bool {
@@ -391,7 +410,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
         cell.onToggle = onChange
         return cell
     }
-    private func makeDisclosureCell(_ title: String, value: String? = nil) -> UITableViewCell {
+    func makeDisclosureCell(_ title: String, value: String? = nil) -> UITableViewCell {
         let theme = ThemeManager.shared
         let cell = UITableViewCell(style: value != nil ? .value1 : .default, reuseIdentifier: nil)
         cell.textLabel?.text            = title
@@ -744,7 +763,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
         present(activity, animated: true)
     }
 
-    private func presentSimpleAlert(title: String, message: String) {
+    func presentSimpleAlert(title: String, message: String) {
         let alert = UIAlertController(
             title: title,
             message: message,
@@ -756,7 +775,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
         present(alert, animated: true)
     }
 
-    private func configureCenteredPopover(_ controller: UIViewController) {
+    func configureCenteredPopover(_ controller: UIViewController) {
         guard let pop = controller.popoverPresentationController
         else { return }
         pop.sourceView = view
