@@ -78,7 +78,7 @@ enum SBCategory: String, CaseIterable {
                 canShowButton: false
             ),
             .interaction: Def(
-                "Interaction Reminder (Subscribe)",
+                "Interaction Reminder (订阅)",
                 "When there is a short reminder to like, subscribe or follow"
                     + " in the middle of content. If it is long or about"
                     + " something specific, it should be under self promotion"
