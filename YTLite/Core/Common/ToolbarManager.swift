@@ -131,7 +131,7 @@ extension UIViewController {
         ) { _ in
             (UIApplication.shared.delegate as? AppDelegate)?.showAuth()
         })
-        sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        sheet.addAction(UIAlertAction(title: "取消", style: .cancel))
         configurePopover(sheet)
         present(sheet, animated: true)
     }
