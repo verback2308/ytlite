@@ -41,6 +41,10 @@ struct HomeCategory: Equatable {
             kind: .destination(browseId: BrowseID.learningDestination)
         ),
         HomeCategory(
+            label: "历史",
+            kind: .destination(browseId: BrowseID.HistoryDestination)
+        ),
+        HomeCategory(
             label: "时尚",
             kind: .destination(browseId: BrowseID.fashionDestination)
         )
