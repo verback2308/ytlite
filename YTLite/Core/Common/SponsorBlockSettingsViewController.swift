@@ -157,7 +157,7 @@ extension SponsorBlockSettingsViewController: UITableViewDataSource, UITableView
             )
         }
         sheet.addAction(
-            UIAlertAction(title: "Cancel", style: .cancel)
+            UIAlertAction(title: "取消", style: .cancel)
         )
         configurePopover(sheet, at: indexPath)
         present(sheet, animated: true)
