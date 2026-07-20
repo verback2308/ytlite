@@ -36,3 +36,7 @@ This file contains Simplified Chinese translations for NSLocalizedString keys.
 "auth.error_with_description" = "错误: %@";
 "auth.waiting_for_authorization" = "等待授权...";
 "auth.failed_with_description" = "失败: %@";
+
+/* Search module keys */
+"search.error_title" = "错误";
+"search.error_ok" = "好";
