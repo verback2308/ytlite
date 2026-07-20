@@ -1,0 +1,51 @@
+/*
+Localizable.strings (Simplified Chinese)
+
+This file contains Simplified Chinese translations for NSLocalizedString keys.
+*/
+
+/* Common buttons */
+"OK" = "确定";
+"Cancel" = "取消";
+"Retry" = "重试";
+
+/* Auth */
+"Sign In" = "登录";
+"Sign Out" = "退出登录";
+
+/* Network / Errors */
+"No Connection" = "无网络连接";
+"Error" = "错误";
+
+/* Playback */
+"Live" = "直播";
+
+/* Search */
+"Search" = "搜索";
+
+/* Navigation */
+"Subscriptions" = "订阅";
+"Home" = "首页";
+
+/* Auth module keys */
+"auth.title" = "登录 YouTube";
+"auth.instruction" = "点击下方按钮，然后将你的代码粘贴到打开的页面上。";
+"auth.fetching_code" = "获取代码...";
+"auth.open_device_site" = "打开 google.com/device";
+"auth.continue_anonymous" = "继续匿名";
+"auth.error_with_description" = "错误: %@";
+"auth.waiting_for_authorization" = "等待授权...";
+"auth.failed_with_description" = "失败: %@";
+
+/* Search module keys */
+"search.error_title" = "错误";
+"search.error_ok" = "好";
+
+/* Subscriptions module keys */
+"subscriptions.subscribe" = "订阅";
+"subscriptions.unsubscribed" = "已取消订阅";
+"subscriptions.subscribed" = "已订阅";
+"subscriptions.manage" = "管理订阅";
+"subscriptions.no_subscriptions" = "暂无订阅";
+"subscriptions.title" = "订阅";
+
