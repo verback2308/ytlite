@@ -78,7 +78,7 @@ enum SBCategory: String, CaseIterable {
                 canShowButton: false
             ),
             .interaction: Def(
-                "Interaction Reminder (Subscribe)",
+                "Interaction Reminder (订阅)",
                 "When there is a short reminder to like, subscribe or follow"
                     + " in the middle of content. If it is long or about"
                     + " something specific, it should be under self promotion"
@@ -162,11 +162,11 @@ enum SBSkipBehavior: String {
     var displayName: String {
         switch self {
         case .autoSkip:
-            return "Auto skip"
+            return "自动跳过"
         case .showButton:
-            return "Show button"
+            return "显示按钮"
         case .disabled:
-            return "Disable"
+            return "禁用"
         }
     }
 

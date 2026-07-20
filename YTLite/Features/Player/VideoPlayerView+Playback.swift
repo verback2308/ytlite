@@ -51,7 +51,7 @@ extension VideoPlayerView {
 
     func showSkipButton(categoryName: String) {
         skipButton.setTitle(
-            "Skip \(categoryName)",
+            "跳过 \(categoryName)",
             for: .normal
         )
         skipButton.isHidden = false

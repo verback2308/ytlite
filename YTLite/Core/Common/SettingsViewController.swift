@@ -33,8 +33,8 @@ final class SettingsViewController: UIViewController {
     private var sections: [Section] {
         var sponsorBlockRows: [Row] = [.sponsorBlockEnabled]
         if SponsorBlockService.enabled { sponsorBlockRows.append(.sponsorBlockSettings) }
-        let rydFooter = "Dislike counts are powered by Return YouTube Dislike"
-            + " (returnyoutubedislike.com) — an open community project."
+        let rydFooter = "不喜欢计数由Return YouTube Dislike提供支持"
+            + " (returnyoutubedislike.com）——一个开放社区项目."
         let sbFooter = SponsorBlockService.enabled
             ? SponsorBlockService.attributionText
             : nil
@@ -52,34 +52,34 @@ final class SettingsViewController: UIViewController {
             themeRows.append(contentsOf: [.autoDarkStart, .autoDarkEnd])
         }
         return [
-            Section(header: "Theme", footer: themeFooter, rows: themeRows),
+            Section(header: "主题", footer: themeFooter, rows: themeRows),
             Section(
-                header: "Playback",
-                footer: "Zoom to Fill automatically scales the video"
-                    + " in fullscreen so no black bars remain."
-                    + " Pinch in the player overrides it per video.",
+                header: "缩放",
+                footer: "缩放到填充自动缩放视频"
+                    + " 全屏时自动缩放视频以消除黑边."
+                    + " 播放器中的捏合手势可针对单个视频覆盖此设置.",
                 rows: [
                     .quality, .backgroundPlayback, .pipEnabled,
                     .hideStatusBar, .autoZoomToFill, .showShorts
                 ]
             ),
             Section(
-                header: "Home",
-                footer: "How recommendation shelves are shown:"
-                    + " one continuous grid, a grid grouped under"
-                    + " shelf titles, or TV-style horizontal rails.",
+                header: "首页",
+                footer: "推荐内容的展示方式:"
+                    + " 连续网格，按分区标题分组的网格"
+                    + " 或电视风格的横向轮播.",
                 rows: [.homeLayout]
             ),
-            Section(header: "Cache", footer: nil, rows: cacheRows),
-            Section(header: "Return YouTube Dislike", footer: rydFooter, rows: [.rydEnabled]),
+            Section(header: "缓存", footer: nil, rows: cacheRows),
+            Section(header: "返回YouTube不喜欢", footer: rydFooter, rows: [.rydEnabled]),
             Section(header: "SponsorBlock", footer: sbFooter, rows: sponsorBlockRows),
             Section(
-                header: "Debug",
-                footer: "Force a specific playback source."
-                    + " Normally Android VR is used"
-                    + " with automatic fallback."
-                    + " The solver server powers the Mobile Web + pot source"
-                    + " (pot minting, and n-solving on iOS 12–13).",
+                header: "调试",
+                footer: "强制特定的播放源."
+                    + " 通常使用安卓虚拟现实系统"
+                    + " 自动回退."
+                    + " 求解器服务器为移动网络+锅源提供动力"
+                    + " (以及在iOS 12–13上的系统求解).",
                 rows: [.playbackSource, .solverEndpoint, .shareLog]
             ),
             Section(header: nil, footer: appVersionFooter, rows: [])
@@ -102,9 +102,9 @@ final class SettingsViewController: UIViewController {
             return nil
         }
         if #available(iOS 13.0, *) {
-            return "Auto follows the system appearance."
+            return "自动跟随系统外观."
         }
-        return "Auto switches to the dark theme between the hours below."
+        return "在以下时间段内，自动切换至深色主题."
     }
 
     private var appVersionFooter: String {
@@ -124,7 +124,7 @@ final class SettingsViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Settings"
+        title = "设置"
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             barButtonSystemItem: .done,
             target: self,
@@ -213,40 +213,40 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
                 value: hourLabel(ThemeManager.shared.autoDarkEndHour)
             )
         case .quality:
-            return makeDisclosureCell("Default Quality", value: VideoQualityStore.displayName)
+            return makeDisclosureCell("默认质量", value: VideoQualityStore.displayName)
         case .backgroundPlayback:
             let bgOn = BackgroundPlaybackService.isEnabled
-            return makeToggleCell("Background Playback", isOn: bgOn) {
+            return makeToggleCell("后台播放", isOn: bgOn) {
                 BackgroundPlaybackService.isEnabled = $0
                 BackgroundPlaybackService.apply()
             }
         case .pipEnabled:
             let key = UserDefaultsKeys.Player.pipEnabled
             let isOn = UserDefaults.standard.object(forKey: key) as? Bool ?? true
-            return makeToggleCell("Picture-in-Picture", isOn: isOn) {
+            return makeToggleCell("画中画", isOn: isOn) {
                 UserDefaults.standard.set($0, forKey: key)
             }
         case .hideStatusBar:
             let key = UserDefaultsKeys.Player.hideStatusBarInFullscreen
             let isOn = UserDefaults.standard.object(forKey: key) as? Bool ?? true
-            return makeToggleCell("Hide Status Bar in Fullscreen", isOn: isOn) {
+            return makeToggleCell("在全屏中隐藏状态栏", isOn: isOn) {
                 UserDefaults.standard.set($0, forKey: key)
             }
         case .autoZoomToFill:
             let key = UserDefaultsKeys.Player.autoZoomToFill
             let isOn = UserDefaults.standard.bool(forKey: key)
-            return makeToggleCell("Zoom to Fill in Fullscreen", isOn: isOn) {
+            return makeToggleCell("全屏自动填充", isOn: isOn) {
                 UserDefaults.standard.set($0, forKey: key)
             }
         case .showShorts:
             return makeShowShortsCell()
         case .homeLayout:
             return makeDisclosureCell(
-                "Home Layout",
+                "首页布局",
                 value: HomeLayout.selected.displayName
             )
         case .persistCache:
-            return makeToggleCell("Feed Cache", isOn: AppCache.persistenceEnabled) {
+            return makeToggleCell("视频缓存", isOn: AppCache.persistenceEnabled) {
                 AppCache.persistenceEnabled = $0
                 self.reloadCacheSection()
             }
@@ -256,11 +256,11 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             ) as? Int ?? 1
             let suffix = days == 1 ? "" : "s"
             return makeDisclosureCell(
-                "Feed Cache Duration", value: "\(days) day\(suffix)"
+                "视频缓存时长", value: "\(days) day\(suffix)"
             )
         case .imageCacheEnabled:
             return makeToggleCell(
-                "Image Cache",
+                "图像缓存",
                 isOn: ThumbnailImageView.cachingEnabled
             ) {
                 UserDefaults.standard.set(
@@ -274,10 +274,10 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             ) as? Int ?? 7
             let suffix = days == 1 ? "" : "s"
             return makeDisclosureCell(
-                "Image Cache Duration", value: "\(days) day\(suffix)"
+                "图像缓存时长", value: "\(days) day\(suffix)"
             )
         case .clearCache:
-            return makeDestructiveCell("Clear All Cache")
+            return makeDestructiveCell("清除所有缓存")
         case .rydEnabled:
             let rydOn = ReturnYouTubeDislikeService.enabled
             return makeToggleCell("Return YouTube Dislike", isOn: rydOn) {
@@ -286,17 +286,17 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
         case .sponsorBlockEnabled:
             return makeSponsorBlockToggle()
         case .sponsorBlockSettings:
-            return makeDisclosureCell("SponsorBlock Settings")
+            return makeDisclosureCell("SponsorBlock设置")
         case .shareLog:
-            return makeDisclosureCell("Share Debug Log")
+            return makeDisclosureCell("分享调试日志")
         case .playbackSource:
             return makeDisclosureCell(
-                "Playback Source",
+                "播放源",
                 value: PlaybackSource.selected.displayName
             )
         case .solverEndpoint:
             return makeDisclosureCell(
-                "Solver Server",
+                "播放源器服务器",
                 value: solverEndpointDisplay
             )
         }
@@ -344,7 +344,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
     private func makeShowShortsCell() -> UITableViewCell {
         let isOn = UserDefaults.standard.bool(forKey: UserDefaultsKeys.Feed.showShorts)
         return makeToggleCell(
-            "Show YouTube Shorts in Subscriptions",
+            "在订阅中显示YouTube短片",
             isOn: isOn
         ) {
             UserDefaults.standard.set(
@@ -390,11 +390,11 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
     private func makeThemeCell() -> UITableViewCell {
         let theme = ThemeManager.shared
         let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
-        cell.textLabel?.text      = "Theme"
+        cell.textLabel?.text      = "主题"
         cell.textLabel?.textColor = theme.primaryText
         cell.backgroundColor      = theme.surface
         cell.selectionStyle       = .none
-        let seg = UISegmentedControl(items: ["Dark", "Light", "Auto"])
+        let seg = UISegmentedControl(items: ["黑暗", "白色", "自动"])
         let modeMap: [ThemeMode: Int] = [.dark: 0, .light: 1, .auto: 2]
         seg.selectedSegmentIndex = modeMap[theme.themeMode, default: 2]
         seg.addTarget(self, action: #selector(themeChanged(_:)), for: .valueChanged)
@@ -472,14 +472,14 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             }
             sheet.addAction(action)
         }
-        sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        sheet.addAction(UIAlertAction(title: "取消", style: .cancel))
         configureCenteredPopover(sheet)
         present(sheet, animated: true)
     }
 
     private func showQualityPicker() {
         let sheet = UIAlertController(
-            title: "Default Quality",
+            title: "默认质量",
             message: nil,
             preferredStyle: .actionSheet
         )
@@ -493,14 +493,14 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             }
             sheet.addAction(action)
         }
-        sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        sheet.addAction(UIAlertAction(title: "取消", style: .cancel))
         configureCenteredPopover(sheet)
         present(sheet, animated: true)
     }
 
     private func showHomeLayoutPicker() {
         let sheet = UIAlertController(
-            title: "Home Layout",
+            title: "首页布局",
             message: nil,
             preferredStyle: .actionSheet
         )
@@ -517,7 +517,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             }
             sheet.addAction(action)
         }
-        sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        sheet.addAction(UIAlertAction(title: "取消", style: .cancel))
         configureCenteredPopover(sheet)
         present(sheet, animated: true)
     }
@@ -528,7 +528,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             forKey: UserDefaultsKeys.Cache.feedCacheDays
         ) as? Int ?? 1
         let sheet = UIAlertController(
-            title: "Feed Cache Duration",
+            title: "视频缓存时长",
             message: nil,
             preferredStyle: .actionSheet
         )
@@ -547,14 +547,14 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             }
             sheet.addAction(action)
         }
-        sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        sheet.addAction(UIAlertAction(title: "取消", style: .cancel))
         configureCenteredPopover(sheet)
         present(sheet, animated: true)
     }
 
     private func showPlaybackSourcePicker() {
         let sheet = UIAlertController(
-            title: "Playback Source",
+            title: "播放源",
             message: nil,
             preferredStyle: .actionSheet
         )
@@ -576,7 +576,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             sheet.addAction(action)
         }
         sheet.addAction(
-            UIAlertAction(title: "Cancel", style: .cancel)
+            UIAlertAction(title: "取消", style: .cancel)
         )
         configureCenteredPopover(sheet)
         present(sheet, animated: true)
@@ -584,8 +584,8 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
 
     private func showSolverEndpointPicker() {
         let alert = UIAlertController(
-            title: "Solver Server",
-            message: "URL of the solver server.",
+            title: "播放源服务器",
+            message: "求解器服务器的URL.",
             preferredStyle: .alert
         )
         alert.addTextField { field in
@@ -596,17 +596,17 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             field.autocorrectionType = .no
         }
         alert.addAction(
-            UIAlertAction(title: "Save", style: .default) { [weak self, weak alert] _ in
+            UIAlertAction(title: "保存", style: .default) { [weak self, weak alert] _ in
                 self?.saveServerBaseURL(alert?.textFields?.first?.text)
             }
         )
         alert.addAction(
-            UIAlertAction(title: "Reset to default", style: .destructive) { [weak self] _ in
+            UIAlertAction(title: "设置为默认值", style: .destructive) { [weak self] _ in
                 self?.saveServerBaseURL(nil)
             }
         )
         alert.addAction(
-            UIAlertAction(title: "Cancel", style: .cancel)
+            UIAlertAction(title: "取消", style: .cancel)
         )
         present(alert, animated: true)
     }
@@ -632,7 +632,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             forKey: UserDefaultsKeys.Cache.imageCacheDays
         ) as? Int ?? 7
         let sheet = UIAlertController(
-            title: "Image Cache Duration",
+            title: "图像缓存时长",
             message: nil,
             preferredStyle: .actionSheet
         )
@@ -651,7 +651,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             }
             sheet.addAction(action)
         }
-        sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        sheet.addAction(UIAlertAction(title: "取消", style: .cancel))
         configureCenteredPopover(sheet)
         present(sheet, animated: true)
     }
@@ -672,8 +672,8 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
         AppCache.shared.clearAllDiskCache()
         WatchProgressStore.shared.clearAll()
         presentSimpleAlert(
-            title: "Cache Cleared",
-            message: "All cache has been cleared."
+            title: "缓存已清除",
+            message: "所有缓存都已清除."
         )
     }
 
@@ -682,8 +682,8 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
               !data.isEmpty
         else {
             presentSimpleAlert(
-                title: "No Logs",
-                message: "No debug logs available yet."
+                title: "没有日志",
+                message: "还没有可用的调试日志."
             )
             return
         }
@@ -704,7 +704,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             message: message,
             preferredStyle: .alert
         )
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        alert.addAction(UIAlertAction(title: "好的", style: .default))
         present(alert, animated: true)
     }
 
@@ -757,7 +757,7 @@ private final class ToggleCell: UITableViewCell {
 enum VideoQualityStore {
     /// 1440p/2160p exist only as av01 — offered solely where decodable.
     static var options: [String] {
-        var opts = ["Auto", "1080p", "720p", "480p", "360p"]
+        var opts = ["自动", "1080p", "720p", "480p", "360p"]
         if AV1Support.isHardwareSupported {
             opts.insert(contentsOf: ["2160p", "1440p"], at: 1)
         }
@@ -766,7 +766,7 @@ enum VideoQualityStore {
     static var selected: String {
         get {
             let key = UserDefaultsKeys.VideoQuality.selected
-            return UserDefaults.standard.string(forKey: key) ?? "Auto"
+            return UserDefaults.standard.string(forKey: key) ?? "自动"
         }
         set { UserDefaults.standard.set(newValue, forKey: UserDefaultsKeys.VideoQuality.selected) }
     }

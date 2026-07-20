@@ -15,7 +15,7 @@ final class ChannelAboutViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = theme.background
-        title = "About"
+        title = "关于"
         if #available(iOS 13, *) {
             navigationItem.rightBarButtonItem = UIBarButtonItem(
                 barButtonSystemItem: .close,
@@ -24,7 +24,7 @@ final class ChannelAboutViewController: UIViewController {
             )
         } else {
             navigationItem.rightBarButtonItem = UIBarButtonItem(
-                title: "Close",
+                title: "关闭",
                 style: .done,
                 target: self,
                 action: #selector(dismissSelf)
@@ -77,13 +77,13 @@ final class ChannelAboutViewController: UIViewController {
         statsStack.distribution = .fillEqually
 
         if let subs = page.info.subscriberCountText {
-            statsStack.addArrangedSubview(makeStatView(value: subs, label: "Subscribers"))
+            statsStack.addArrangedSubview(makeStatView(value: subs, label: "订阅者"))
         }
         if let vids = page.info.videoCountText {
             let count = vids
-                .replacingOccurrences(of: " videos", with: "", options: .caseInsensitive)
-                .replacingOccurrences(of: " video", with: "", options: .caseInsensitive)
-            statsStack.addArrangedSubview(makeStatView(value: count, label: "Videos"))
+                .replacingOccurrences(of: " 视频", with: "", options: .caseInsensitive)
+                .replacingOccurrences(of: " 视频", with: "", options: .caseInsensitive)
+            statsStack.addArrangedSubview(makeStatView(value: count, label: "视频"))
         }
         if !statsStack.arrangedSubviews.isEmpty {
             stack.addArrangedSubview(statsStack)
@@ -96,7 +96,7 @@ final class ChannelAboutViewController: UIViewController {
             return
         }
         let descHeader = makeLabel(
-            text: "Description",
+            text: "描述",
             style: .subheadline,
             color: theme.secondaryText
         )
@@ -112,7 +112,7 @@ final class ChannelAboutViewController: UIViewController {
             return
         }
         let header = makeLabel(
-            text: "Contact",
+            text: "联系",
             style: .subheadline,
             color: theme.secondaryText
         )

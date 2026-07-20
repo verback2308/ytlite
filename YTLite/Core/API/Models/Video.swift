@@ -236,7 +236,7 @@ final class ChannelInfoStore {
         guard let cached = AppCache.shared.cachedChannelInfo(channelId: channelId)
         else { return nil }
         cache[channelId] = cached
-        let hasAvatar = cached.avatarURL != nil ? "YES" : "NO"
+        let hasAvatar = cached.avatarURL != nil ? "是的" : "不是"
         AppLog.channel(
             "info disk-hit \(channelId) avatar=\(hasAvatar)"
         )

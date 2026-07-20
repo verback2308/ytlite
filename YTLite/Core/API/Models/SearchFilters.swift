@@ -12,13 +12,13 @@ struct SearchFilters: Equatable {
         var displayName: String {
             switch self {
             case .relevance:
-                return "Relevance"
+                return "相关度"
             case .rating:
-                return "Rating"
+                return "评分"
             case .uploadDate:
-                return "Upload date"
+                return "上传日期"
             case .viewCount:
-                return "View count"
+                return "播放次数"
             }
         }
     }
@@ -34,17 +34,17 @@ struct SearchFilters: Equatable {
         var displayName: String {
             switch self {
             case .any:
-                return "Any time"
+                return "任意时间"
             case .lastHour:
-                return "Last hour"
+                return "最近一小时"
             case .today:
-                return "Today"
+                return "今天"
             case .thisWeek:
-                return "This week"
+                return "本周"
             case .thisMonth:
-                return "This month"
+                return "本月"
             case .thisYear:
-                return "This year"
+                return "今年"
             }
         }
     }
@@ -58,13 +58,13 @@ struct SearchFilters: Equatable {
         var displayName: String {
             switch self {
             case .any:
-                return "Any type"
+                return "任意类型"
             case .video:
-                return "Video"
+                return "视频"
             case .channel:
-                return "Channel"
+                return "频道"
             case .playlist:
-                return "Playlist"
+                return "播放列表"
             }
         }
     }
@@ -78,13 +78,13 @@ struct SearchFilters: Equatable {
         var displayName: String {
             switch self {
             case .any:
-                return "Any duration"
+                return "任意时长"
             case .short:
-                return "Under 4 min"
+                return "4分钟以下"
             case .long:
-                return "Over 20 min"
+                return "20分钟以上"
             case .medium:
-                return "4–20 min"
+                return "4–20分钟"
             }
         }
     }

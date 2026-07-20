@@ -16,18 +16,18 @@ enum VideoFormatters {
         }
         let seconds = -date.timeIntervalSinceNow
         if seconds < 3_600 {
-            return "\(max(1, Int(seconds / 60)))m ago"
+            return "\(max(1, Int(seconds / 60)))m 前"
         }
         if seconds < 86_400 {
-            return "\(Int(seconds / 3_600))h ago"
+            return "\(Int(seconds / 3_600))h 前"
         }
         if seconds < 86_400 * 30 {
-            return "\(Int(seconds / 86_400))d ago"
+            return "\(Int(seconds / 86_400))d 前"
         }
         if seconds < 86_400 * 365 {
-            return "\(Int(seconds / 86_400 / 30))mo ago"
+            return "\(Int(seconds / 86_400 / 30))mo 前"
         }
-        return "\(Int(seconds / 86_400 / 365))y ago"
+        return "\(Int(seconds / 86_400 / 365))y 前"
     }
 
     /// Approximates a Date from a relative time string like "2 hours ago" / "3 дня назад".
@@ -37,26 +37,26 @@ enum VideoFormatters {
         let num = lowered.components(separatedBy: .whitespaces)
             .compactMap(Int.init).first ?? 1
         let now = Date()
-        if lowered.contains("sec") || lowered.contains("сек") {
+        if lowered.contains("秒") || lowered.contains("сек") {
             return now - Double(num)
         }
-        if lowered.contains("min") || lowered.contains("мин") {
+        if lowered.contains("分") || lowered.contains("мин") {
             return now - Double(num) * 60
         }
-        if lowered.contains("hour") || lowered.contains("час") {
+        if lowered.contains("时") || lowered.contains("час") {
             return now - Double(num) * 3_600
         }
-        if lowered.contains("day") || lowered.contains("дн")
-            || lowered.contains("день") || lowered.contains("дня") {
+        if lowered.contains("天") || lowered.contains("дн")
+            || lowered.contains("天") || lowered.contains("дня") {
             return now - Double(num) * 86_400
         }
-        if lowered.contains("week") || lowered.contains("нед") {
+        if lowered.contains("周") || lowered.contains("нед") {
             return now - Double(num) * 604_800
         }
-        if lowered.contains("month") || lowered.contains("мес") {
+        if lowered.contains("月") || lowered.contains("мес") {
             return now - Double(num) * 2_592_000
         }
-        if lowered.contains("year") || lowered.contains("лет")
+        if lowered.contains("年") || lowered.contains("лет")
             || lowered.contains("год") {
             return now - Double(num) * 31_536_000
         }
@@ -91,13 +91,13 @@ enum VideoFormatters {
         }
         switch count {
         case 1_000_000_000...:
-            return String(format: "%.1fB views", Double(count) / 1e9)
+            return String(format: "%.1fB 浏览量", Double(count) / 1e9)
         case 1_000_000...:
-            return String(format: "%.1fM views", Double(count) / 1e6)
+            return String(format: "%.1fM 浏览量", Double(count) / 1e6)
         case 1_000...:
-            return String(format: "%.0fK views", Double(count) / 1e3)
+            return String(format: "%.0fK 浏览量", Double(count) / 1e3)
         default:
-            return "\(count) views"
+            return "\(count) 流浪量"
         }
     }
 }

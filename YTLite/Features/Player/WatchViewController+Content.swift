@@ -33,7 +33,7 @@ extension WatchViewController {
         channelMetaLabel.text = nil
         subscribeButton.isHidden =
             !OAuthClient.shared.isAnonymous
-        subscribeButton.setTitle("Subscribe", for: .normal)
+        subscribeButton.setTitle("订阅", for: .normal)
         descriptionLabel.text = nil
         descriptionButton.isHidden = true
         resetComments()
@@ -158,7 +158,7 @@ extension WatchViewController {
     func applySubscriptionState(from page: WatchPage) {
         let buttonText = page.subscribeButtonText
             ?? (page.isSubscribed
-                ? "Subscribed" : "Subscribe")
+                ? "已订阅" : "订阅")
         subscribeButton.setTitle(
             buttonText,
             for: .normal
@@ -174,9 +174,9 @@ extension WatchViewController {
         if let count = page.likeCount {
             likeCountLabel.text = count
         } else {
-            likeCountLabel.text = "—"
+            likeCountLabel.text = "喜欢"
         }
-        dislikeCountLabel.text = "—"
+        dislikeCountLabel.text = "不喜欢"
         currentLikeStatus =
             page.likeStatus ?? .indifferent
         updateLikeDislikeUI()
@@ -360,8 +360,8 @@ extension WatchViewController {
         visibleCommentsCount = commentsPageSize
         isLoadingComments = false
         descriptionExpanded = false
-        likeCountLabel.text = "—"
-        dislikeCountLabel.text = "—"
+        likeCountLabel.text = "喜欢"
+        dislikeCountLabel.text = "不喜欢"
         currentLikeStatus = .indifferent
         sponsorBlock.reset()
         commentsStackView.arrangedSubviews

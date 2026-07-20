@@ -55,13 +55,13 @@ final class AuthViewController: UIViewController {
 // MARK: - Configuration
 private extension AuthViewController {
     func configureLabels() {
-        titleLabel.text = "Sign in to YouTube"
+        titleLabel.text = "登录 YouTube"
         titleLabel.textColor = .white
         titleLabel.font = UIFont.boldSystemFont(ofSize: 22)
         titleLabel.textAlignment = .center
 
-        instructionLabel.text = "Tap the button below,"
-            + " then paste your code on the page that opens."
+        instructionLabel.text = "点击下方按钮,"
+            + " 然后将你的代码粘贴到打开的页面上."
         instructionLabel.textColor = .lightGray
         instructionLabel.font = UIFont.systemFont(ofSize: 15)
         instructionLabel.textAlignment = .center
@@ -74,7 +74,7 @@ private extension AuthViewController {
         ) ?? UIFont.boldSystemFont(ofSize: 36)
         codeLabel.textAlignment = .center
 
-        statusLabel.text = "Fetching code..."
+        statusLabel.text = "获取代码..."
         statusLabel.textColor = .lightGray
         statusLabel.font = UIFont.systemFont(ofSize: 14)
         statusLabel.textAlignment = .center
@@ -87,7 +87,7 @@ private extension AuthViewController {
 
     func configureOpenButton() {
         openButton.setTitle(
-            "Open google.com/device",
+            "打开 google.com/device",
             for: .normal
         )
         openButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 17)
@@ -107,7 +107,7 @@ private extension AuthViewController {
 
     func configureAnonymousButton() {
         anonymousButton.setTitle(
-            "Continue Anonymously",
+            "继续匿名",
             for: .normal
         )
         anonymousButton.titleLabel?.font = UIFont.systemFont(ofSize: 15)
@@ -255,7 +255,7 @@ private extension AuthViewController {
                 switch result {
                 case .failure(let error):
                     self?.statusLabel.text =
-                        "Error: \(error.localizedDescription)"
+                        "错误: \(error.localizedDescription)"
                     self?.spinner.stopAnimating()
                 case .success(let code):
                     self?.handleDeviceCode(code)
@@ -268,7 +268,7 @@ private extension AuthViewController {
         codeLabel.text = code.userCode
         verificationURL = URL(string: code.verificationURL)
         openButton.isHidden = false
-        statusLabel.text = "Waiting for authorization..."
+        statusLabel.text = "等待授权..."
 
         let config = OAuthClient.PollConfig(
             deviceCode: code.deviceCode,
@@ -287,7 +287,7 @@ private extension AuthViewController {
                     self?.onAuthorized?()
                 case .failure(let error):
                     self?.statusLabel.text =
-                        "Failed: \(error.localizedDescription)"
+                        "失败: \(error.localizedDescription)"
                     self?.spinner.stopAnimating()
                 }
             }

@@ -95,14 +95,14 @@ extension UIViewController {
     }
 
     private func showSignedInSheet() {
-        let name = UserProfileStore.shared.displayName ?? "Account"
+        let name = UserProfileStore.shared.displayName ?? "账户"
         let sheet = UIAlertController(
             title: name,
             message: nil,
             preferredStyle: .actionSheet
         )
         sheet.addAction(UIAlertAction(
-            title: "Sign Out",
+            title: "退出",
             style: .destructive
         ) { _ in
             OAuthClient.shared.signOut()
@@ -114,24 +114,24 @@ extension UIViewController {
             )
             (UIApplication.shared.delegate as? AppDelegate)?.showAuth()
         })
-        sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        sheet.addAction(UIAlertAction(title: "取消", style: .cancel))
         configurePopover(sheet)
         present(sheet, animated: true)
     }
 
     private func showSignedOutSheet() {
         let sheet = UIAlertController(
-            title: "Not signed in",
+            title: "未登录",
             message: nil,
             preferredStyle: .actionSheet
         )
         sheet.addAction(UIAlertAction(
-            title: "Sign In",
+            title: "登录",
             style: .default
         ) { _ in
             (UIApplication.shared.delegate as? AppDelegate)?.showAuth()
         })
-        sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        sheet.addAction(UIAlertAction(title: "取消", style: .cancel))
         configurePopover(sheet)
         present(sheet, animated: true)
     }

@@ -72,7 +72,7 @@ enum UserDefaultsKeys {
 // MARK: - PlaybackSource
 
 enum PlaybackSource: String, CaseIterable {
-    case auto = "auto"
+    case auto = " auto"
     case androidVR = "android_vr"
     case progressive = "progressive"
     case mwebPot = "mweb_pot"
@@ -88,13 +88,13 @@ enum PlaybackSource: String, CaseIterable {
     var displayName: String {
         switch self {
         case .auto:
-            return "Auto (Android VR, mweb fallback)"
+            return "自动(Android VR, mweb回退)"
         case .androidVR:
-            return "Android VR (fast)"
+            return "Android VR (快速)"
         case .progressive:
             return "Progressive (360p)"
         case .mwebPot:
-            return "Mobile Web + pot (kids/dubbed)"
+            return "移动网络+锅（儿童版/配音版）)"
         }
     }
 

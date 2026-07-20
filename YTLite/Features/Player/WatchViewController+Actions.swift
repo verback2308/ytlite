@@ -61,19 +61,19 @@ extension WatchViewController {
         switch result {
         case .success:
             let verb = wasSubscribed
-                ? "unsubscribed" : "subscribed"
+                ? "取消订阅" : "订阅"
             AppLog.subscribe(
                 "\(verb) channelId=\(channelId)"
             )
         case .failure(let error):
             let verb = wasSubscribed
-                ? "unsubscribe" : "subscribe"
+                ? "取消订阅" : "订阅"
             AppLog.subscribe(
                 "\(verb) failed channelId=\(channelId): \(error)"
             )
             isSubscribed = wasSubscribed
             subscribeButton.setTitle(
-                wasSubscribed ? "Subscribed" : "Subscribe",
+                wasSubscribed ? "已订阅" : "订阅",
                 for: .normal
             )
             applyTheme()
@@ -89,7 +89,7 @@ extension WatchViewController {
         let wasSubscribed = isSubscribed
         isSubscribed = !wasSubscribed
         subscribeButton.setTitle(
-            isSubscribed ? "Subscribed" : "Subscribe",
+            isSubscribed ? "已订阅" : "订阅",
             for: .normal
         )
         subscribeButton.isEnabled = false

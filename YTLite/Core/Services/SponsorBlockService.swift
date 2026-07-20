@@ -17,8 +17,8 @@ final class SponsorBlockService {
     static let shared = SponsorBlockService()
     static let attributionURL = AppURLs.SponsorBlock.api
     static let attributionText =
-        "Powered by SponsorBlock (sponsor.ajay.app)"
-        + " — an open community project."
+        "由SponsorBlock（sponsor.ajay.app）提供技术支持)"
+        + " — 一个开放的社区项目."
 
     static var enabled: Bool {
         get {

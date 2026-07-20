@@ -13,7 +13,7 @@ extension OAuthClient {
             headers: [
                 HTTPHeader.userAgent: UserAgent.cobaltTV,
                 HTTPHeader.referer: AppURLs.YouTube.tv,
-                HTTPHeader.acceptLanguage: "en-US"
+                HTTPHeader.acceptLanguage: "zh-Hans"
             ]
         )
         performRequest(request) { result in

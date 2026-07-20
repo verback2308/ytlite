@@ -14,34 +14,34 @@ struct HomeCategory: Equatable {
         case destination(browseId: String)
     }
 
-    static let feed = HomeCategory(label: "All", kind: .feed)
+    static let feed = HomeCategory(label: "全部", kind: .feed)
     static let placeholder = HomeCategory(label: "", kind: .placeholder)
 
     /// Static tail — TV destination pages, kept after the dynamic
     /// shelf chips.
     static let destinations: [HomeCategory] = [
         HomeCategory(
-            label: "Live",
+            label: "直播",
             kind: .destination(browseId: BrowseID.liveDestination)
         ),
         HomeCategory(
-            label: "News",
+            label: "新闻",
             kind: .destination(browseId: BrowseID.newsDestination)
         ),
         HomeCategory(
-            label: "Gaming",
+            label: "游戏",
             kind: .destination(browseId: BrowseID.gamingDestination)
         ),
         HomeCategory(
-            label: "Sports",
+            label: "运动",
             kind: .destination(browseId: BrowseID.sportsDestination)
         ),
         HomeCategory(
-            label: "Learning",
+            label: "学习",
             kind: .destination(browseId: BrowseID.learningDestination)
         ),
         HomeCategory(
-            label: "Fashion",
+            label: "时尚",
             kind: .destination(browseId: BrowseID.fashionDestination)
         )
     ]

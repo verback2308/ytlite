@@ -62,7 +62,7 @@ class HomeViewController: VideosViewController {
 
     lazy var errorLabel: UILabel = {
         let label = UILabel()
-        label.text = "Couldn't load feed\nPull down to retry"
+        label.text = "无法加载提要\n下拉以重试"
         label.textColor = .lightGray
         label.textAlignment = .center
         label.numberOfLines = 0
@@ -73,7 +73,7 @@ class HomeViewController: VideosViewController {
     }()
 
     lazy var signInEmptyView: SignInEmptyStateView = {
-        let emptyView = SignInEmptyStateView(message: "Sign in to see your recommendations")
+        let emptyView = SignInEmptyStateView(message: "登录以查看您的推荐")
         emptyView.isHidden = true
         emptyView.onSignIn = { [weak self] in self?.toolbarOpenProfile() }
         return emptyView
@@ -98,7 +98,7 @@ class HomeViewController: VideosViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Home"
+        title = "首页"
         AppLog.home("viewDidLoad")
         setupEmptyViews()
         setupChipBar()

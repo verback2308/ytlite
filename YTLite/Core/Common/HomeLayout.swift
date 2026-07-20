@@ -29,9 +29,9 @@ enum HomeLayout: String, CaseIterable {
     var displayName: String {
         switch self {
         case .grid:
-            return "Plain Grid"
+            return "网格"
         case .rails:
-            return "Shelf Rails"
+            return "列表"
         }
     }
 }

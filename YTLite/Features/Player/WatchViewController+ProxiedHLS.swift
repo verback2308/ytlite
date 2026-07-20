@@ -35,7 +35,7 @@ extension WatchViewController {
                 self?.selectSourceQuality(quality, source: source)
             }
         }
-        presentPlayerMenu(title: "Quality", items: items)
+        presentPlayerMenu(title: "画质", items: items)
     }
 
     private func selectSourceQuality(
@@ -46,7 +46,7 @@ extension WatchViewController {
             return
         }
         let resumeTime = videoPlayerView?.player?.currentTime()
-        playerStatusLabel.text = "Loading \(quality.label)..."
+        playerStatusLabel.text = "加载中 \(quality.label)..."
         playerStatusLabel.isHidden = false
         source.selectQuality(quality) { [weak self] result in
             DispatchQueue.main.async {
@@ -54,7 +54,7 @@ extension WatchViewController {
                 case .success(let prepared):
                     self?.attachPrepared(prepared, resumeAt: resumeTime)
                 case .failure:
-                    self?.showPlaybackError("Quality switch failed.")
+                    self?.showPlaybackError("画质切换失败.")
                 }
             }
         }

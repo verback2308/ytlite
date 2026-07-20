@@ -1,0 +1,32 @@
+"home.title" = "首页";
+"home.feed_error" = "无法加载提要\n下拉以重试";
+"home.signin_message" = "登录以查看您的推荐";
+
+"library.playlists.title" = "播放列表";
+"library.playlists.signin" = "登录以查看您的播放列表";
+"library.playlists.load_failed" = "无法加载播放列表";
+
+"library.history.signin" = "登录以查看您的观看历史";
+"library.history.empty" = "未找到观看记录";
+"library.history.load_failed" = "无法加载历史记录";
+
+"library.playlist.empty" = "此播放列表中没有视频";
+
+"player.comments" = "评论";
+"player.loading_comments" = "加载评论...";
+"player.load_more_comments" = "加载更多评论";
+"player.comments_unavailable" = "评论不可用";
+"player.comments_unavailable_long" = "评论功能暂未开放。";
+"player.comments_count" = "评论 (%d)";
+
+"player.quality.title" = "画质";
+"player.loading_quality" = "加载中 %@...";
+"player.quality_switch_failed" = "画质切换失败。";
+
+"subscriptions.signin" = "登录以查看您的订阅";
+
+"library.segment.history" = "历史";
+"library.segment.downloads" = "下载";
+"library.segment.playlists" = "播放列表";
+
+"generic.placeholder" = "—";

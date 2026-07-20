@@ -32,7 +32,7 @@ extension ChannelViewController {
 
     func applyPageSubscription(_ page: ChannelPage) {
         let txt = page.subscribeButtonText
-            ?? (page.isSubscribed ? "Subscribed" : "Subscribe")
+            ?? (page.isSubscribed ? "已订阅" : "订阅")
         headerView.updateSubscription(
             title: txt, isEnabled: !OAuthClient.shared.isAnonymous
         )
@@ -91,10 +91,10 @@ extension ChannelViewController {
         updateSubscribeUI(subscribed: isSubscribed, enabled: true)
         switch result {
         case .success:
-            let act = wasSubscribed ? "unsubscribed" : "subscribed"
+            let act = wasSubscribed ? "退订" : "订阅"
             AppLog.subscribe("\(act) channelId=\(channelId)")
         case .failure(let error):
-            let act = wasSubscribed ? "unsubscribe" : "subscribe"
+            let act = wasSubscribed ? "退订" : "订阅"
             AppLog.subscribe(
                 "\(act) failed channelId=\(channelId): \(error)"
             )
@@ -110,7 +110,7 @@ extension ChannelViewController {
         subscribed: Bool,
         enabled: Bool
     ) {
-        let txt = subscribed ? "Subscribed" : "Subscribe"
+        let txt = subscribed ? "已订阅" : "订阅"
         headerView.updateSubscription(
             title: txt,
             isEnabled: enabled

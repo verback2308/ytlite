@@ -112,7 +112,7 @@ extension WatchViewController {
         [ps, sl].forEach { $0.translatesAutoresizingMaskIntoConstraints = false }
         ps.startAnimating()
         pc.addSubview(ps)
-        sl.text = "Preparing video..."
+        sl.text = "准备视频..."
         sl.textAlignment = .center
         sl.numberOfLines = 0
         sl.font = UIFont.systemFont(ofSize: 14)
@@ -143,7 +143,7 @@ extension WatchViewController {
         cv.addSubview(descriptionLabel)
         descriptionButton.titleLabel?.font = UIFont.systemFont(ofSize: 12)
         descriptionButton.addTarget(self, action: #selector(toggleDescription), for: .touchUpInside)
-        descriptionButton.setTitle("More", for: .normal)
+        descriptionButton.setTitle("更多", for: .normal)
         cv.addSubview(descriptionButton)
     }
 
@@ -197,9 +197,9 @@ extension WatchViewController {
                 label: nil,
                 countLabel: dislikeCountLabel
             ),
-            ActionBarItem(button: shareButton, icon: "icon_share", label: "Share"),
-            ActionBarItem(button: saveButton, icon: "icon_bookmark", label: "Save"),
-            ActionBarItem(button: downloadButton, icon: "icon_download", label: "Download")
+            ActionBarItem(button: shareButton, icon: "icon_share", label: "分享"),
+            ActionBarItem(button: saveButton, icon: "icon_bookmark", label: "保存"),
+            ActionBarItem(button: downloadButton, icon: "icon_download", label: "下载")
         ]
         for item in items {
             actionBar.addArrangedSubview(
@@ -250,14 +250,14 @@ extension WatchViewController {
             item.translatesAutoresizingMaskIntoConstraints = false
         }
         commentsLabel.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
-        commentsLabel.text = "Comments"
+        commentsLabel.text = "评论"
         cv.addSubview(commentsLabel)
         commentsStackView.axis = .vertical
         commentsStackView.spacing = 12
         cv.addSubview(commentsStackView)
         loadMoreCommentsButton.contentHorizontalAlignment = .left
         loadMoreCommentsButton.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .semibold)
-        loadMoreCommentsButton.setTitle("Load more comments", for: .normal)
+        loadMoreCommentsButton.setTitle("加载更多评论", for: .normal)
         loadMoreCommentsButton.addTarget(
             self,
             action: #selector(loadMoreCommentsTapped),
