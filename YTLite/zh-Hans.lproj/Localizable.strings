@@ -2,11 +2,6 @@
 Localizable.strings (Simplified Chinese)
 
 This file contains Simplified Chinese translations for NSLocalizedString keys.
-Add key-value pairs in the format:
-
-"<key>" = "<translation>";
-
-NOTE: This is an initial set of common UI translations. After we extract actual user-facing strings from the codebase and replace them with NSLocalizedString(), we'll populate this file with the corresponding keys.
 */
 
 /* Common buttons */
@@ -32,5 +27,12 @@ NOTE: This is an initial set of common UI translations. After we extract actual 
 "Subscriptions" = "订阅";
 "Home" = "首页";
 
-/* Placeholder – add more keys after extraction */
-
+/* Auth module keys */
+"auth.title" = "登录 YouTube";
+"auth.instruction" = "点击下方按钮，然后将你的代码粘贴到打开的页面上。";
+"auth.fetching_code" = "获取代码...";
+"auth.open_device_site" = "打开 google.com/device";
+"auth.continue_anonymous" = "继续匿名";
+"auth.error_with_description" = "错误: %@";
+"auth.waiting_for_authorization" = "等待授权...";
+"auth.failed_with_description" = "失败: %@";

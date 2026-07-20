@@ -55,13 +55,12 @@ final class AuthViewController: UIViewController {
 // MARK: - Configuration
 private extension AuthViewController {
     func configureLabels() {
-        titleLabel.text = "Sign in to YouTube"
+        titleLabel.text = NSLocalizedString("auth.title", comment: "Title on auth screen")
         titleLabel.textColor = .white
         titleLabel.font = UIFont.boldSystemFont(ofSize: 22)
         titleLabel.textAlignment = .center
 
-        instructionLabel.text = "Tap the button below,"
-            + " then paste your code on the page that opens."
+        instructionLabel.text = NSLocalizedString("auth.instruction", comment: "Instructions for device code flow")
         instructionLabel.textColor = .lightGray
         instructionLabel.font = UIFont.systemFont(ofSize: 15)
         instructionLabel.textAlignment = .center
@@ -74,7 +73,7 @@ private extension AuthViewController {
         ) ?? UIFont.boldSystemFont(ofSize: 36)
         codeLabel.textAlignment = .center
 
-        statusLabel.text = "Fetching code..."
+        statusLabel.text = NSLocalizedString("auth.fetching_code", comment: "Status shown while fetching device code")
         statusLabel.textColor = .lightGray
         statusLabel.font = UIFont.systemFont(ofSize: 14)
         statusLabel.textAlignment = .center
@@ -87,7 +86,7 @@ private extension AuthViewController {
 
     func configureOpenButton() {
         openButton.setTitle(
-            "Open google.com/device",
+            NSLocalizedString("auth.open_device_site", comment: "Button title to open device activation site"),
             for: .normal
         )
         openButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 17)
@@ -107,7 +106,7 @@ private extension AuthViewController {
 
     func configureAnonymousButton() {
         anonymousButton.setTitle(
-            "Continue Anonymously",
+            NSLocalizedString("auth.continue_anonymous", comment: "Continue anonymously button title"),
             for: .normal
         )
         anonymousButton.titleLabel?.font = UIFont.systemFont(ofSize: 15)
@@ -254,8 +253,7 @@ private extension AuthViewController {
             DispatchQueue.main.async {
                 switch result {
                 case .failure(let error):
-                    self?.statusLabel.text =
-                        "Error: \(error.localizedDescription)"
+                    self?.statusLabel.text = String(format: NSLocalizedString("auth.error_with_description", comment: "Error prefix with description"), error.localizedDescription)
                     self?.spinner.stopAnimating()
                 case .success(let code):
                     self?.handleDeviceCode(code)
@@ -268,7 +266,7 @@ private extension AuthViewController {
         codeLabel.text = code.userCode
         verificationURL = URL(string: code.verificationURL)
         openButton.isHidden = false
-        statusLabel.text = "Waiting for authorization..."
+        statusLabel.text = NSLocalizedString("auth.waiting_for_authorization", comment: "Waiting for user to authorize")
 
         let config = OAuthClient.PollConfig(
             deviceCode: code.deviceCode,
@@ -286,8 +284,7 @@ private extension AuthViewController {
                     UserProfileStore.shared.load()
                     self?.onAuthorized?()
                 case .failure(let error):
-                    self?.statusLabel.text =
-                        "Failed: \(error.localizedDescription)"
+                    self?.statusLabel.text = String(format: NSLocalizedString("auth.failed_with_description", comment: "Failure prefix with description"), error.localizedDescription)
                     self?.spinner.stopAnimating()
                 }
             }
