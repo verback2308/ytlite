@@ -1,0 +1,36 @@
+/*
+Localizable.strings (Simplified Chinese)
+
+This file contains Simplified Chinese translations for NSLocalizedString keys.
+Add key-value pairs in the format:
+
+"<key>" = "<translation>";
+
+NOTE: This is an initial set of common UI translations. After we extract actual user-facing strings from the codebase and replace them with NSLocalizedString(), we'll populate this file with the corresponding keys.
+*/
+
+/* Common buttons */
+"OK" = "确定";
+"Cancel" = "取消";
+"Retry" = "重试";
+
+/* Auth */
+"Sign In" = "登录";
+"Sign Out" = "退出登录";
+
+/* Network / Errors */
+"No Connection" = "无网络连接";
+"Error" = "错误";
+
+/* Playback */
+"Live" = "直播";
+
+/* Search */
+"Search" = "搜索";
+
+/* Navigation */
+"Subscriptions" = "订阅";
+"Home" = "首页";
+
+/* Placeholder – add more keys after extraction */
+
