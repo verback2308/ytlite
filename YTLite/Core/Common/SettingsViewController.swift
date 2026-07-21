@@ -149,8 +149,12 @@ final class SettingsViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "settings.title".localized
+        // Titled, not `barButtonSystemItem: .done` — system items are
+        // localized by iOS to the DEVICE language, ignoring the in-app
+        // language override.
         navigationItem.rightBarButtonItem = UIBarButtonItem(
-            barButtonSystemItem: .done,
+            title: "common.done".localized,
+            style: .done,
             target: self,
             action: #selector(dismiss(_:))
         )
